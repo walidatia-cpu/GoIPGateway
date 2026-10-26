@@ -1,0 +1,592 @@
+@using System.Globalization
+@{
+    var isRtl = CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
+    var currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var isAdminArea = ViewContext.RouteData.Values["area"]?.ToString() == "Admin";
+    var isCompanyArea = ViewContext.RouteData.Values["area"]?.ToString() == "Company";
+}
+<!DOCTYPE html>
+<html lang="@currentCulture" dir="@(isRtl ? "rtl" : "ltr")" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - بوابة GoIP Gateway</title>
+
+    <!-- Prevent theme flicker on load -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('goip_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+    </script>
+
+    <!-- Google Fonts: Plus Jakarta Sans (English/Latin) & IBM Plex Sans Arabic (Arabic UI) & JetBrains Mono (Code/USSD) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Cairo:wght@600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap@(isRtl ? ".rtl" : "").min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Unified Design System Tokens (Light & Dark) -->
+    <style>
+        :root {
+            --primary-accent: #2563eb;
+            --primary-hover: #1d4ed8;
+            --font-family-arabic: 'IBM Plex Sans Arabic', 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-family-english: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-family-base: 'Plus Jakarta Sans', 'IBM Plex Sans Arabic', 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --bs-body-font-family: var(--font-family-base);
+        }
+
+        /* Force font consistency across all HTML elements */
+        html, body, button, input, optgroup, select, textarea, .btn, .form-control, .form-select, .badge, .navbar, .sidebar, .dropdown-menu {
+            font-family: var(--font-family-base) !important;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+            font-family: var(--font-family-base) !important;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+        }
+
+        code, pre, .font-monospace, .ussd-code, .ussd-command {
+            font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace !important;
+        }
+
+        /* Strict Left-To-Right isolation for USSD codes to prevent inverted text */
+        .dir-ltr, .ussd-code, .ussd-command {
+            direction: ltr !important;
+            text-align: left !important;
+            unicode-bidi: isolate !important;
+            display: inline-block;
+        }
+
+        /* LIGHT MODE THEME (الوضع النهاري - واضح جداً ومريح في شمس المحل أو السوق) */
+        [data-bs-theme="light"] {
+            --bg-app: #f4f6fa;
+            --card-bg: #ffffff;
+            --card-border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --navbar-bg: rgba(255, 255, 255, 0.96);
+            --navbar-border: #e2e8f0;
+            --sidebar-bg: #ffffff;
+            --sidebar-border: #e2e8f0;
+            --sidebar-link-active: rgba(37, 99, 235, 0.1);
+            --sidebar-link-active-text: #1d4ed8;
+            --table-border: #e2e8f0;
+            --table-hover: #f1f5f9;
+            --stat-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+            --input-bg: #ffffff;
+            --input-border: #cbd5e1;
+            --input-text: #0f172a;
+            --input-placeholder: #94a3b8;
+            --pulse-bg: #16a34a;
+            --port-empty-bg: #f8fafc;
+            --port-empty-border: #cbd5e1;
+            --port-empty-text: #94a3b8;
+            --code-bg: #f1f5f9;
+            --code-color: #0f172a;
+            --modal-bg: #ffffff;
+        }
+
+        /* DARK MODE THEME (الوضع الليلي - مريح للعين وأنيق) */
+        [data-bs-theme="dark"] {
+            --bg-app: #0b1120;
+            --card-bg: #131c31;
+            --card-border: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --navbar-bg: rgba(19, 28, 49, 0.95);
+            --navbar-border: #1e293b;
+            --sidebar-bg: #0f172a;
+            --sidebar-border: #1e293b;
+            --sidebar-link-active: rgba(99, 102, 241, 0.2);
+            --sidebar-link-active-text: #818cf8;
+            --table-border: #1e293b;
+            --table-hover: #17233f;
+            --stat-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+            --input-bg: #18233c;
+            --input-border: #334155;
+            --input-text: #f8fafc;
+            --input-placeholder: #64748b;
+            --pulse-bg: #22c55e;
+            --port-empty-bg: rgba(30, 41, 59, 0.4);
+            --port-empty-border: #334155;
+            --port-empty-text: #64748b;
+            --code-bg: #070d18;
+            --code-color: #38bdf8;
+            --modal-bg: #131c31;
+        }
+
+        body {
+            font-family: var(--font-family-base);
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        /* Top Navbar */
+        .navbar-custom {
+            background: var(--navbar-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--navbar-border);
+            transition: all 0.2s ease;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 270px;
+            background: var(--sidebar-bg);
+            border-@(isRtl ? "left" : "right"): 1px solid var(--sidebar-border);
+            min-height: calc(100vh - 65px);
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 18px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 12px;
+            margin: 4px 14px;
+            font-weight: 700;
+            font-size: 0.98rem;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-link:hover {
+            color: var(--text-main);
+            background: rgba(100, 116, 139, 0.12);
+        }
+
+        .sidebar-link.active {
+            background: var(--sidebar-link-active);
+            color: var(--sidebar-link-active-text);
+            border-@(isRtl ? "right" : "left"): 4px solid var(--primary-accent);
+        }
+
+        /* Universal Card Styles (Adaptive) */
+        .portal-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            box-shadow: var(--stat-shadow);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card-stat {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: var(--stat-shadow);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card-stat:hover {
+            transform: translateY(-2px);
+            border-color: rgba(37, 99, 235, 0.4);
+        }
+
+        .card-stat .icon-box {
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+
+        /* Form Inputs (Light & Dark) */
+        .form-control, .form-select {
+            background-color: var(--input-bg) !important;
+            border-color: var(--input-border) !important;
+            color: var(--input-text) !important;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-control::placeholder {
+            color: var(--input-placeholder) !important;
+            opacity: 0.8;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-accent) !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+        }
+
+        .input-group-text {
+            background-color: var(--card-bg);
+            border-color: var(--input-border);
+            color: var(--text-muted);
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        /* Modal Dialogs */
+        .modal-content {
+            background-color: var(--modal-bg) !important;
+            border: 1px solid var(--card-border) !important;
+            color: var(--text-main) !important;
+            border-radius: 20px;
+        }
+
+        .modal-header, .modal-footer {
+            border-color: var(--card-border) !important;
+        }
+
+        /* Tables */
+        .table-custom {
+            --bs-table-bg: transparent;
+            --bs-table-color: var(--text-main);
+            border-color: var(--table-border);
+        }
+
+        .table-custom th {
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.92rem;
+            border-bottom: 2px solid var(--table-border);
+            padding: 14px 16px;
+        }
+
+        .table-custom td {
+            vertical-align: middle;
+            border-bottom: 1px solid var(--table-border);
+            padding: 16px;
+            font-size: 0.98rem;
+        }
+
+        .table-custom tbody tr:hover {
+            background-color: var(--table-hover);
+        }
+
+        /* Live Pulse Indicator */
+        .badge-live-pulse {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--pulse-bg);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+            animation: pulse-green 1.8s infinite;
+        }
+
+        @@keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        /* Port Matrix Grid */
+        .port-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+            gap: 8px;
+            padding: 16px;
+            background: var(--bg-app);
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+        }
+
+        .port-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .port-cell.active { background: rgba(34, 197, 94, 0.18); border-color: #22c55e; color: #16a34a; font-weight: 800; }
+        .port-cell.busy { background: rgba(234, 179, 8, 0.22); border-color: #eab308; color: #ca8a04; animation: blink-port 1s infinite alternate; }
+        .port-cell.empty { background: var(--port-empty-bg); border-color: var(--port-empty-border); color: var(--port-empty-text); }
+        .port-cell.error { background: rgba(239, 68, 68, 0.18); border-color: #ef4444; color: #dc2626; }
+
+        @@keyframes blink-port {
+            from { opacity: 0.6; }
+            to { opacity: 1; transform: scale(1.05); }
+        }
+
+        /* Telecom Operator Brand Badges */
+        .badge-op-vodafone {
+            background-color: #e60000 !important;
+            color: #ffffff !important;
+            font-weight: 700;
+        }
+        .badge-op-orange {
+            background-color: #ff7900 !important;
+            color: #ffffff !important;
+            font-weight: 700;
+        }
+        .badge-op-etisalat {
+            background-color: #78be20 !important;
+            color: #ffffff !important;
+            font-weight: 700;
+        }
+        .badge-op-we {
+            background-color: #5c2483 !important;
+            color: #ffffff !important;
+            font-weight: 700;
+        }
+
+        /* Quick Merchant Action Buttons */
+        .btn-merchant-action {
+            padding: 14px 22px;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 1.05rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+        .btn-merchant-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Code snippets */
+        code {
+            background-color: var(--code-bg);
+            color: var(--code-color);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+    </style>
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top py-2">
+        <div class="container-fluid px-3 px-md-4">
+            <!-- Brand -->
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="/">
+                <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-router-fill fs-5"></i>
+                </div>
+                <span class="fs-5">بوابة GoIP <span class="badge bg-primary bg-opacity-10 text-primary fs-8">Gateway</span></span>
+            </a>
+
+            <!-- Right Controls: SignalR, Theme Switcher, Language, User -->
+            <div class="d-flex align-items-center gap-2 gap-md-3">
+                <!-- Live SignalR Pulse Indicator -->
+                <div class="d-none d-sm-flex align-items-center gap-2 px-3 py-1 rounded-pill border border-secondary border-opacity-25 fs-8" style="background: var(--card-bg);">
+                    <span id="signalr-indicator" class="badge-live-pulse"></span>
+                    <span id="signalr-status" class="text-muted fw-bold">متصل لحظياً</span>
+                </div>
+
+                <!-- Theme Toggle Button (Dark / Light) -->
+                <button type="button" id="themeToggleBtn" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 px-3 py-1 rounded-pill" onclick="toggleTheme()" title="تبديل الوضع النهاري / الليلي">
+                    <i id="themeIcon" class="bi bi-moon-stars-fill text-warning"></i>
+                    <span id="themeLabel" class="d-none d-md-inline fw-bold small">الوضع الليلي</span>
+                </button>
+
+                <!-- Language Switcher -->
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle px-3 py-1 rounded-pill" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-globe me-1"></i> @(isRtl ? "العربية" : "English")
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li><a class="dropdown-item @(isRtl ? "active" : "")" asp-area="" asp-controller="Account" asp-action="SetLanguage" asp-route-culture="ar-EG" asp-route-returnUrl="@Context.Request.Path">🇪🇬 العربية</a></li>
+                        <li><a class="dropdown-item @(!isRtl ? "active" : "")" asp-area="" asp-controller="Account" asp-action="SetLanguage" asp-route-culture="en-US" asp-route-returnUrl="@Context.Request.Path">🇺🇸 English</a></li>
+                    </ul>
+                </div>
+
+                <!-- User Dropdown -->
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle d-flex align-items-center gap-2 px-3 py-1 rounded-pill fw-bold" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle fs-6"></i>
+                            <span>@(User.Identity.Name ?? "المستخدم")</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                            <li><h6 class="dropdown-header">@(User.IsInRole("SuperAdmin") ? "👑 مدير المنصة (Super Admin)" : "🏢 حساب التاجر / الشركة")</h6></li>
+                            <li><a class="dropdown-item" href="/swagger"><i class="bi bi-file-code me-2"></i> توثيق الـ API (Swagger)</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                                    <button type="submit" class="dropdown-item text-danger fw-bold"><i class="bi bi-box-arrow-right me-2"></i> تسجيل الخروج</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                }
+                else
+                {
+                    <a asp-area="" asp-controller="Account" asp-action="Login" class="btn btn-sm btn-primary px-3 rounded-pill fw-bold">تسجيل الدخول</a>
+                }
+            </div>
+        </div>
+    </nav>
+
+    <!-- Layout Body -->
+    <div class="d-flex flex-grow-1">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <aside class="sidebar py-3 d-none d-md-block">
+                @if (isAdminArea || User.IsInRole("SuperAdmin"))
+                {
+                    <div class="px-3 pb-2 text-uppercase fs-8 fw-bold text-muted">إدارة النظام (الأدمن)</div>
+                    <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isAdminArea ? "active" : "")">
+                        <i class="bi bi-speedometer2"></i> <span>الرئيسية والإحصائيات</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Tenants" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tenants" ? "active" : "")">
+                        <i class="bi bi-buildings"></i> <span>إدارة الشركات والتجار</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Services" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Services" ? "active" : "")">
+                        <i class="bi bi-gear-wide-connected"></i> <span>كتالوج الخدمات و USSD</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isAdminArea ? "active" : "")">
+                        <i class="bi bi-clock-history"></i> <span>سجل العمليات العام</span>
+                    </a>
+                    <div class="border-top my-3" style="border-color: var(--sidebar-border);"></div>
+                }
+
+                @if (isCompanyArea || !User.IsInRole("SuperAdmin"))
+                {
+                    <div class="px-3 pb-2 text-uppercase fs-8 fw-bold text-muted">بوابة التاجر والشركة</div>
+                    <a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isCompanyArea ? "active" : "")">
+                        <i class="bi bi-speedometer"></i> <span>لوحة المتابعة</span>
+                    </a>
+                    <a asp-area="Company" asp-controller="Devices" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Devices" ? "active" : "")">
+                        <i class="bi bi-router"></i> <span>أجهزة GoIP</span>
+                    </a>
+                    <a asp-area="Company" asp-controller="SimCards" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SimCards" ? "active" : "")">
+                        <i class="bi bi-sim"></i> <span>الشرائح والمحافظ</span>
+                    </a>
+                    <a asp-area="Company" asp-controller="Routing" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Routing" ? "active" : "")">
+                        <i class="bi bi-shuffle text-primary"></i> <span>توجيه الخدمات والشرائح</span>
+                    </a>
+                    <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Execute" ? "active" : "")">
+                        <i class="bi bi-lightning-charge-fill text-warning"></i> <span>تنفيذ عملية فورية</span>
+                    </a>
+                    <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")">
+                        <i class="bi bi-receipt"></i> <span>تقرير عملياتي</span>
+                    </a>
+                    <a asp-area="Company" asp-controller="ApiSettings" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ApiSettings" ? "active" : "")">
+                        <i class="bi bi-key"></i> <span>مفاتيح الربط والـ API</span>
+                    </a>
+                }
+            </aside>
+        }
+
+        <main class="flex-grow-1 p-3 p-md-4">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 py-3" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill fs-5 me-2"></i>
+                        <div class="fw-bold">@TempData["Success"]</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 py-3" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
+                        <div class="fw-bold">@TempData["Error"]</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- jQuery, Bootstrap 5 & SignalR JS -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+
+    <!-- Theme Switcher & SignalR Scripts -->
+    <script>
+        function updateThemeUI(theme) {
+            const icon = document.getElementById("themeIcon");
+            const label = document.getElementById("themeLabel");
+            if (!icon || !label) return;
+
+            if (theme === "dark") {
+                icon.className = "bi bi-sun-fill text-warning";
+                label.innerText = "الوضع النهاري";
+            } else {
+                icon.className = "bi bi-moon-stars-fill text-primary";
+                label.innerText = "الوضع الليلي";
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
+            const newTheme = currentTheme === "dark" ? "light" : "dark";
+            document.documentElement.setAttribute("data-bs-theme", newTheme);
+            localStorage.setItem("goip_theme", newTheme);
+            updateThemeUI(newTheme);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
+            updateThemeUI(currentTheme);
+
+            // SignalR Connection
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/hubs/gateway")
+                .withAutomaticReconnect()
+                .build();
+
+            const indicator = document.getElementById("signalr-indicator");
+            const statusLabel = document.getElementById("signalr-status");
+
+            connection.start().then(() => {
+                if (indicator) indicator.style.backgroundColor = "#22c55e";
+                if (statusLabel) statusLabel.innerText = "متصل لحظياً";
+                connection.invoke("JoinAdminGroup").catch(err => console.log(err));
+            }).catch(err => {
+                if (indicator) indicator.style.backgroundColor = "#ef4444";
+                if (statusLabel) statusLabel.innerText = "غير متصل";
+            });
+
+            connection.on("OnTransactionUpdated", function (tx) {
+                window.dispatchEvent(new CustomEvent("goip:transactionUpdated", { detail: tx }));
+            });
+
+            connection.on("OnSimBalanceChanged", function (sim) {
+                window.dispatchEvent(new CustomEvent("goip:simBalanceChanged", { detail: sim }));
+            });
+
+            connection.on("OnPortStatusChanged", function (port) {
+                window.dispatchEvent(new CustomEvent("goip:portStatusChanged", { detail: port }));
+            });
+        });
+    </script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

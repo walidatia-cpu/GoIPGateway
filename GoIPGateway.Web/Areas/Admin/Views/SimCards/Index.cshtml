@@ -1,0 +1,233 @@
+@model IEnumerable<GoIPGateway.Domain.Entities.SimCard>
+@{
+    ViewData["Title"] = "إدارة الشرايح ومحافظ الكاش";
+    var selectedOp = ViewBag.SelectedOperator as GoIPGateway.Domain.Enums.OperatorType?;
+}
+
+<div class="container-xl px-0 py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none">لوحة التحكم</a></li>
+            <li class="breadcrumb-item active" aria-current="page">إدارة الشرايح ومحافظ الكاش</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-sim-fill fs-4"></i>
+                </span>
+                <span>إدارة الشرايح ومحافظ الكاش</span>
+            </h3>
+            <p class="text-muted small mb-0">إدارة خطوط المحافظ الذكية، كلمات السر (PIN)، الأرصدة والحدود اليومية لأجهزة GoIP</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Create" class="btn btn-primary px-4 py-2 fw-bold shadow-sm rounded-3 d-flex align-items-center gap-2">
+                <i class="bi bi-plus-circle-fill fs-5"></i>
+                <span>إضافة شريحة جديدة</span>
+            </a>
+        </div>
+    </div>
+
+<!-- Operator Filter Tabs -->
+<div class="portal-card p-3 mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-action="Index" class="btn btn-sm @(!selectedOp.HasValue ? "btn-primary" : "btn-outline-secondary") rounded-pill px-3">
+                الكل (@Model.Count())
+            </a>
+            <a asp-action="Index" asp-route-op="@GoIPGateway.Domain.Enums.OperatorType.Vodafone" class="btn btn-sm @(selectedOp == GoIPGateway.Domain.Enums.OperatorType.Vodafone ? "btn-danger" : "btn-outline-danger") rounded-pill px-3">
+                فودافون كاش
+            </a>
+            <a asp-action="Index" asp-route-op="@GoIPGateway.Domain.Enums.OperatorType.Orange" class="btn btn-sm @(selectedOp == GoIPGateway.Domain.Enums.OperatorType.Orange ? "btn-warning text-dark" : "btn-outline-warning") rounded-pill px-3">
+                أورانج كاش
+            </a>
+            <a asp-action="Index" asp-route-op="@GoIPGateway.Domain.Enums.OperatorType.Etisalat" class="btn btn-sm @(selectedOp == GoIPGateway.Domain.Enums.OperatorType.Etisalat ? "btn-success" : "btn-outline-success") rounded-pill px-3">
+                اتصالات كاش
+            </a>
+            <a asp-action="Index" asp-route-op="@GoIPGateway.Domain.Enums.OperatorType.WE" class="btn btn-sm @(selectedOp == GoIPGateway.Domain.Enums.OperatorType.WE ? "btn-purple text-white" : "btn-outline-secondary") rounded-pill px-3" style="@(selectedOp == GoIPGateway.Domain.Enums.OperatorType.WE ? "background:#5c2483;" : "")">
+                وي باي (WE)
+            </a>
+        </div>
+        <div class="small text-muted">
+            إجمالي الشرايح: <strong>@Model.Count()</strong> | النشطة: <strong class="text-success">@Model.Count(s => s.IsActive && !s.IsBlocked)</strong>
+        </div>
+    </div>
+</div>
+
+<!-- SIM Cards Table -->
+<div class="portal-card p-4 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>البورت / الجهاز</th>
+                    <th>الشبكة</th>
+                    <th>رقم الخط</th>
+                    <th>باسورد المحفظة (PIN)</th>
+                    <th>الرصيد اللحظي</th>
+                    <th>الاستهلاك / الحد اليومي</th>
+                    <th>الحالة</th>
+                    <th>إجراءات USSD والإدارة</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-sim fs-1 d-block mb-2"></i>
+                            لا توجد شرايح مسجلة. اضغط على "إضافة شريحة جديدة" لربط أول خط بالبورت.
+                        </td>
+                    </tr>
+                }
+                @foreach (var sim in Model)
+                {
+                    <tr id="sim-row-@sim.Id">
+                        <td>
+                            <div class="fw-bold">@(sim.DevicePort?.PortLabel ?? "بورت " + sim.DevicePortId)</div>
+                            <small class="text-muted">@(sim.DevicePort?.Device?.DeviceName ?? "-")</small>
+                        </td>
+                        <td>
+                            @switch (sim.Operator)
+                            {
+                                case GoIPGateway.Domain.Enums.OperatorType.Vodafone:
+                                    <span class="badge badge-op-vodafone px-3 py-1">فودافون</span>
+                                    break;
+                                case GoIPGateway.Domain.Enums.OperatorType.Orange:
+                                    <span class="badge badge-op-orange px-3 py-1">أورانج</span>
+                                    break;
+                                case GoIPGateway.Domain.Enums.OperatorType.Etisalat:
+                                    <span class="badge badge-op-etisalat px-3 py-1">اتصالات</span>
+                                    break;
+                                default:
+                                    <span class="badge badge-op-we px-3 py-1">WE</span>
+                                    break;
+                            }
+                        </td>
+                        <td class="fw-bold fs-6">@(sim.PhoneNumber ?? "غير محدد")</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <span id="pin-text-@sim.Id" class="font-monospace fw-bold text-warning">••••••</span>
+                                @if (!string.IsNullOrEmpty(sim.WalletPassword))
+                                {
+                                    <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-1" onclick="togglePin(@sim.Id, '@sim.WalletPassword')" title="إظهار / إخفاء كلمة السر">
+                                        <i id="pin-icon-@sim.Id" class="bi bi-eye"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger bg-opacity-10 text-danger fs-9">بدون باسورد</span>
+                                }
+                            </div>
+                        </td>
+                        <td>
+                            <h6 class="fw-bold text-success mb-0" id="sim-bal-@sim.Id">@sim.CurrentBalance.ToString("N2") ج.م</h6>
+                            @if (sim.LastBalanceCheck.HasValue)
+                            {
+                                <small class="text-muted fs-8">آخر فحص: @sim.LastBalanceCheck.Value.ToString("HH:mm")</small>
+                            }
+                        </td>
+                        <td>
+                            <div class="small fw-bold">@sim.DailyConsumed.ToString("N0") / @(sim.DailyLimit > 0 ? sim.DailyLimit.ToString("N0") : "∞") ج.م</div>
+                            <div class="progress mt-1" style="height: 4px;">
+                                @{
+                                    var percent = sim.DailyLimit > 0 ? Math.Min(100, (int)((sim.DailyConsumed / sim.DailyLimit) * 100)) : 0;
+                                }
+                                <div class="progress-bar @(percent > 80 ? "bg-danger" : "bg-primary")" role="progressbar" style="width: @percent%;"></div>
+                            </div>
+                        </td>
+                        <td>
+                            @if (sim.IsActive && !sim.IsBlocked)
+                            {
+                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 py-1">
+                                    <i class="bi bi-check-circle-fill me-1"></i> نشطة
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-2 py-1">
+                                    <i class="bi bi-pause-circle me-1"></i> متوقفة
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <!-- USSD Inquiry Buttons -->
+                                <form asp-action="QueryBalance" method="post" class="d-inline">
+                                    <input type="hidden" name="simId" value="@sim.Id" />
+                                    <button type="submit" class="btn btn-outline-info btn-sm" title="استعلام رصيد USSD فوري">
+                                        <i class="bi bi-wallet2"></i>
+                                    </button>
+                                </form>
+
+                                <form asp-action="QueryNumber" method="post" class="d-inline">
+                                    <input type="hidden" name="simId" value="@sim.Id" />
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm" title="استعلام رقم الشريحة USSD">
+                                        <i class="bi bi-telephone"></i>
+                                    </button>
+                                </form>
+
+                                <!-- Edit SIM Button -->
+                                <a asp-action="Edit" asp-route-id="@sim.Id" class="btn btn-outline-primary btn-sm" title="تعديل بيانات الشريحة والباسورد">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+
+                                <!-- Toggle Active/Inactive -->
+                                <form asp-action="ToggleStatus" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@sim.Id" />
+                                    <button type="submit" class="btn @(sim.IsActive ? "btn-outline-warning" : "btn-outline-success") btn-sm" title="@(sim.IsActive ? "إيقاف مؤقت" : "تشغيل")">
+                                        <i class="bi @(sim.IsActive ? "bi-pause" : "bi-play")"></i>
+                                    </button>
+                                </form>
+
+                                <!-- Delete SIM -->
+                                <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذه الشريحة وتحرير البورت؟');">
+                                    <input type="hidden" name="id" value="@sim.Id" />
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="حذف الشريحة وتحرير البورت">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+
+@section Scripts {
+    <script>
+        function togglePin(simId, realPin) {
+            const label = document.getElementById("pin-text-" + simId);
+            const icon = document.getElementById("pin-icon-" + simId);
+            if (!label) return;
+
+            if (label.innerText === "••••••") {
+                label.innerText = realPin;
+                label.classList.remove("text-warning");
+                label.classList.add("text-success");
+                if (icon) icon.className = "bi bi-eye-slash";
+            } else {
+                label.innerText = "••••••";
+                label.classList.remove("text-success");
+                label.classList.add("text-warning");
+                if (icon) icon.className = "bi bi-eye";
+            }
+        }
+
+        window.addEventListener("goip:simBalanceChanged", function (e) {
+            const sim = e.detail;
+            const balLabel = document.getElementById("sim-bal-" + sim.id);
+            if (balLabel) {
+                balLabel.innerText = sim.currentBalance.toFixed(2) + " ج.م";
+                balLabel.classList.add("text-warning");
+                setTimeout(() => balLabel.classList.remove("text-warning"), 2500);
+            }
+        });
+    </script>
+}

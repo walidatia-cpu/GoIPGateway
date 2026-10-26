@@ -1,0 +1,189 @@
+@model GoIPGateway.Domain.Entities.Tenant
+@{
+    ViewData["Title"] = $"تفاصيل الشركة: {Model.CompanyName}";
+}
+
+<div class="container-xl px-0 py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة التحكم</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">إدارة الشركات</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">@Model.CompanyName</li>
+        </ol>
+    </nav>
+
+    <!-- Header Card -->
+    <div class="portal-card p-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-2" style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <h4 class="fw-black mb-0 text-main">@Model.CompanyName</h4>
+                        @if (Model.IsActive && !Model.IsBlocked)
+                        {
+                            <span class="badge bg-success bg-opacity-25 text-success">حساب نشط</span>
+                        }
+                        else if (Model.IsBlocked)
+                        {
+                            <span class="badge bg-danger bg-opacity-25 text-danger">محظور: @Model.BlockReason</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary bg-opacity-25 text-secondary">معطل</span>
+                        }
+                    </div>
+                    <div class="text-muted small mt-1">
+                        @if (!string.IsNullOrEmpty(Model.CompanyNameEn))
+                        {
+                            <span>@Model.CompanyNameEn • </span>
+                        }
+                        <span class="font-monospace">كود الشركة: #@Model.Id</span> • أُنشئت: @Model.CreatedDate.ToString("yyyy-MM-dd")
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary px-3 py-2 rounded-3 fw-bold shadow-sm">
+                    <i class="bi bi-pencil-square me-1"></i> تعديل البيانات
+                </a>
+                <a asp-action="ManageServices" asp-route-id="@Model.Id" class="btn btn-outline-info px-3 py-2 rounded-3 fw-bold">
+                    <i class="bi bi-gear-wide me-1"></i> الخدمات المصرح بها
+                </a>
+                <a asp-action="ManageTokens" asp-route-id="@Model.Id" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold">
+                    <i class="bi bi-key me-1"></i> مفاتيح الـ API
+                </a>
+                <a asp-action="Index" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold">
+                    <i class="bi bi-arrow-right me-1"></i> العودة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="portal-card p-3 shadow-sm h-100">
+                <div class="text-muted fs-8 mb-1">كوتة أجهزة GoIP</div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h3 class="fw-black mb-0 text-primary font-monospace">@Model.AssignedDevices.Count / @Model.MaxDevices</h3>
+                    <span class="text-muted fs-8">أجهزة</span>
+                </div>
+                <div class="progress mt-2" style="height: 4px;">
+                    @{ var devPercent = Model.MaxDevices > 0 ? (Model.AssignedDevices.Count * 100 / Model.MaxDevices) : 0; }
+                    <div class="progress-bar bg-primary" style="width: @devPercent%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="portal-card p-3 shadow-sm h-100">
+                <div class="text-muted fs-8 mb-1">الخدمات المفعلة</div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h3 class="fw-black mb-0 text-info font-monospace">@Model.SubscribedServices.Count(s => s.IsActive)</h3>
+                    <span class="text-muted fs-8">خدمة</span>
+                </div>
+                <small class="text-muted mt-2 d-block fs-9">متاحة للاستخدام عبر الـ API</small>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="portal-card p-3 shadow-sm h-100">
+                <div class="text-muted fs-8 mb-1">مفاتيح الـ API</div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h3 class="fw-black mb-0 text-success font-monospace">@Model.ApiKeys.Count(k => k.IsActive)</h3>
+                    <span class="text-muted fs-8">توكن نشط</span>
+                </div>
+                <small class="text-muted mt-2 d-block fs-9">مقيدة بالخدمات المحددة</small>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="portal-card p-3 shadow-sm h-100">
+                <div class="text-muted fs-8 mb-1">حد العمليات اليومي</div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h3 class="fw-black mb-0 text-warning font-monospace">@Model.MaxDailyOperations</h3>
+                    <span class="text-muted fs-8">طلب / يوم</span>
+                </div>
+                <small class="text-muted mt-2 d-block fs-9">الحد الأقصى اليومي المسموح</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Information Grid -->
+    <div class="row g-4">
+        <!-- Contact & Legal Info -->
+        <div class="col-12 col-lg-6">
+            <div class="portal-card p-4 shadow-sm h-100">
+                <h5 class="fw-black mb-3 pb-2 border-bottom text-main d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle text-primary"></i>
+                    <span>بيانات التواصل والملف التعريفي</span>
+                </h5>
+
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex justify-content-between pb-2 border-bottom">
+                        <span class="text-muted small">مسؤول التواصل:</span>
+                        <strong class="text-main">@(Model.ContactPerson ?? "غير محدد")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between pb-2 border-bottom">
+                        <span class="text-muted small">رقم الهاتف:</span>
+                        <strong class="font-monospace text-main">@(Model.ContactPhone ?? "غير محدد")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between pb-2 border-bottom">
+                        <span class="text-muted small">البريد الإلكتروني:</span>
+                        <strong class="font-monospace text-main">@(Model.ContactEmail ?? "غير محدد")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between pb-2 border-bottom">
+                        <span class="text-muted small">الرقم الضريبي:</span>
+                        <strong class="font-monospace text-main">@(Model.TaxId ?? "غير محدد")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted small">العنوان والمقر:</span>
+                        <strong class="text-main">@(Model.Address ?? "غير محدد")</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assigned Devices & Services Overview -->
+        <div class="col-12 col-lg-6">
+            <div class="portal-card p-4 shadow-sm h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <h5 class="fw-black mb-0 text-main d-flex align-items-center gap-2">
+                        <i class="bi bi-router text-primary"></i>
+                        <span>أجهزة GoIP المسجلة للشركة (@Model.AssignedDevices.Count)</span>
+                    </h5>
+                    <span class="badge bg-light text-dark border font-monospace fs-8">كوتة: @Model.MaxDevices</span>
+                </div>
+
+                @if (!Model.AssignedDevices.Any())
+                {
+                    <div class="text-center py-4 text-muted small">
+                        لم تقم الشركة بتسجيل أي أجهزة GoIP حتى الآن.
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush gap-2">
+                        @foreach (var td in Model.AssignedDevices.Where(d => d.IsActive && !d.Device.IsDelete))
+                        {
+                            var dev = td.Device;
+                            <div class="p-2.5 rounded-3 border bg-light d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="fw-bold text-main fs-6">@dev.DeviceName</span>
+                                    <div class="text-muted fs-8 font-monospace">@dev.IpAddress:@dev.Port • @dev.TotalPorts بورت</div>
+                                </div>
+                                <span class="badge @(dev.IsOnline ? "bg-success" : "bg-secondary")">
+                                    @(dev.IsOnline ? "أونلاين" : "أوفلاين")
+                                </span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,156 @@
+@model IEnumerable<GoIPGateway.Domain.Entities.TenantDevice>
+@{
+    var tenant = ViewBag.Tenant as GoIPGateway.Domain.Entities.Tenant;
+    int currentCount = ViewBag.CurrentCount ?? 0;
+    int maxDevices = ViewBag.MaxDevices ?? 1;
+    bool canAddMore = ViewBag.CanAddMore ?? false;
+    ViewData["Title"] = "أجهزة GoIP الخاصة بالشركة";
+}
+
+<div class="container-xl px-0 py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة المتابعة</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">أجهزة GoIP والبوابات</li>
+        </ol>
+    </nav>
+
+    <!-- Header Card with Quota -->
+    <div class="portal-card p-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-2" style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-router-fill"></i>
+                </div>
+                <div>
+                    <h4 class="fw-black mb-1 text-main">أجهزة GoIP وبوابات الدفع</h4>
+                    <div class="text-muted small">
+                        الأجهزة المربوطة بحساب شركتك لتنفيذ العمليات على الشرائح
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <!-- Quota Badge -->
+                <div class="p-2 px-3 rounded-3 border bg-light text-center">
+                    <div class="fs-8 text-muted fw-bold">حصة الأجهزة المسموحة:</div>
+                    <div class="fw-black fs-6 @(canAddMore ? "text-primary" : "text-danger")">
+                        @currentCount / @maxDevices أجهزة
+                    </div>
+                </div>
+
+                @if (canAddMore)
+                {
+                    <a asp-action="Create" class="btn btn-primary fw-bold px-3 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2">
+                        <i class="bi bi-plus-circle-fill"></i>
+                        <span>إضافة جهاز جديد</span>
+                    </a>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-secondary px-3 py-2 rounded-3 fw-bold" disabled title="وصلت للحد الأقصى">
+                        <i class="bi bi-lock-fill me-1"></i> استنفذت الحصة (@maxDevices)
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (!canAddMore)
+    {
+        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center gap-2 mb-4">
+            <i class="bi bi-info-circle-fill fs-5"></i>
+            <div>
+                لقد استخدمت كامل عدد الأجهزة المسموح بها في باقتك الحالية (<strong>@maxDevices أجهزة</strong>). إذا كنت بحاجة لإضافة بوابات إضافية، يرجى التواصل مع إدارة النظام لترقية باقتك.
+            </div>
+        </div>
+    }
+
+    <!-- Devices Table Card -->
+    <div class="portal-card p-4 shadow-sm">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 border rounded-3 border-dashed" style="border-color: var(--card-border) !important;">
+                <div class="p-3 rounded-circle bg-primary bg-opacity-10 text-primary d-inline-block mb-3">
+                    <i class="bi bi-router fs-2"></i>
+                </div>
+                <h5 class="fw-bold text-main mb-2">لا توجد أجهزة GoIP مسجلة بعد</h5>
+                <p class="text-muted small mb-3">أضف بيانات جهاز GoIP الأول الخاص بك للبدء في تركيب وإدارة الشرائح.</p>
+                @if (canAddMore)
+                {
+                    <a asp-action="Create" class="btn btn-primary px-4 py-2 rounded-3 fw-bold">
+                        <i class="bi bi-plus-circle-fill me-1"></i> إضافة أول جهاز الآن
+                    </a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light fs-8">
+                        <tr>
+                            <th>اسم الجهاز</th>
+                            <th>النوع والموديل</th>
+                            <th>عنوان IP والمنفذ</th>
+                            <th>حالة الاتصال</th>
+                            <th>المنافذ والشرائح</th>
+                            <th class="text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var td in Model)
+                        {
+                            var dev = td.Device;
+                            var activeSims = dev.Ports.Count(p => p.SimCard != null && p.SimCard.IsActive && !p.SimCard.IsDelete);
+
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-main">@dev.DeviceName</div>
+                                    <small class="text-muted font-monospace">SN: @(dev.SerialNumber ?? "N/A")</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 font-monospace">
+                                        @dev.DeviceType
+                                    </span>
+                                </td>
+                                <td>
+                                    <code class="text-primary font-monospace">@dev.IpAddress:@dev.Port</code>
+                                </td>
+                                <td>
+                                    @if (dev.IsOnline)
+                                    {
+                                        <span class="badge bg-success bg-opacity-25 text-success">
+                                            <i class="bi bi-check-circle-fill me-1"></i> متصل
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger bg-opacity-25 text-danger">
+                                            <i class="bi bi-x-circle-fill me-1"></i> غير متصل
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-main">@activeSims / @dev.TotalPorts</span>
+                                    <small class="text-muted">منافذ نشطة</small>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@dev.Id" class="btn btn-outline-info" title="عرض المنافذ">
+                                            <i class="bi bi-grid-3x3-gap"></i> المنافذ
+                                        </a>
+                                        <a asp-area="Company" asp-controller="SimCards" asp-action="Index" class="btn btn-outline-primary" title="إدارة الشرائح">
+                                            <i class="bi bi-sim"></i> الشرائح
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

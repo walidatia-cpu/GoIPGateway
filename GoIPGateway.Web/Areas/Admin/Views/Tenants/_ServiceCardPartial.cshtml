@@ -1,0 +1,87 @@
+@model (GoIPGateway.Domain.Entities.ServiceDefinition Service, bool IsSubscribed)
+@{
+    var s = Model.Service;
+    var isChecked = Model.IsSubscribed;
+    var opName = s.Operator?.ToString() ?? "ALL";
+    var catName = s.Category.ToString();
+
+    var opArabic = s.Operator switch
+    {
+        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "فودافون كاش",
+        GoIPGateway.Domain.Enums.OperatorType.Orange => "أورنج كاش",
+        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "اتصالات كاش",
+        GoIPGateway.Domain.Enums.OperatorType.WE => "وي باي WE",
+        _ => "عامة"
+    };
+
+    var opBadgeClass = s.Operator switch
+    {
+        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "bg-danger",
+        GoIPGateway.Domain.Enums.OperatorType.Orange => "bg-warning text-dark",
+        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "bg-success",
+        GoIPGateway.Domain.Enums.OperatorType.WE => "bg-secondary",
+        _ => "bg-dark"
+    };
+
+    var catArabic = s.Category switch
+    {
+        GoIPGateway.Domain.Enums.ServiceCategory.Payment => "دفع تاجر",
+        GoIPGateway.Domain.Enums.ServiceCategory.Transfer => "تحويل كاش",
+        GoIPGateway.Domain.Enums.ServiceCategory.Inquiry => "استعلام رصيد",
+        GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry => "استعلام رقم",
+        GoIPGateway.Domain.Enums.ServiceCategory.Settlement => "تسوية وسحب",
+        _ => s.Category.ToString()
+    };
+
+    var cardBorderClass = s.Operator switch
+    {
+        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "border-danger border-opacity-25",
+        GoIPGateway.Domain.Enums.OperatorType.Orange => "border-warning border-opacity-50",
+        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "border-success border-opacity-25",
+        GoIPGateway.Domain.Enums.OperatorType.WE => "border-secondary border-opacity-50",
+        _ => "border-secondary border-opacity-25"
+    };
+}
+
+<div class="col-12 col-md-6 col-lg-4 service-card-wrapper">
+    <div class="p-3 rounded-3 border h-100 service-card @cardBorderClass @(isChecked ? "card-selected" : "bg-light")" 
+         data-srv-id="@s.Id"
+         data-op="@opName"
+         data-cat="@catName"
+         data-subscribed="@(isChecked ? "true" : "false")"
+         data-search="@s.NameAr.ToLower() @s.ServiceCode.ToLower() @opArabic.ToLower() @catArabic.ToLower() @opName.ToLower()"
+         onclick="toggleCard(@s.Id)">
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-check-label fw-black text-main fs-6 mb-0" for="srv_@s.Id" onclick="event.stopPropagation();">
+                @s.NameAr
+            </label>
+            <div class="form-check form-switch mb-0" onclick="event.stopPropagation();">
+                <input class="form-check-input service-checkbox cursor-pointer" 
+                       type="checkbox" 
+                       name="selectedServiceIds" 
+                       value="@s.Id" 
+                       id="srv_@s.Id" 
+                       @(isChecked ? "checked" : "") 
+                       onchange="onServiceCheckboxChanged(this)" />
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-1.5 flex-wrap mb-2">
+            <span class="badge @opBadgeClass px-2 py-0.5 rounded-pill fs-8">
+                @opArabic
+            </span>
+            <span class="badge bg-light text-dark font-monospace border fs-8">
+                @s.ServiceCode
+            </span>
+            <span class="badge bg-secondary bg-opacity-10 text-main border fs-8">
+                @catArabic
+            </span>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center text-muted fs-8 pt-2 border-top">
+            <span>التكلفة: <strong class="text-primary font-monospace">@s.BaseCost.ToString("N2") ج.م</strong></span>
+            <span>أوامر USSD: <strong class="font-monospace">@s.UssdSteps.Count(st => !st.IsDelete)</strong></span>
+        </div>
+    </div>
+</div>

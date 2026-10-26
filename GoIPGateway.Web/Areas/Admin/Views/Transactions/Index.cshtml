@@ -1,0 +1,114 @@
+@model GoIPGateway.Application.Common.Models.PagedResult<GoIPGateway.Application.DTOs.TransactionResultDto>
+@{
+    ViewData["Title"] = "سجل العمليات العام";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-clock-history text-primary me-2"></i> سجل العمليات العام</h3>
+        <p class="text-muted small mb-0">جميع طلبات الشركات وعمليات بوابة GoIP مع تفاصيل الاستجابة والأرصدة</p>
+    </div>
+</div>
+
+<div class="portal-card p-4 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>رقم المرجع (UUID)</th>
+                    <th>المرجع الخارجي</th>
+                    <th>الحالة</th>
+                    <th>الرسالة / النتيجة</th>
+                    <th>الرصيد قبل</th>
+                    <th>الرصيد بعد</th>
+                    <th>توقيت الاكتمال</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            لا توجد عمليات مسجلة حتى الآن.
+                        </td>
+                    </tr>
+                }
+                @foreach (var tx in Model.Items)
+                {
+                    <tr>
+                        <td class="fw-bold"><code>@tx.TransactionRef</code></td>
+                        <td><small class="text-muted">@(tx.ExternalRef ?? "-")</small></td>
+                        <td>
+                            @if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Completed)
+                            {
+                                <span class="badge bg-success bg-opacity-25 text-success">مكتمل بنجاح</span>
+                            }
+                            else if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Processing)
+                            {
+                                <span class="badge bg-warning bg-opacity-25 text-warning">قيد التنفيذ</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger bg-opacity-25 text-danger">@tx.Status</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 260px;" title="@(tx.Message ?? tx.RawResponse)">
+                                @(tx.Message ?? tx.RawResponse ?? "-")
+                            </div>
+                        </td>
+                        <td>@(tx.SimBalanceBefore.HasValue ? tx.SimBalanceBefore.Value.ToString("N2") + " ج.م" : "-")</td>
+                        <td class="text-success fw-bold">@(tx.SimBalanceAfter.HasValue ? tx.SimBalanceAfter.Value.ToString("N2") + " ج.م" : "-")</td>
+                        <td class="small text-muted">@tx.CompletedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="showTxModal('@tx.TransactionRef')">
+                                <i class="bi bi-eye"></i> التفاصيل
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-25">
+            <span class="small text-muted">عرض الصفحة @Model.PageNumber من @Model.TotalPages (إجمالي @Model.TotalCount عملية)</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageNumber - 1)">السابق</a>
+                </li>
+                <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageNumber + 1)">التالي</a>
+                </li>
+            </ul>
+        </div>
+    }
+</div>
+
+<!-- Modal Container for Details -->
+<div class="modal fade" id="txDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" id="txDetailsContent">
+            <!-- Dynamic Content Loaded via Fetch -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showTxModal(refCode) {
+            fetch('/Admin/Transactions/Details?refCode=' + encodeURIComponent(refCode))
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById('txDetailsContent').innerHTML = html;
+                    new bootstrap.Modal(document.getElementById('txDetailsModal')).show();
+                })
+                .catch(err => alert('حدث خطأ أثناء تحميل تفاصيل العملية'));
+        }
+    </script>
+}

@@ -1,0 +1,139 @@
+@model GoIPGateway.Domain.Entities.SimCard
+@{
+    ViewData["Title"] = "إضافة شريحة جديدة";
+    var availablePorts = ViewBag.AvailablePorts as List<GoIPGateway.Domain.Entities.DevicePort> ?? new();
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="portal-card p-4 p-md-5 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom" style="border-color: var(--card-border);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-3">
+                        <i class="bi bi-sim-fill"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1">إضافة شريحة محفظة جديدة</h4>
+                        <p class="text-muted small mb-0">ربط خط جديد ببورت في جهاز GoIP، وتعيين باسورد المحفظة والحدود اليومية</p>
+                    </div>
+                </div>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-right me-1"></i> العودة للقائمة
+                </a>
+            </div>
+
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger small p-2 rounded-3" role="alert"></div>
+
+                <!-- Step 1: Select Port & Device -->
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted">1. اختيار البورت والجهاز المتاح <span class="text-danger">*</span></label>
+                    @if (availablePorts.Count == 0)
+                    {
+                        <div class="alert alert-warning small p-3 rounded-3">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> لا توجد بورتات فارغة متاحة حالياً. يرجى إضافة جهاز جديد أو تحرير بورتات سابقة.
+                        </div>
+                    }
+                    else
+                    {
+                        <select asp-for="DevicePortId" class="form-select fs-6 py-2" required>
+                            <option value="">-- اضغط لاختيار البورت الفارغ المناسب --</option>
+                            @foreach (var port in availablePorts)
+                            {
+                                <option value="@port.Id">
+                                    [@port.PortLabel] - @(port.Device?.DeviceName ?? "Device") (بورت رقم @port.PortNumber)
+                                </option>
+                            }
+                        </select>
+                        <span asp-validation-for="DevicePortId" class="text-danger small"></span>
+                    }
+                </div>
+
+                <!-- Step 2: Operator & Phone Number -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">2. شركة المحمول (الشبكة) <span class="text-danger">*</span></label>
+                        <select asp-for="Operator" class="form-select" asp-items="Html.GetEnumSelectList<GoIPGateway.Domain.Enums.OperatorType>()" required></select>
+                        <span asp-validation-for="Operator" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">3. رقم هاتف الشريحة (المحفظة) <span class="text-danger">*</span></label>
+                        <input asp-for="PhoneNumber" class="form-control" placeholder="مثال: 01012345678" required />
+                        <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <!-- Step 3: Wallet PIN/Password & Initial Balance -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-warning">
+                            <i class="bi bi-key-fill me-1"></i> 4. الرقم السري لمحفظة كاش (Wallet PIN) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input asp-for="WalletPassword" id="createWalletPin" type="password" class="form-control fs-6 fw-bold" placeholder="مثال: 1234 أو 9999" required />
+                            <button type="button" class="btn btn-outline-secondary" onclick="toggleCreatePin()" title="إظهار / إخفاء">
+                                <i id="toggleCreatePinIcon" class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">الرقم السري للمحفظة المستخدم في تأكيد عمليات الدفع والـ USSD</small>
+                        <span asp-validation-for="WalletPassword" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">5. الرصيد الحالي المبدئي (ج.م)</label>
+                        <input asp-for="CurrentBalance" type="number" step="0.01" min="0" class="form-control" placeholder="0.00" />
+                        <small class="text-muted">سيتم تحديثه تلقائياً عند إجراء استعلام رصيد USSD</small>
+                    </div>
+                </div>
+
+                <!-- Step 4: Daily and Monthly Limits -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">6. الحد الأقصى للاستهلاك اليومي (ج.م)</label>
+                        <input asp-for="DailyLimit" type="number" step="100" min="0" class="form-control" />
+                        <small class="text-muted">لحماية الخط من استنزاف الرصيد أو الحظر (مثال: 50,000)</small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">7. الحد الأقصى الشهري (ج.م)</label>
+                        <input asp-for="MonthlyLimit" type="number" step="1000" min="0" class="form-control" />
+                        <small class="text-muted">الحد الشهري المسموح بتحويله (مثال: 500,000)</small>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted">ملاحظات تشغيلية</label>
+                    <textarea asp-for="Notes" class="form-control" rows="2" placeholder="أي بيانات أو ملاحظات خاصة بمالك الخط أو البنك..."></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary py-3 fw-bold fs-6 shadow rounded-3">
+                        <i class="bi bi-check-circle-fill me-2"></i> حفظ الشريحة وربطها بالبورت
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function toggleCreatePin() {
+            const input = document.getElementById("createWalletPin");
+            const icon = document.getElementById("toggleCreatePinIcon");
+            if (input.type === "password") {
+                input.type = "text";
+                icon.className = "bi bi-eye-slash";
+            } else {
+                input.type = "password";
+                icon.className = "bi bi-eye";
+            }
+        }
+    </script>
+}

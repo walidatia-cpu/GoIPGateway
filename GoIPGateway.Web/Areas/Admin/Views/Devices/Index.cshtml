@@ -1,0 +1,59 @@
+@model IEnumerable<GoIPGateway.Domain.Entities.Device>
+@{
+    ViewData["Title"] = "أجهزة GoIP";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-router text-primary me-2"></i> إدارة أجهزة GoIP</h3>
+        <p class="text-muted small mb-0">تهيئة أجهزة GoIP 128 و 512 بورت وتوزيعها على الشركات المستأجرة</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i> إضافة جهاز جديد
+    </a>
+</div>
+
+<div class="row g-4">
+    @foreach (var device in Model)
+    {
+        <div class="col-md-6 col-xl-4">
+            <div class="portal-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-1">@device.DeviceName</h5>
+                        <code class="text-muted small">@device.IpAddress:@device.Port</code>
+                    </div>
+                    @if (device.IsOnline)
+                    {
+                        <span class="badge bg-success bg-opacity-25 text-success"><span class="badge-live-pulse me-1"></span> متصل</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger bg-opacity-25 text-danger">غير متصل</span>
+                    }
+                </div>
+
+                <div class="p-3 rounded-3 mb-3" style="background: var(--bg-app); border: 1px solid var(--card-border);">
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>نوع الجهاز:</span>
+                        <strong class="text-main">@device.DeviceType</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>إجمالي البورتات:</span>
+                        <strong class="text-main">@device.TotalPorts بورت</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>الشرايح المركبة:</span>
+                        <strong class="text-info">@device.ActivePorts شريحة</strong>
+                    </div>
+                </div>
+
+                <div class="mt-auto pt-2">
+                    <a asp-action="Details" asp-route-id="@device.Id" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-grid-3x3-gap me-1"></i> فتح خريطة البورتات اللحظية
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>

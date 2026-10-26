@@ -1,0 +1,111 @@
+@model GoIPGateway.Domain.Entities.SimCard
+@{
+    ViewData["Title"] = $"تعديل شريحة: {Model.PhoneNumber}";
+}
+
+<div class="container-xl px-0 py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة المتابعة</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">الشرائح والمحافظ</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">تعديل: @Model.PhoneNumber</li>
+        </ol>
+    </nav>
+
+    <!-- Header Card -->
+    <div class="portal-card p-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-2" style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-pencil-square"></i>
+                </div>
+                <div>
+                    <h4 class="fw-black mb-1 text-main">تعديل بيانات الشريحة: @Model.PhoneNumber</h4>
+                    <div class="text-muted small">
+                        الجهاز: <strong class="text-primary">@Model.DevicePort.Device.DeviceName</strong> 
+                        <span class="badge bg-light text-dark font-monospace border ms-2">منفذ #@Model.DevicePort.PortNumber (@Model.DevicePort.PortLabel)</span>
+                    </div>
+                </div>
+            </div>
+
+            <a asp-action="Index" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold">
+                <i class="bi bi-arrow-right me-1"></i> العودة للشرائح
+            </a>
+        </div>
+    </div>
+
+    <!-- Edit Form Card -->
+    <div class="portal-card p-4 shadow-sm mb-4">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+
+            <div class="row g-3">
+                <!-- Operator -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">شبكة الاتصالات <span class="text-danger">*</span></label>
+                    <select name="Operator" class="form-select form-select-sm">
+                        <option value="1" selected="@(Model.Operator == GoIPGateway.Domain.Enums.OperatorType.Vodafone ? "selected" : null)">فودافون (Vodafone Cash)</option>
+                        <option value="2" selected="@(Model.Operator == GoIPGateway.Domain.Enums.OperatorType.Orange ? "selected" : null)">أورانج (Orange Money)</option>
+                        <option value="3" selected="@(Model.Operator == GoIPGateway.Domain.Enums.OperatorType.Etisalat ? "selected" : null)">اتصالات (Etisalat Cash)</option>
+                        <option value="4" selected="@(Model.Operator == GoIPGateway.Domain.Enums.OperatorType.WE ? "selected" : null)">وي (WE Pay)</option>
+                    </select>
+                </div>
+
+                <!-- Phone Number -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">رقم هاتف الشريحة (المحفظة) <span class="text-danger">*</span></label>
+                    <input type="text" name="PhoneNumber" class="form-control form-control-sm font-monospace dir-ltr text-end" value="@Model.PhoneNumber" required />
+                </div>
+
+                <!-- Wallet PIN -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">الرقم السري للمحفظة (Wallet PIN) <span class="text-danger">*</span></label>
+                    <input type="password" name="WalletPassword" class="form-control form-control-sm font-monospace" value="@Model.WalletPassword" required />
+                    <small class="text-muted fs-8">يتم استخدامه كـ {Password} في أوامر المسار</small>
+                </div>
+
+                <!-- Current Balance -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">الرصيد الحالي بالمحفظة (ج.م)</label>
+                    <input type="number" step="0.01" name="CurrentBalance" class="form-control form-control-sm font-monospace" value="@Model.CurrentBalance" />
+                </div>
+
+                <!-- Daily Limit -->
+                <div class="col-md-4">
+                    <label class="form-label fw-bold small">الحد الأقصى للإنفاق اليومي (ج.م)</label>
+                    <input type="number" name="DailyLimit" class="form-control form-control-sm font-monospace" value="@Model.DailyLimit" />
+                </div>
+
+                <!-- Monthly Limit -->
+                <div class="col-md-4">
+                    <label class="form-label fw-bold small">الحد الأقصى للإنفاق الشهري (ج.م)</label>
+                    <input type="number" name="MonthlyLimit" class="form-control form-control-sm font-monospace" value="@Model.MonthlyLimit" />
+                </div>
+
+                <!-- Status -->
+                <div class="col-md-4">
+                    <label class="form-label fw-bold small">حالة الشريحة</label>
+                    <div class="form-check form-switch mt-2">
+                        <input type="checkbox" name="IsActive" value="true" class="form-check-input" role="switch" id="isSimActive" @(Model.IsActive ? "checked" : "") />
+                        <label class="form-check-label fw-bold small" for="isSimActive">الشريحة نشطة وجاهزة للعمليات</label>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="col-12">
+                    <label class="form-label fw-bold small">ملاحظات على الشريحة</label>
+                    <input type="text" name="Notes" class="form-control form-control-sm" value="@Model.Notes" placeholder="مثال: محفظة السحب الرئيسية" />
+                </div>
+
+                <div class="col-12 text-end pt-3 border-top d-flex justify-content-between align-items-center">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4 fw-bold">إلغاء</a>
+                    <button type="submit" class="btn btn-primary fw-bold px-5 py-2 rounded-3 shadow">
+                        <i class="bi bi-check-circle-fill me-1"></i> حفظ التعديلات
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

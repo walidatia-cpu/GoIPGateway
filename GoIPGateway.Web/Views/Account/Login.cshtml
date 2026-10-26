@@ -1,0 +1,271 @@
+@model GoIPGateway.Web.Models.LoginViewModel
+@{
+    ViewData["Title"] = "تسجيل الدخول - GoIP Gateway";
+    Layout = null;
+    var isRtl = System.Globalization.CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
+}
+<!DOCTYPE html>
+<html lang="ar" dir="@(isRtl ? "rtl" : "ltr")" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Prevent theme flicker -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('goip_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap@(isRtl ? ".rtl" : "").min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        :root {
+            --primary-accent: #2563eb;
+            --font-family-base: @(isRtl ? "'Cairo', sans-serif" : "'Outfit', sans-serif");
+        }
+
+        [data-bs-theme="light"] {
+            --bg-page: radial-gradient(circle at 50% 10%, #e0e7ff 0%, #f1f5f9 60%, #e2e8f0 100%);
+            --card-bg: rgba(255, 255, 255, 0.94);
+            --card-border: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --input-bg: #ffffff;
+            --input-border: #cbd5e1;
+            --input-text: #0f172a;
+            --quick-btn-admin: rgba(245, 158, 11, 0.12);
+            --quick-btn-admin-border: rgba(245, 158, 11, 0.4);
+            --quick-btn-admin-text: #b45309;
+            --quick-btn-merchant: rgba(37, 99, 235, 0.1);
+            --quick-btn-merchant-border: rgba(37, 99, 235, 0.35);
+            --quick-btn-merchant-text: #1d4ed8;
+            --box-shadow: 0 20px 45px rgba(15, 23, 42, 0.1);
+        }
+
+        [data-bs-theme="dark"] {
+            --bg-page: radial-gradient(circle at 50% 20%, #172554 0%, #090d16 70%);
+            --card-bg: rgba(19, 28, 49, 0.88);
+            --card-border: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --input-bg: #18233c;
+            --input-border: #334155;
+            --input-text: #f8fafc;
+            --quick-btn-admin: rgba(245, 158, 11, 0.15);
+            --quick-btn-admin-border: rgba(245, 158, 11, 0.4);
+            --quick-btn-admin-text: #fbbf24;
+            --quick-btn-merchant: rgba(99, 102, 241, 0.18);
+            --quick-btn-merchant-border: rgba(99, 102, 241, 0.4);
+            --quick-btn-merchant-text: #93c5fd;
+            --box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        body {
+            font-family: var(--font-family-base);
+            background: var(--bg-page);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+            transition: background 0.3s ease, color 0.3s ease;
+            position: relative;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            box-shadow: var(--box-shadow);
+            max-width: 460px;
+            width: 100%;
+            padding: 36px 30px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control {
+            background-color: var(--input-bg) !important;
+            border-color: var(--input-border) !important;
+            color: var(--input-text) !important;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-accent) !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+        }
+
+        .input-group-text {
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
+            color: var(--text-muted);
+            border-radius: 12px;
+        }
+
+        .theme-toggle-floating {
+            position: absolute;
+            top: 20px;
+            @(isRtl ? "left" : "right"): 20px;
+            z-index: 10;
+        }
+
+        .btn-quick-admin {
+            background: var(--quick-btn-admin);
+            border: 1px dashed var(--quick-btn-admin-border);
+            color: var(--quick-btn-admin-text);
+            font-weight: 700;
+            border-radius: 12px;
+            padding: 10px 14px;
+            text-align: right;
+            transition: all 0.2s ease;
+        }
+
+        .btn-quick-admin:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .btn-quick-merchant {
+            background: var(--quick-btn-merchant);
+            border: 1px dashed var(--quick-btn-merchant-border);
+            color: var(--quick-btn-merchant-text);
+            font-weight: 700;
+            border-radius: 12px;
+            padding: 10px 14px;
+            text-align: right;
+            transition: all 0.2s ease;
+        }
+
+        .btn-quick-merchant:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Theme Switcher Button -->
+    <div class="theme-toggle-floating">
+        <button type="button" id="themeToggleBtn" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm" onclick="toggleTheme()" title="تبديل الوضع النهاري / الليلي">
+            <i id="themeIcon" class="bi bi-moon-stars-fill text-warning fs-6"></i>
+            <span id="themeLabel" class="fw-bold small">الوضع الليلي</span>
+        </button>
+    </div>
+
+    <div class="login-card">
+        <!-- Brand Header -->
+        <div class="text-center mb-4">
+            <div class="d-inline-flex p-3 rounded-4 bg-primary bg-opacity-10 text-primary mb-3 shadow-sm">
+                <i class="bi bi-router-fill fs-2"></i>
+            </div>
+            <h3 class="fw-bold mb-1">منصة GoIP Gateway</h3>
+            <p class="text-muted small mb-0">بوابة التاجر والشركات لإدارة خطط الدفع والـ USSD</p>
+        </div>
+
+        <form asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small p-2 rounded-3" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label small fw-bold text-muted">البريد الإلكتروني / الحساب</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                    <input asp-for="Email" id="emailInput" class="form-control" placeholder="admin@goipgateway.com" required autofocus />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label small fw-bold text-muted">كلمة المرور / السري</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input asp-for="Password" id="passwordInput" type="password" class="form-control" required />
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="form-check">
+                    <input asp-for="RememberMe" class="form-check-input" />
+                    <label asp-for="RememberMe" class="form-check-label small fw-bold text-muted">تذكرني على هذا الجهاز</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold fs-6 rounded-3 shadow">
+                <i class="bi bi-box-arrow-in-right me-2"></i> تسجيل الدخول إلى النظام
+            </button>
+        </form>
+
+        <!-- Quick 1-Click Fill Demo Credentials for Manual Testing -->
+        <div class="mt-4 pt-3 border-top" style="border-color: var(--card-border);">
+            <div class="small fw-bold text-muted mb-2 text-center">👇 دخول سريع بحسابات تجريبية (نقرة واحدة):</div>
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-quick-merchant" onclick="fillCreds('operator@fastpay.com', 'FastPay@123456')">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <i class="bi bi-shop me-1"></i> <strong>حساب التاجر (FastPay)</strong>
+                            <div class="small fw-normal text-muted">operator@fastpay.com</div>
+                        </div>
+                        <span class="badge bg-primary bg-opacity-25 text-primary">دخول فوري</span>
+                    </div>
+                </button>
+
+                <button type="button" class="btn btn-quick-admin" onclick="fillCreds('admin@goipgateway.com', 'Admin@123456')">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <i class="bi bi-shield-lock me-1"></i> <strong>مدير المنصة (Super Admin)</strong>
+                            <div class="small fw-normal text-muted">admin@goipgateway.com</div>
+                        </div>
+                        <span class="badge bg-warning bg-opacity-25 text-warning">تحكم كامل</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateThemeUI(theme) {
+            const icon = document.getElementById("themeIcon");
+            const label = document.getElementById("themeLabel");
+            if (!icon || !label) return;
+
+            if (theme === "dark") {
+                icon.className = "bi bi-sun-fill text-warning fs-6";
+                label.innerText = "الوضع النهاري";
+            } else {
+                icon.className = "bi bi-moon-stars-fill text-primary fs-6";
+                label.innerText = "الوضع الليلي";
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
+            const newTheme = currentTheme === "dark" ? "light" : "dark";
+            document.documentElement.setAttribute("data-bs-theme", newTheme);
+            localStorage.setItem("goip_theme", newTheme);
+            updateThemeUI(newTheme);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
+            updateThemeUI(currentTheme);
+        });
+
+        function fillCreds(email, pass) {
+            document.getElementById('emailInput').value = email;
+            document.getElementById('passwordInput').value = pass;
+        }
+    </script>
+</body>
+</html>

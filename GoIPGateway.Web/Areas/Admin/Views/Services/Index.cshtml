@@ -1,0 +1,543 @@
+@model IEnumerable<GoIPGateway.Domain.Entities.ServiceDefinition>
+@{
+    ViewData["Title"] = "إدارة الخدمات";
+
+    var servicesList = Model.ToList();
+    var totalServices = servicesList.Count;
+
+    // Grouping by Category Standard
+    var paymentServices = servicesList.Where(s => s.Category == GoIPGateway.Domain.Enums.ServiceCategory.Payment || s.Category == GoIPGateway.Domain.Enums.ServiceCategory.Transfer).ToList();
+    var balanceServices = servicesList.Where(s => s.Category == GoIPGateway.Domain.Enums.ServiceCategory.Inquiry || s.Category == GoIPGateway.Domain.Enums.ServiceCategory.BalanceInquiry).ToList();
+    var numberServices = servicesList.Where(s => s.Category == GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry).ToList();
+    var otherServices = servicesList.Except(paymentServices).Except(balanceServices).Except(numberServices).ToList();
+
+    // Egyptian Operators counts
+    int vfCount = servicesList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.Vodafone);
+    int orCount = servicesList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.Orange);
+    int etCount = servicesList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.Etisalat);
+    int weCount = servicesList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.WE);
+}
+
+<style>
+    .filter-pill.active, .filter-cat-pill.active {
+        background-color: var(--primary-accent) !important;
+        color: #fff !important;
+        border-color: var(--primary-accent) !important;
+    }
+    .category-section-header {
+        background: rgba(13, 110, 253, 0.04);
+        border-radius: 12px;
+        padding: 12px 18px;
+        margin-bottom: 12px;
+        border-right: 4px solid var(--primary-accent);
+    }
+    .service-row-hover {
+        transition: background-color 0.15s ease;
+    }
+    .service-row-hover:hover {
+        background-color: rgba(13, 110, 253, 0.03) !important;
+    }
+</style>
+
+<div class="container-xl px-0 py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة التحكم</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">إدارة الخدمات</li>
+        </ol>
+    </nav>
+
+    <!-- Header & Action Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h3 class="fw-black mb-1 d-flex align-items-center gap-2">
+                <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-grid-fill fs-4"></i>
+                </span>
+                <span>إدارة الخدمات (Services Catalog)</span>
+            </h3>
+            <p class="text-muted small mb-0">كتالوج خدمات المحافظ الذكية والكاش والاستعلام لشبكات مصر الأربعة</p>
+        </div>
+        <!-- Add Service Button (Full Screen Page) -->
+        <a asp-action="Create" class="btn btn-primary px-4 py-2 fw-bold shadow-sm rounded-3 d-flex align-items-center gap-2">
+            <i class="bi bi-plus-circle-fill fs-5"></i>
+            <span>إضافة خدمة جديدة</span>
+        </a>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-collection"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-bold">إجمالي الخدمات</div>
+                        <div class="fs-4 fw-black text-main">@totalServices</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-credit-card-2-front"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-bold">دفع وتحويل كاش</div>
+                        <div class="fs-4 fw-black text-main">@paymentServices.Count</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-search"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-bold">استعلام رصيد</div>
+                        <div class="fs-4 fw-black text-main">@balanceServices.Count</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-phone"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-bold">استعلام وتأكيد رقم</div>
+                        <div class="fs-4 fw-black text-main">@numberServices.Count</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unified Filters Toolbar -->
+    <div class="portal-card p-4 mb-4 shadow-sm">
+        <!-- Live Search & Counter -->
+        <div class="row g-3 align-items-center mb-3">
+            <div class="col-12 col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="serviceSearchInput" class="form-control border-start-0" placeholder="ابحث باسم الخدمة، كود الـ API (مثل VF_PAY)، أو الشبكة..." onkeyup="filterCatalog()" />
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 d-flex align-items-center gap-2 flex-wrap justify-content-md-end">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnActiveOnly" onclick="toggleActiveOnly(this)">
+                    النشطة فقط
+                </button>
+                <div class="text-muted small ms-2">
+                    عرض <strong class="text-primary font-monospace" id="visibleCount">@totalServices</strong> من أصل @totalServices خدمة
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Filters (Egyptian Operators) -->
+        <div class="d-flex flex-wrap align-items-center gap-2 pt-2 border-top">
+            <span class="text-muted small fw-bold me-2"><i class="bi bi-sim me-1"></i> تصفية بالشبكة:</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-op="ALL" onclick="filterByOp(this, 'ALL')">
+                كل الشبكات (@totalServices)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 filter-pill" data-op="Vodafone" onclick="filterByOp(this, 'Vodafone')">
+                🔴 فودافون كاش (@vfCount)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 filter-pill text-dark" data-op="Orange" onclick="filterByOp(this, 'Orange')">
+                🟠 أورانج كاش (@orCount)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 filter-pill" data-op="Etisalat" onclick="filterByOp(this, 'Etisalat')">
+                🟢 اتصالات كاش (@etCount)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="WE" onclick="filterByOp(this, 'WE')">
+                🟣 وي باي WE (@weCount)
+            </button>
+        </div>
+
+        <!-- Category Filters -->
+        <div class="d-flex flex-wrap align-items-center gap-2 pt-2 mt-2 border-top">
+            <span class="text-muted small fw-bold me-2"><i class="bi bi-tags me-1"></i> تصفية بالتصنيف:</span>
+            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-3 filter-cat-pill active" data-cat="ALL" onclick="filterByCat(this, 'ALL')">
+                كل التصنيفات (@totalServices)
+            </button>
+            <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-3 filter-cat-pill" data-cat="Payment" onclick="filterByCat(this, 'Payment')">
+                💳 دفع وتحويل كاش (@paymentServices.Count)
+            </button>
+            <button type="button" class="btn btn-xs btn-outline-info rounded-pill px-3 filter-cat-pill" data-cat="Inquiry" onclick="filterByCat(this, 'Inquiry')">
+                🔍 استعلام عن رصيد (@balanceServices.Count)
+            </button>
+            <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-3 filter-cat-pill text-dark" data-cat="NumberInquiry" onclick="filterByCat(this, 'NumberInquiry')">
+                📱 استعلام عن رقم (@numberServices.Count)
+            </button>
+            @if (otherServices.Any())
+            {
+                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-3 filter-cat-pill" data-cat="Other" onclick="filterByCat(this, 'Other')">
+                    ⚙️ خدمات أخرى (@otherServices.Count)
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (!servicesList.Any())
+    {
+        <div class="portal-card p-5 text-center shadow-sm">
+            <div class="p-4 rounded-circle bg-primary bg-opacity-10 text-primary d-inline-block mb-3">
+                <i class="bi bi-collection fs-1"></i>
+            </div>
+            <h4 class="fw-bold mb-2">لا توجد خدمات مضافة حتى الآن</h4>
+            <p class="text-muted small mb-4">اضغط على زر "إضافة خدمة جديدة" للبدء في تعريف أول خدمة وتوليد كودها تلقائياً.</p>
+            <a asp-action="Create" class="btn btn-primary px-4 py-2 fw-bold rounded-3 shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i> إضافة أول خدمة
+            </a>
+        </div>
+    }
+    else
+    {
+        <!-- Helper Local Function for Rows -->
+        @functions {
+            string GetOpArabic(GoIPGateway.Domain.Enums.OperatorType? op) => op switch
+            {
+                GoIPGateway.Domain.Enums.OperatorType.Vodafone => "فودافون كاش",
+                GoIPGateway.Domain.Enums.OperatorType.Orange => "أورانج كاش",
+                GoIPGateway.Domain.Enums.OperatorType.Etisalat => "اتصالات كاش",
+                GoIPGateway.Domain.Enums.OperatorType.WE => "وي باي WE",
+                _ => "عامة"
+            };
+
+            string GetOpBadgeClass(GoIPGateway.Domain.Enums.OperatorType? op) => op switch
+            {
+                GoIPGateway.Domain.Enums.OperatorType.Vodafone => "badge-op-vodafone",
+                GoIPGateway.Domain.Enums.OperatorType.Orange => "badge-op-orange",
+                GoIPGateway.Domain.Enums.OperatorType.Etisalat => "badge-op-etisalat",
+                GoIPGateway.Domain.Enums.OperatorType.WE => "badge-op-we",
+                _ => "bg-secondary"
+            };
+
+            string GetCatArabic(GoIPGateway.Domain.Enums.ServiceCategory cat) => cat switch
+            {
+                GoIPGateway.Domain.Enums.ServiceCategory.Payment => "دفع تاجر",
+                GoIPGateway.Domain.Enums.ServiceCategory.Transfer => "تحويل كاش",
+                GoIPGateway.Domain.Enums.ServiceCategory.Inquiry => "استعلام رصيد",
+                GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry => "استعلام رقم",
+                GoIPGateway.Domain.Enums.ServiceCategory.Settlement => "تسوية وسحب",
+                _ => cat.ToString()
+            };
+
+            string GetCatGroupKey(GoIPGateway.Domain.Enums.ServiceCategory cat) => cat switch
+            {
+                GoIPGateway.Domain.Enums.ServiceCategory.Payment or GoIPGateway.Domain.Enums.ServiceCategory.Transfer => "Payment",
+                GoIPGateway.Domain.Enums.ServiceCategory.Inquiry => "Inquiry",
+                GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry => "NumberInquiry",
+                _ => "Other"
+            };
+        }
+
+        <!-- CATEGORY 1: PAYMENT & TRANSFER SERVICES -->
+        @if (paymentServices.Any())
+        {
+            <div class="category-block mb-4" id="cat-block-payment" data-section-cat="Payment">
+                <div class="category-section-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-4">💳</span>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-main">خدمات الدفع والتحويل المالي (Merchant Payment & Cash Transfer)</h5>
+                            <small class="text-muted">عمليات سداد التجار وتحويل المحافظ والخصم المالي المباشر</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-1 font-monospace section-count-badge">
+                        @paymentServices.Count خدمات
+                    </span>
+                </div>
+
+                <div class="portal-card p-0 shadow-sm overflow-hidden mb-3">
+                    <div class="table-responsive">
+                        <table class="table table-custom align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="min-width: 220px;">اسم الخدمة</th>
+                                    <th>كود الـ API</th>
+                                    <th>الشبكة</th>
+                                    <th>التصنيف</th>
+                                    <th>التأثير على الرصيد</th>
+                                    <th>الرسوم الأساسية</th>
+                                    <th>أوامر USSD</th>
+                                    <th>الحالة</th>
+                                    <th class="text-center" style="min-width: 180px;">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var srv in paymentServices)
+                                {
+                                    @await Html.PartialAsync("_ServiceTableRowPartial", srv)
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- CATEGORY 2: BALANCE INQUIRY SERVICES -->
+        @if (balanceServices.Any())
+        {
+            <div class="category-block mb-4" id="cat-block-inquiry" data-section-cat="Inquiry">
+                <div class="category-section-header d-flex justify-content-between align-items-center" style="border-right-color: #0dcaf0;">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-4">🔍</span>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-main">خدمات استعلام الرصيد (Balance Inquiry)</h5>
+                            <small class="text-muted">الاستعلام اللحظي عن أرصدة المحافظ والخطوط وتحديثها في النظام</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-3 py-1 font-monospace section-count-badge">
+                        @balanceServices.Count خدمات
+                    </span>
+                </div>
+
+                <div class="portal-card p-0 shadow-sm overflow-hidden mb-3">
+                    <div class="table-responsive">
+                        <table class="table table-custom align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="min-width: 220px;">اسم الخدمة</th>
+                                    <th>كود الـ API</th>
+                                    <th>الشبكة</th>
+                                    <th>التصنيف</th>
+                                    <th>التأثير على الرصيد</th>
+                                    <th>الرسوم الأساسية</th>
+                                    <th>أوامر USSD</th>
+                                    <th>الحالة</th>
+                                    <th class="text-center" style="min-width: 180px;">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var srv in balanceServices)
+                                {
+                                    @await Html.PartialAsync("_ServiceTableRowPartial", srv)
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- CATEGORY 3: NUMBER INQUIRY SERVICES -->
+        @if (numberServices.Any())
+        {
+            <div class="category-block mb-4" id="cat-block-numberinquiry" data-section-cat="NumberInquiry">
+                <div class="category-section-header d-flex justify-content-between align-items-center" style="border-right-color: #ffc107;">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-4">📱</span>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-main">خدمات استعلام وتأكيد الرقم (Number Inquiry & Discovery)</h5>
+                            <small class="text-muted">معرفة أرقام الشرائح المجهولة وتأكيد صحتها عبر شبكات المحمول</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 rounded-pill px-3 py-1 font-monospace section-count-badge">
+                        @numberServices.Count خدمات
+                    </span>
+                </div>
+
+                <div class="portal-card p-0 shadow-sm overflow-hidden mb-3">
+                    <div class="table-responsive">
+                        <table class="table table-custom align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="min-width: 220px;">اسم الخدمة</th>
+                                    <th>كود الـ API</th>
+                                    <th>الشبكة</th>
+                                    <th>التصنيف</th>
+                                    <th>التأثير على الرصيد</th>
+                                    <th>الرسوم الأساسية</th>
+                                    <th>أوامر USSD</th>
+                                    <th>الحالة</th>
+                                    <th class="text-center" style="min-width: 180px;">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var srv in numberServices)
+                                {
+                                    @await Html.PartialAsync("_ServiceTableRowPartial", srv)
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- CATEGORY 4: OTHER SERVICES -->
+        @if (otherServices.Any())
+        {
+            <div class="category-block mb-4" id="cat-block-other" data-section-cat="Other">
+                <div class="category-section-header d-flex justify-content-between align-items-center" style="border-right-color: #6c757d;">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-4">⚙️</span>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-main">خدمات وإجراءات إضافية (Other Services)</h5>
+                            <small class="text-muted">عمليات التسوية والإدارة وخدمات أخرى</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-secondary bg-opacity-10 text-main border border-secondary border-opacity-25 rounded-pill px-3 py-1 font-monospace section-count-badge">
+                        @otherServices.Count خدمات
+                    </span>
+                </div>
+
+                <div class="portal-card p-0 shadow-sm overflow-hidden mb-3">
+                    <div class="table-responsive">
+                        <table class="table table-custom align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="min-width: 220px;">اسم الخدمة</th>
+                                    <th>كود الـ API</th>
+                                    <th>الشبكة</th>
+                                    <th>التصنيف</th>
+                                    <th>التأثير على الرصيد</th>
+                                    <th>الرسوم الأساسية</th>
+                                    <th>أوامر USSD</th>
+                                    <th>الحالة</th>
+                                    <th class="text-center" style="min-width: 180px;">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var srv in otherServices)
+                                {
+                                    @await Html.PartialAsync("_ServiceTableRowPartial", srv)
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- No Filter Results Placeholder -->
+        <div id="noCatalogMatches" class="portal-card p-5 text-center shadow-sm d-none">
+            <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning d-inline-block mb-2">
+                <i class="bi bi-funnel fs-2"></i>
+            </div>
+            <h5 class="fw-bold text-main mb-1">لا توجد خدمات مطابقة للتصفية</h5>
+            <p class="text-muted small mb-3">جرب تغيير كلمات البحث أو اختيار شبكة أو تصنيف آخر.</p>
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3" onclick="resetCatalogFilters()">
+                إعادة ضبط كل الفلاتر
+            </button>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        let currentOp = 'ALL';
+        let currentCat = 'ALL';
+        let activeOnly = false;
+
+        function filterByOp(btn, op) {
+            document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
+            btn.classList.add("active");
+            currentOp = op;
+            filterCatalog();
+        }
+
+        function filterByCat(btn, cat) {
+            document.querySelectorAll(".filter-cat-pill").forEach(p => p.classList.remove("active"));
+            btn.classList.add("active");
+            currentCat = cat;
+            filterCatalog();
+        }
+
+        function toggleActiveOnly(btn) {
+            activeOnly = !activeOnly;
+            if (activeOnly) {
+                btn.classList.remove("btn-outline-primary");
+                btn.classList.add("btn-primary");
+            } else {
+                btn.classList.remove("btn-primary");
+                btn.classList.add("btn-outline-primary");
+            }
+            filterCatalog();
+        }
+
+        function resetCatalogFilters() {
+            document.getElementById('serviceSearchInput').value = '';
+            currentOp = 'ALL';
+            currentCat = 'ALL';
+            activeOnly = false;
+
+            const activeBtn = document.getElementById('btnActiveOnly');
+            if (activeBtn) {
+                activeBtn.classList.remove('btn-primary');
+                activeBtn.classList.add('btn-outline-primary');
+            }
+
+            document.querySelectorAll('.filter-pill').forEach(p => {
+                p.classList.toggle('active', p.getAttribute('data-op') === 'ALL');
+            });
+
+            document.querySelectorAll('.filter-cat-pill').forEach(p => {
+                p.classList.toggle('active', p.getAttribute('data-cat') === 'ALL');
+            });
+
+            filterCatalog();
+        }
+
+        function filterCatalog() {
+            const query = (document.getElementById('serviceSearchInput')?.value || '').trim().toLowerCase();
+            const rows = document.querySelectorAll('.service-table-row');
+            let totalVisible = 0;
+
+            rows.forEach(r => {
+                const rowOp = r.getAttribute('data-op') || 'ALL';
+                const rowCat = r.getAttribute('data-cat') || '';
+                const rowActive = r.getAttribute('data-active') === 'true';
+                const rowSearch = (r.getAttribute('data-search') || '').toLowerCase();
+
+                const matchesOp = (currentOp === 'ALL' || rowOp === currentOp);
+                const matchesCat = (currentCat === 'ALL' || rowCat === currentCat);
+                const matchesActive = (!activeOnly || rowActive);
+                const matchesQuery = (!query || rowSearch.includes(query));
+
+                if (matchesOp && matchesCat && matchesActive && matchesQuery) {
+                    r.style.display = '';
+                    totalVisible++;
+                } else {
+                    r.style.display = 'none';
+                }
+            });
+
+            // Update visible counter
+            const counter = document.getElementById('visibleCount');
+            if (counter) counter.innerText = totalVisible;
+
+            // Hide/Show category blocks based on visible child rows
+            let visibleSections = 0;
+            document.querySelectorAll('.category-block').forEach(block => {
+                const visibleChildren = block.querySelectorAll('.service-table-row:not([style*="display: none"])');
+                const badge = block.querySelector('.section-count-badge');
+                if (badge) badge.innerText = `${visibleChildren.length} خدمات`;
+
+                if (visibleChildren.length > 0) {
+                    block.style.display = '';
+                    visibleSections++;
+                } else {
+                    block.style.display = 'none';
+                }
+            });
+
+            // No matches card
+            const noMatches = document.getElementById('noCatalogMatches');
+            if (noMatches) {
+                noMatches.classList.toggle('d-none', totalVisible > 0);
+            }
+        }
+    </script>
+}

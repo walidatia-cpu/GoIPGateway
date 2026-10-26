@@ -1,0 +1,234 @@
+@model GoIPGateway.Web.Models.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "لوحة التحكم الرئيسية";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">لوحة تحكم النظام (Super Admin)</h3>
+        <p class="text-muted small mb-0">نظرة عامة لحظية على أجهزة GoIP والشرايح وعمليات الشركات</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-area="Admin" asp-controller="Devices" asp-action="Create" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i> إضافة جهاز GoIP
+        </a>
+        <a asp-area="Admin" asp-controller="Tenants" asp-action="Create" class="btn btn-primary btn-sm">
+            <i class="bi bi-building-add me-1"></i> إضافة شركة
+        </a>
+    </div>
+</div>
+
+<!-- 5 Top KPI Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card-stat d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted small fw-bold">الشركات المستأجرة</span>
+                <h3 class="fw-bold my-1">@Model.TotalTenants</h3>
+                <span class="text-success small"><i class="bi bi-shield-check"></i> Multi-Tenant نشط</span>
+            </div>
+            <div class="icon-box bg-primary bg-opacity-25 text-primary">
+                <i class="bi bi-buildings"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card-stat d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted small fw-bold">أجهزة GoIP المتصلة</span>
+                <h3 class="fw-bold my-1">@Model.OnlineDevices <span class="text-muted fs-6 fw-normal">/ @Model.TotalDevices</span></h3>
+                <span class="text-success small"><span class="badge-live-pulse me-1"></span> @Model.OnlineDevices متصل بالشبكة</span>
+            </div>
+            <div class="icon-box bg-success bg-opacity-25 text-success">
+                <i class="bi bi-router"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card-stat d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted small fw-bold">الشرايح النشطة (SIMs)</span>
+                <h3 class="fw-bold my-1">@Model.ActiveSimCards <span class="text-muted fs-6 fw-normal">/ @Model.TotalSimCards</span></h3>
+                <span class="text-info small"><i class="bi bi-sim"></i> @Model.ActiveSimCards بورت مجهز</span>
+            </div>
+            <div class="icon-box bg-info bg-opacity-25 text-info">
+                <i class="bi bi-phone"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card-stat d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted small fw-bold">عمليات اليوم ومعدل النجاح</span>
+                <h3 class="fw-bold my-1">@Model.TodayTransactionsCount <span class="badge bg-success bg-opacity-25 text-success fs-8">@Model.SuccessRate%</span></h3>
+                <span class="text-success small">@Model.TodaySuccessfulTransactions ناجح</span> •
+                <span class="text-danger small">@Model.TodayFailedTransactions فاشل</span>
+            </div>
+            <div class="icon-box bg-warning bg-opacity-25 text-warning">
+                <i class="bi bi-lightning-charge"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Live GoIP Devices Status Card -->
+    <div class="col-lg-6">
+        <div class="portal-card p-4 shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-hdd-network text-primary me-2"></i> حالة أجهزة GoIP</h5>
+                <a asp-area="Admin" asp-controller="Devices" asp-action="Index" class="btn btn-sm btn-link text-decoration-none">عرض البورتات</a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead>
+                        <tr>
+                            <th>الجهاز</th>
+                            <th>النوع</th>
+                            <th>عنوان IP</th>
+                            <th>البورتات</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var dev in Model.Devices)
+                        {
+                            <tr>
+                                <td class="fw-bold">@dev.DeviceName</td>
+                                <td><span class="badge bg-secondary">@dev.DeviceType</span></td>
+                                <td><code>@dev.IpAddress:@dev.Port</code></td>
+                                <td>@dev.ActivePorts / @dev.TotalPorts</td>
+                                <td>
+                                    @if (dev.IsOnline)
+                                    {
+                                        <span class="badge bg-success bg-opacity-25 text-success"><i class="bi bi-check-circle me-1"></i> متصل</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger bg-opacity-25 text-danger"><i class="bi bi-x-circle me-1"></i> غير متصل</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Financial Balance Summary -->
+    <div class="col-lg-6">
+        <div class="portal-card p-4 shadow-sm h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-wallet2 text-success me-2"></i> إجمالي أرصدة الشرايح والمحافظ</h5>
+                <span class="badge bg-primary fs-7">@Model.TotalSimBalance.ToString("N2") ج.م</span>
+            </div>
+
+            <p class="text-muted small">شرايح ذات رصيد منخفض تحتاج إلى تغذية:</p>
+            <div class="list-group list-group-flush bg-transparent">
+                @foreach (var sim in Model.LowBalanceSims)
+                {
+                    <div class="list-group-item bg-transparent border-secondary border-opacity-25 d-flex justify-content-between align-items-center px-0 py-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-secondary">@(sim.DevicePort?.PortLabel ?? "Port")</span>
+                            <span class="fw-bold">@sim.PhoneNumber</span>
+                            <span class="badge bg-info bg-opacity-25 text-info">@sim.Operator</span>
+                        </div>
+                        <span class="fw-bold text-danger">@sim.CurrentBalance.ToString("N2") ج.م</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time Live Operations Feed (SignalR) -->
+<div class="portal-card p-4 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <h5 class="fw-bold mb-0"><i class="bi bi-broadcast text-warning me-2"></i> البث المباشر للعمليات (SignalR Live Feed)</h5>
+            <span class="badge-live-pulse"></span>
+        </div>
+        <a asp-area="Admin" asp-controller="Transactions" asp-action="Index" class="btn btn-sm btn-outline-secondary">سجل العمليات الكامل</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-custom" id="liveFeedTable">
+            <thead>
+                <tr>
+                    <th>المرجع</th>
+                    <th>الشركة</th>
+                    <th>الخدمة</th>
+                    <th>الشريحة / البورت</th>
+                    <th>المبلغ</th>
+                    <th>الحالة</th>
+                    <th>الوقت</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var tx in Model.RecentTransactions)
+                {
+                    <tr id="tx-row-@tx.Id">
+                        <td><code>@tx.TransactionRef</code></td>
+                        <td>@(tx.Tenant?.CompanyName ?? "System")</td>
+                        <td><span class="badge bg-primary bg-opacity-25 text-primary">@(tx.ServiceDefinition?.NameAr ?? "USSD")</span></td>
+                        <td>@(tx.SimCard?.PhoneNumber ?? "-")</td>
+                        <td>@(tx.Amount.HasValue ? tx.Amount.Value.ToString("N2") + " ج.م" : "-")</td>
+                        <td>
+                            @if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Completed)
+                            {
+                                <span class="badge bg-success bg-opacity-25 text-success">ناجح</span>
+                            }
+                            else if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Processing)
+                            {
+                                <span class="badge bg-warning bg-opacity-25 text-warning">قيد المعالجة</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger bg-opacity-25 text-danger">@tx.Status</span>
+                            }
+                        </td>
+                        <td class="text-muted small">@tx.RequestedAt.ToString("HH:mm:ss")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.addEventListener("goip:transactionUpdated", function (e) {
+            const tx = e.detail;
+            const table = document.getElementById("liveFeedTable").getElementsByTagName('tbody')[0];
+            const existingRow = document.getElementById("tx-row-" + tx.id);
+
+            let statusBadge = `<span class="badge bg-secondary">${tx.statusName}</span>`;
+            if (tx.status === 2) statusBadge = `<span class="badge bg-success bg-opacity-25 text-success">ناجح</span>`;
+            else if (tx.status === 1) statusBadge = `<span class="badge bg-warning bg-opacity-25 text-warning">قيد المعالجة</span>`;
+            else if (tx.status === 3) statusBadge = `<span class="badge bg-danger bg-opacity-25 text-danger">فشل</span>`;
+
+            if (existingRow) {
+                existingRow.cells[5].innerHTML = statusBadge;
+                existingRow.classList.add("table-active");
+                setTimeout(() => existingRow.classList.remove("table-active"), 2000);
+            } else {
+                const newRow = table.insertRow(0);
+                newRow.id = "tx-row-" + tx.id;
+                newRow.innerHTML = `
+                    <td><code>${tx.transactionRef}</code></td>
+                    <td>Tenant #${tx.tenantId}</td>
+                    <td><span class="badge bg-primary bg-opacity-25 text-primary">USSD</span></td>
+                    <td>-</td>
+                    <td>${tx.amount ? tx.amount.toFixed(2) + ' ج.م' : '-'}</td>
+                    <td>${statusBadge}</td>
+                    <td class="text-muted small">الآن</td>
+                `;
+            }
+        });
+    </script>
+}

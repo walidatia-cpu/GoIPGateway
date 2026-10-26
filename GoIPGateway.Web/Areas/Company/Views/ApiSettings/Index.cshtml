@@ -1,0 +1,84 @@
+@model GoIPGateway.Domain.Entities.Tenant
+@{
+    ViewData["Title"] = "إعدادات الربط البرمجي (API Keys)";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-key text-primary me-2"></i> إعدادات الربط البرمجي (API Keys & Integration)</h3>
+        <p class="text-muted small mb-0">بيانات التوثيق لربط نظام شركتكم وموقعكم مع بوابة GoIP Gateway REST API</p>
+    </div>
+    <a href="/swagger" target="_blank" class="btn btn-outline-info btn-sm">
+        <i class="bi bi-file-code me-1"></i> فتح توثيق Swagger التفاعلي
+    </a>
+</div>
+
+<!-- API Keys Table -->
+<div class="portal-card p-4 mb-4">
+    <h5 class="fw-bold mb-3"><i class="bi bi-shield-lock-fill text-warning me-2"></i> مفاتيح الـ API المعتمدة لحسابكم</h5>
+
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>اسم المفتاح</th>
+                    <th>مفتاح API (API Key)</th>
+                    <th>المفتاح السري (Secret Key)</th>
+                    <th>حد الطلبات (Rate Limit)</th>
+                    <th>الحالة</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var key in Model.ApiKeys)
+                {
+                    <tr>
+                        <td class="fw-bold">@key.KeyName</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <code>@key.ApiKey</code>
+                                <button type="button" class="btn btn-sm btn-link text-primary p-0" onclick="navigator.clipboard.writeText('@key.ApiKey')" title="نسخ"><i class="bi bi-clipboard"></i></button>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <code>@key.SecretKey[..10]...</code>
+                                <button type="button" class="btn btn-sm btn-link text-primary p-0" onclick="navigator.clipboard.writeText('@key.SecretKey')" title="نسخ"><i class="bi bi-clipboard"></i></button>
+                            </div>
+                        </td>
+                        <td>@key.RateLimit طلب / دقيقة</td>
+                        <td>
+                            @if (key.IsActive)
+                            {
+                                <span class="badge bg-success bg-opacity-25 text-success">نشط</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger bg-opacity-25 text-danger">معطل</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Quick Integration Code Sample -->
+<div class="portal-card p-4 shadow-sm">
+    <h5 class="fw-bold mb-3"><i class="bi bi-code-slash text-success me-2"></i> نموذج استدعاء الـ API (cURL Example)</h5>
+
+    <pre class="p-3 rounded-3 small mb-0" style="direction: ltr; text-align: left; background: var(--bg-app); border: 1px solid var(--card-border); color: var(--text-main); font-family: monospace;">
+curl -X POST "http://localhost:5200/api/v1/services/execute" \
+     -H "Content-Type: application/json" \
+     -H "X-Api-Key: @(Model.ApiKeys.FirstOrDefault()?.ApiKey ?? "YOUR_API_KEY")" \
+     -H "X-Secret-Key: @(Model.ApiKeys.FirstOrDefault()?.SecretKey ?? "YOUR_SECRET_KEY")" \
+     -d '{
+       "serviceCode": "QR_PAY",
+       "externalRef": "ORDER-987654",
+       "parameters": {
+         "merchantCode": "12345",
+         "amount": "500.00"
+       }
+     }'
+    </pre>
+</div>

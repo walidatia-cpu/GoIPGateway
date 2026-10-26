@@ -1,0 +1,146 @@
+@model GoIPGateway.Domain.Entities.ServiceDefinition
+@{
+    ViewData["Title"] = $"تعديل الخدمة: {Model.NameAr}";
+}
+
+<div class="container-xl px-0 py-2" style="max-width: 850px;">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة التحكم</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">كتالوج الخدمات</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">تعديل الخدمة: @Model.NameAr</li>
+        </ol>
+    </nav>
+
+    <!-- Header Banner -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h3 class="fw-black mb-1 d-flex align-items-center gap-2">
+                <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-pencil-square fs-4"></i>
+                </span>
+                <span>تعديل بيانات الخدمة</span>
+            </h3>
+            <p class="text-muted small mb-0">تعديل كود الـ API، الشبكة، التصنيف، المسميات، والرسوم</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="ConfigureSteps" asp-route-id="@Model.Id" class="btn btn-primary px-3 py-2 fw-bold shadow-sm rounded-3 d-flex align-items-center gap-2">
+                <i class="bi bi-sliders"></i>
+                <span>تهيئة أوامر USSD</span>
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary px-3 py-2 rounded-3">
+                <i class="bi bi-arrow-right me-1"></i> رجوع
+            </a>
+        </div>
+    </div>
+
+    <!-- Edit Form Card -->
+    <div class="portal-card p-4 p-md-5 shadow-sm">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" name="ServiceType" value="1" /> <!-- USSD Execution Only -->
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 py-2 mb-4" role="alert"></div>
+
+            <!-- Network, Category & Balance Impact -->
+            <div class="p-3 rounded-3 mb-4" style="background: var(--bg-app); border: 1px solid var(--card-border);">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="Operator" class="form-label fw-bold">شركة المحمول (الشبكة) <span class="text-danger">*</span></label>
+                        <select asp-for="Operator" class="form-select fs-6 py-2" required>
+                            <option value="1" selected="@(Model.Operator == GoIPGateway.Domain.Enums.OperatorType.Vodafone)">فودافون (Vodafone)</option>
+                            <option value="2" selected="@(Model.Operator == GoIPGateway.Domain.Enums.OperatorType.Orange)">أورانج (Orange)</option>
+                            <option value="3" selected="@(Model.Operator == GoIPGateway.Domain.Enums.OperatorType.Etisalat)">اتصالات (Etisalat)</option>
+                            <option value="4" selected="@(Model.Operator == GoIPGateway.Domain.Enums.OperatorType.WE)">وي (WE)</option>
+                        </select>
+                        <span asp-validation-for="Operator" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Category" class="form-label fw-bold">تصنيف الخدمة <span class="text-danger">*</span></label>
+                        <select asp-for="Category" class="form-select fs-6 py-2" required>
+                            <option value="1" selected="@(Model.Category == GoIPGateway.Domain.Enums.ServiceCategory.Payment)">دفع إلكتروني / تاجر (Payment)</option>
+                            <option value="5" selected="@((int)Model.Category == 5)">تحويل أموال كاش (Transfer)</option>
+                            <option value="2" selected="@((int)Model.Category == 2)">استعلام رصيد (Balance Inquiry)</option>
+                            <option value="6" selected="@((int)Model.Category == 6)">استعلام عن رقم (Number Inquiry)</option>
+                        </select>
+                        <span asp-validation-for="Category" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BalanceActionType" class="form-label fw-bold">التأثير على الرصيد <span class="text-danger">*</span></label>
+                        <select asp-for="BalanceActionType" class="form-select fs-6 py-2" required>
+                            <option value="2" selected="@(Model.BalanceActionType == GoIPGateway.Domain.Enums.BalanceActionType.Decrement)">تخفيض / خصم (-)</option>
+                            <option value="1" selected="@(Model.BalanceActionType == GoIPGateway.Domain.Enums.BalanceActionType.Increment)">إضافة (+)</option>
+                            <option value="0" selected="@(Model.BalanceActionType == GoIPGateway.Domain.Enums.BalanceActionType.None)">بدون تأثير (استعلام)</option>
+                        </select>
+                        <span asp-validation-for="BalanceActionType" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Identifiers -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label asp-for="ServiceCode" class="form-label fw-bold">
+                        كود الخدمة في الـ API <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-code-slash"></i></span>
+                        <input asp-for="ServiceCode" class="form-control font-monospace text-uppercase fs-6 fw-bold text-primary" required />
+                    </div>
+                    <span asp-validation-for="ServiceCode" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="NameAr" class="form-label fw-bold">
+                        اسم الخدمة بالعربية <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="NameAr" class="form-control fs-6 fw-bold" required />
+                    <span asp-validation-for="NameAr" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="NameEn" class="form-label fw-bold">اسم الخدمة بالإنجليزية</label>
+                    <input asp-for="NameEn" class="form-control" />
+                    <span asp-validation-for="NameEn" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="BaseCost" class="form-label fw-bold">رسوم الخدمة الأساسية (ج.م)</label>
+                    <div class="input-group">
+                        <input asp-for="BaseCost" type="number" step="0.01" min="0" class="form-control" />
+                        <span class="input-group-text">ج.م</span>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="form-check form-switch p-0 d-flex align-items-center gap-3">
+                        <input asp-for="IsActive" class="form-check-input m-0 cursor-pointer" type="checkbox" role="switch" id="editActiveSwitch" style="width: 2.5em; height: 1.3em;" />
+                        <label class="form-check-label fw-bold cursor-pointer" for="editActiveSwitch">الخدمة مفعلة وجاهزة للعمل</label>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label fw-bold">وصف وملاحظات تشغيلية</label>
+                    <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+
+            <!-- Submit Button Bar -->
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top" style="border-color: var(--card-border) !important;">
+                <a asp-action="Index" class="btn btn-outline-secondary px-4 py-2 rounded-3">إلغاء</a>
+                <div class="d-flex gap-2">
+                    <a asp-action="ConfigureSteps" asp-route-id="@Model.Id" class="btn btn-outline-primary px-3 py-2 rounded-3 fw-bold">
+                        <i class="bi bi-sliders me-1"></i> أوامر USSD (@(Model.UssdSteps?.Count(s => !s.IsDelete) ?? 0))
+                    </a>
+                    <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow rounded-3">
+                        <i class="bi bi-check-lg me-1"></i> حفظ التعديلات
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

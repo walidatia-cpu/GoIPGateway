@@ -1,0 +1,255 @@
+@model GoIPGateway.Domain.Entities.ServiceUssdStep
+@{
+    var service = ViewBag.Service as GoIPGateway.Domain.Entities.ServiceDefinition;
+    ViewData["Title"] = $"تفاصيل خطوة USSD رقم {Model.StepOrder}: {service?.NameAr}";
+    var successRules = Model.ParsedSuccessRules;
+    var failureRules = Model.ParsedFailureRules;
+
+    string FormatUssdDisplay(string cmd)
+    {
+        if (string.IsNullOrEmpty(cmd)) return "";
+        var formatted = System.Web.HttpUtility.HtmlEncode(cmd);
+        formatted = formatted.Replace("{Password}", "<span class=\"ussd-tag tag-pwd\"><i class=\"bi bi-key-fill\"></i> {Password}</span>");
+        formatted = formatted.Replace("{Amount}", "<span class=\"ussd-tag tag-amt\"><i class=\"bi bi-cash\"></i> {Amount}</span>");
+        formatted = formatted.Replace("{MobileNumber}", "<span class=\"ussd-tag tag-phone\"><i class=\"bi bi-phone\"></i> {MobileNumber}</span>");
+        formatted = formatted.Replace("{PhoneNumber}", "<span class=\"ussd-tag tag-phone\"><i class=\"bi bi-phone\"></i> {PhoneNumber}</span>");
+        formatted = formatted.Replace("{MerchantCode}", "<span class=\"ussd-tag tag-merchant\"><i class=\"bi bi-shop\"></i> {MerchantCode}</span>");
+        return formatted;
+    }
+}
+
+<style>
+    .ussd-console {
+        background: #0f172a;
+        color: #f8fafc;
+        border-radius: 12px;
+        padding: 16px 20px;
+        border: 1px solid #1e293b;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+    [data-bs-theme="light"] .ussd-console {
+        background: #1e293b;
+        color: #f1f5f9;
+        border-color: #334155;
+    }
+    .ussd-code-ltr {
+        direction: ltr !important;
+        text-align: left !important;
+        unicode-bidi: isolate !important;
+        display: block;
+        font-family: 'JetBrains Mono', Consolas, monospace !important;
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    .ussd-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        margin: 0 2px;
+    }
+    .tag-pwd { background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .tag-amt { background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .tag-phone { background: rgba(14, 165, 233, 0.25); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); }
+    .tag-merchant { background: rgba(168, 85, 247, 0.25); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+</style>
+
+<div class="container-xl px-0 py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة التحكم</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">كتالوج الخدمات</a></li>
+            <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@service?.Id" class="text-decoration-none text-muted">@service?.NameAr</a></li>
+            <li class="breadcrumb-item"><a asp-action="ConfigureSteps" asp-route-id="@service?.Id" class="text-decoration-none text-muted">خطوات USSD</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">تفاصيل خطوة رقم @Model.StepOrder</li>
+        </ol>
+    </nav>
+
+    <!-- Header Card -->
+    <div class="portal-card p-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-2" style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-terminal"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                        <h4 class="fw-black mb-0 text-main">@(string.IsNullOrEmpty(Model.StepTitle) ? $"خطوة {Model.StepOrder}" : Model.StepTitle)</h4>
+                        <span class="badge bg-primary px-3 py-1 rounded-pill">خطوة رقم @Model.StepOrder</span>
+                        <span class="badge @(Model.IsActive ? "bg-success" : "bg-danger") px-2 py-1 rounded-pill fs-8">
+                            @(Model.IsActive ? "نشطة" : "معطلة")
+                        </span>
+                    </div>
+                    <div class="text-muted small">
+                        الخدمة التابعة: <strong class="text-primary">@service?.NameAr</strong> 
+                        <span class="badge bg-light text-dark font-monospace border ms-2">@service?.ServiceCode</span>
+                        <span class="ms-2">• المعرف: #@Model.Id</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a asp-action="EditStep" asp-route-id="@Model.Id" class="btn btn-primary px-3 py-2 rounded-3 fw-bold">
+                    <i class="bi bi-pencil me-1"></i> تعديل الخطوة
+                </a>
+                <a asp-action="ConfigureSteps" asp-route-id="@service?.Id" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold">
+                    <i class="bi bi-arrow-right me-1"></i> جدول الخطوات
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- USSD Command Box -->
+    <div class="portal-card p-4 shadow-sm mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <h6 class="fw-black mb-0 text-main d-flex align-items-center gap-2">
+                <i class="bi bi-code-square text-primary"></i>
+                <span>أمر الـ USSD الموجه لجهاز GoIP</span>
+            </h6>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('@Model.UssdCommand'); alert('تم نسخ أمر الـ USSD');">
+                <i class="bi bi-clipboard me-1"></i> نسخ الأمر
+            </button>
+        </div>
+
+        <div class="ussd-console mb-3">
+            <div class="ussd-code-ltr" dir="ltr">
+                @Html.Raw(FormatUssdDisplay(Model.UssdCommand))
+            </div>
+        </div>
+
+        <div class="row g-3 text-muted small">
+            <div class="col-md-6">
+                <div class="p-2 rounded bg-light border">
+                    <strong class="text-main">مهلة الانتظار:</strong> <span>@Model.TimeoutSeconds ثانية</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="p-2 rounded bg-light border">
+                    <strong class="text-main">فترة التأخير بعد التنفيذ:</strong> <span>@Model.DelayAfterMs مللي ثانية</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rules Tables (Success & Failure) -->
+    <div class="row g-4">
+        <!-- Success Rules Table -->
+        <div class="col-12 col-lg-6">
+            <div class="portal-card p-4 shadow-sm h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <h6 class="fw-black mb-0 text-success d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>شروط النجاح (@successRules.Count)</span>
+                    </h6>
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 fs-8">
+                        قائمة الردود الناجحة
+                    </span>
+                </div>
+
+                @if (!successRules.Any())
+                {
+                    <div class="text-center py-4 text-muted small">
+                        <i class="bi bi-check-all fs-2 text-success d-block mb-1"></i>
+                        بدون شروط محددة (تُعتبر الخطوة ناجحة فورياً أو تلقائياً).
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light fs-8">
+                                <tr>
+                                    <th>العبارة في رد GoIP</th>
+                                    <th>الرد المرجع للعميل</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in successRules)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="font-monospace fw-bold text-success">@s.Pattern</span>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(s.ClientMessage))
+                                            {
+                                                <span class="text-primary fw-bold">"@s.ClientMessage"</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted fs-8">الرد الافتراضي</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Failure Rules Table -->
+        <div class="col-12 col-lg-6">
+            <div class="portal-card p-4 shadow-sm h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <h6 class="fw-black mb-0 text-danger d-flex align-items-center gap-2">
+                        <i class="bi bi-x-circle-fill"></i>
+                        <span>شروط الفشل والردود الآمنة (@failureRules.Count)</span>
+                    </h6>
+                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1 fs-8">
+                        حماية أمان البيانات
+                    </span>
+                </div>
+
+                @if (!failureRules.Any())
+                {
+                    <div class="text-center py-4 text-muted small">
+                        <i class="bi bi-shield-check fs-2 text-muted d-block mb-1"></i>
+                        لم يتم تحديد شروط فشل مخصصة (يتم استخدام الفشل التلقائي للشبكة).
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light fs-8">
+                                <tr>
+                                    <th>العبارة في رد GoIP</th>
+                                    <th>الرد البديل الآمن للعميل</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var f in failureRules)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="font-monospace fw-bold text-danger">@f.Pattern</span>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(f.ClientMessage))
+                                            {
+                                                <span class="text-primary fw-bold">"@f.ClientMessage"</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted fs-8">نص الفشل القياسي</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

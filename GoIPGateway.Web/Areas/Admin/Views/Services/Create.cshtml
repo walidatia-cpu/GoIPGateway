@@ -1,0 +1,332 @@
+@model GoIPGateway.Domain.Entities.ServiceDefinition
+@{
+    ViewData["Title"] = "إضافة خدمة جديدة";
+}
+
+<div class="container-xl px-0 py-2" style="max-width: 850px;">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة التحكم</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">كتالوج الخدمات</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">إضافة خدمة جديدة</li>
+        </ol>
+    </nav>
+
+    <!-- Header Banner -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h3 class="fw-black mb-1 d-flex align-items-center gap-2">
+                <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-plus-circle-fill fs-4"></i>
+                </span>
+                <span>إضافة خدمة جديدة</span>
+            </h3>
+            <p class="text-muted small mb-0">تحديد الشبكة وتصنيف الخدمة لتوليد كود الـ API والاسم تلقائياً</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary px-3 py-2 rounded-3">
+            <i class="bi bi-arrow-right me-1"></i> رجوع للكتالوج
+        </a>
+    </div>
+
+    <!-- Create Form Card -->
+    <div class="portal-card p-4 p-md-5 shadow-sm">
+        <form asp-action="Create" method="post" id="createServiceForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ServiceType" value="1" /> <!-- USSD Execution Only -->
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 py-2 mb-4" role="alert"></div>
+
+            <!-- 1. Operator, Category & Balance Impact (Drives Auto-Generation) -->
+            <div class="p-3 rounded-3 mb-4" style="background: var(--bg-app); border: 1px solid var(--card-border);">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="Operator" class="form-label fw-bold">
+                            1. شركة المحمول (الشبكة) <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="Operator" id="createOperatorSelect" class="form-select fs-6 py-2" required onchange="onSelectionsChanged()">
+                            <option value="1">فودافون (Vodafone)</option>
+                            <option value="2">أورانج (Orange)</option>
+                            <option value="3">اتصالات (Etisalat)</option>
+                            <option value="4">وي (WE)</option>
+                        </select>
+                        <span asp-validation-for="Operator" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Category" class="form-label fw-bold">
+                            2. تصنيف الخدمة <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="Category" id="createCategorySelect" class="form-select fs-6 py-2" required onchange="onSelectionsChanged()">
+                            <option value="1">دفع إلكتروني / تاجر (Payment)</option>
+                            <option value="5">تحويل أموال كاش (Transfer)</option>
+                            <option value="2">استعلام رصيد (Balance Inquiry)</option>
+                            <option value="6">استعلام عن رقم (Number Inquiry)</option>
+                        </select>
+                        <span asp-validation-for="Category" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BalanceActionType" class="form-label fw-bold">
+                            3. التأثير على الرصيد <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="BalanceActionType" id="createBalanceActionSelect" class="form-select fs-6 py-2" required onchange="userChangedBalanceAction()">
+                            <option value="2">تخفيض / خصم من الرصيد (-)</option>
+                            <option value="1">إضافة إلى الرصيد (+)</option>
+                            <option value="0">بدون تأثير على الرصيد (استعلام / محايد)</option>
+                        </select>
+                        <span asp-validation-for="BalanceActionType" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Auto-generated Identifiers -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label asp-for="ServiceCode" class="form-label fw-bold mb-0">
+                            كود الخدمة في الـ API <span class="text-danger">*</span>
+                        </label>
+                        <button type="button" id="btnRegenerateCode" class="btn btn-sm btn-outline-primary px-3 py-1 border rounded-pill fw-bold shadow-xs d-flex align-items-center gap-1" style="font-size: 0.8rem;" onclick="forceRegenerateAll(event)">
+                            <i class="bi bi-arrow-repeat fs-6"></i>
+                            <span>إعادة توليد الكود والاسم</span>
+                        </button>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-code-slash"></i></span>
+                        <input asp-for="ServiceCode" id="createServiceCode" class="form-control font-monospace text-uppercase fs-6 fw-bold text-primary" placeholder="VF_PAY" required oninput="userTypedCode()" />
+                    </div>
+                    <span asp-validation-for="ServiceCode" class="text-danger small"></span>
+                    <div class="form-text fs-8 text-muted">كود فريد بالـ API لا يتكرر (يتولد تلقائياً ويمكنك تعديله).</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="NameAr" class="form-label fw-bold">
+                        اسم الخدمة بالعربية <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="NameAr" id="createNameAr" class="form-control fs-6 fw-bold" placeholder="مثال: فودافون كاش - دفع تاجر" required oninput="userTypedNameAr()" />
+                    <span asp-validation-for="NameAr" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="NameEn" class="form-label fw-bold">
+                        اسم الخدمة بالإنجليزية <span class="text-muted small">(اختياري)</span>
+                    </label>
+                    <input asp-for="NameEn" id="createNameEn" class="form-control" placeholder="مثال: Vodafone Cash - Merchant Payment" oninput="userTypedNameEn()" />
+                    <span asp-validation-for="NameEn" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="BaseCost" class="form-label fw-bold">
+                        الرسوم الأساسية للخدمة (ج.م)
+                    </label>
+                    <div class="input-group">
+                        <input asp-for="BaseCost" type="number" step="0.01" min="0" class="form-control" value="0.50" />
+                        <span class="input-group-text">ج.م</span>
+                    </div>
+                    <span asp-validation-for="BaseCost" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <!-- 3. Status & Notes -->
+            <div class="row g-3 mb-4">
+                <div class="col-12">
+                    <div class="form-check form-switch p-0 d-flex align-items-center gap-3">
+                        <input asp-for="IsActive" class="form-check-input m-0 cursor-pointer" type="checkbox" role="switch" checked id="isActiveSwitch" style="width: 2.5em; height: 1.3em;" />
+                        <label class="form-check-label fw-bold cursor-pointer" for="isActiveSwitch">تفعيل الخدمة فور إنشائها</label>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label fw-bold">وصف الخدمة وملاحظات تشغيلية (اختياري)</label>
+                    <textarea asp-for="Description" class="form-control" rows="2" placeholder="وصف توضيحي لطريقة عمل الخدمة..."></textarea>
+                </div>
+            </div>
+
+            <!-- Submit Button Bar -->
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top" style="border-color: var(--card-border) !important;">
+                <a asp-action="Index" class="btn btn-outline-secondary px-4 py-2 rounded-3">إلغاء</a>
+                <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow rounded-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill fs-5"></i>
+                    <span>حفظ الخدمة</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .spin-icon {
+        display: inline-block;
+        animation: spinAnim 0.5s ease-in-out;
+    }
+    @@keyframes spinAnim {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    .flash-highlight {
+        transition: background-color 0.4s ease !important;
+        background-color: rgba(245, 158, 11, 0.2) !important;
+    }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let isCodeCustom = false;
+        let isNameArCustom = false;
+        let isNameEnCustom = false;
+        let isBalanceActionCustom = false;
+
+        function userTypedCode() { isCodeCustom = true; }
+        function userTypedNameAr() { isNameArCustom = true; }
+        function userTypedNameEn() { isNameEnCustom = true; }
+        function userChangedBalanceAction() { isBalanceActionCustom = true; }
+
+        // Resilient DOM Resolvers
+        function getField(preferredId, fallbackName) {
+            return document.getElementById(preferredId) 
+                || document.getElementById(fallbackName) 
+                || document.querySelector(`[name="${fallbackName}"]`);
+        }
+
+        function getOperatorElement() { return getField("createOperatorSelect", "Operator"); }
+        function getCategoryElement() { return getField("createCategorySelect", "Category"); }
+        function getBalanceActionElement() { return getField("createBalanceActionSelect", "BalanceActionType"); }
+        function getCodeElement() { return getField("createServiceCode", "ServiceCode"); }
+        function getNameArElement() { return getField("createNameAr", "NameAr"); }
+        function getNameEnElement() { return getField("createNameEn", "NameEn"); }
+
+        function onSelectionsChanged() {
+            const opEl = getOperatorElement();
+            const catEl = getCategoryElement();
+            if (!opEl || !catEl) return;
+
+            const op = String(opEl.value);
+            const cat = String(catEl.value);
+
+            // Network Operator Data (Vodafone, Orange, Etisalat, WE)
+            let prefix = "VF";
+            let opAr = "فودافون كاش";
+            let opEn = "Vodafone Cash";
+
+            if (op === "2") {
+                prefix = "OR";
+                opAr = "أورانج كاش";
+                opEn = "Orange Cash";
+            } else if (op === "3") {
+                prefix = "ET";
+                opAr = "اتصالات كاش";
+                opEn = "Etisalat Cash";
+            } else if (op === "4") {
+                prefix = "WE";
+                opAr = "وي باي";
+                opEn = "WE Pay";
+            }
+
+            // Category Data (Payment, Transfer, Balance Inquiry, Number Inquiry)
+            let suffix = "PAY";
+            let catAr = "دفع تاجر";
+            let catEn = "Merchant Payment";
+            let defaultBalanceAction = "2"; // Decrement (خصم / تخفيض)
+
+            if (cat === "5") {
+                suffix = "TRANSFER";
+                catAr = "تحويل كاش";
+                catEn = "Money Transfer";
+                defaultBalanceAction = "2"; // Decrement (خصم / تخفيض)
+            } else if (cat === "2") {
+                suffix = "BAL_INQ";
+                catAr = "استعلام رصيد";
+                catEn = "Balance Inquiry";
+                defaultBalanceAction = "0"; // None (بدون تأثير)
+            } else if (cat === "6") {
+                suffix = "NUM_INQ";
+                catAr = "استعلام رقم";
+                catEn = "Number Inquiry";
+                defaultBalanceAction = "0"; // None (بدون تأثير)
+            }
+
+            // 1. Update Balance Action Type if not manually overridden
+            const balActionEl = getBalanceActionElement();
+            if (balActionEl && !isBalanceActionCustom) {
+                balActionEl.value = defaultBalanceAction;
+            }
+
+            // 2. Update Service Code
+            const codeEl = getCodeElement();
+            if (codeEl && !isCodeCustom) {
+                codeEl.value = `${prefix}_${suffix}`;
+            }
+
+            // 3. Update Arabic Name
+            const nameArEl = getNameArElement();
+            if (nameArEl && !isNameArCustom) {
+                nameArEl.value = `${opAr} - ${catAr}`;
+            }
+
+            // 4. Update English Name
+            const nameEnEl = getNameEnElement();
+            if (nameEnEl && !isNameEnCustom) {
+                nameEnEl.value = `${opEn} - ${catEn}`;
+            }
+        }
+
+        function forceRegenerateAll(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            isCodeCustom = false;
+            isNameArCustom = false;
+            isNameEnCustom = false;
+            isBalanceActionCustom = false;
+            
+            onSelectionsChanged();
+
+            // Visual feedback on generated fields
+            const fields = [getCodeElement(), getNameArElement(), getNameEnElement(), getBalanceActionElement()];
+            fields.forEach(el => {
+                if (el) {
+                    el.classList.add("flash-highlight");
+                    setTimeout(() => el.classList.remove("flash-highlight"), 450);
+                }
+            });
+
+            // Rotate icon animation
+            const icon = document.querySelector("#btnRegenerateCode i");
+            if (icon) {
+                icon.classList.add("spin-icon");
+                setTimeout(() => icon.classList.remove("spin-icon"), 500);
+            }
+        }
+
+        // Expose globally to window
+        window.forceRegenerateAll = forceRegenerateAll;
+        window.onSelectionsChanged = onSelectionsChanged;
+        window.userTypedCode = userTypedCode;
+        window.userTypedNameAr = userTypedNameAr;
+        window.userTypedNameEn = userTypedNameEn;
+        window.userChangedBalanceAction = userChangedBalanceAction;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const opEl = getOperatorElement();
+            const catEl = getCategoryElement();
+            const balActionEl = getBalanceActionElement();
+            const codeEl = getCodeElement();
+            const nameArEl = getNameArElement();
+            const nameEnEl = getNameEnElement();
+            const btnRegen = document.getElementById("btnRegenerateCode");
+
+            if (opEl) opEl.addEventListener("change", onSelectionsChanged);
+            if (catEl) catEl.addEventListener("change", onSelectionsChanged);
+            if (balActionEl) balActionEl.addEventListener("change", userChangedBalanceAction);
+            if (codeEl) codeEl.addEventListener("input", userTypedCode);
+            if (nameArEl) nameArEl.addEventListener("input", userTypedNameAr);
+            if (nameEnEl) nameEnEl.addEventListener("input", userTypedNameEn);
+            if (btnRegen) btnRegen.addEventListener("click", forceRegenerateAll);
+
+            // Populate on initial load if empty
+            if (codeEl && codeEl.value.trim() === "") {
+                onSelectionsChanged();
+            }
+        });
+    </script>
+}

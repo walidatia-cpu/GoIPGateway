@@ -1,0 +1,458 @@
+@model GoIPGateway.Domain.Entities.ServiceDefinition
+@{
+    ViewData["Title"] = $"تفاصيل الخدمة: {Model.NameAr}";
+    var steps = Model.UssdSteps?.Where(s => !s.IsDelete).OrderBy(s => s.StepOrder).ToList() ?? new List<GoIPGateway.Domain.Entities.ServiceUssdStep>();
+    var parameters = Model.Parameters?.Where(p => p.IsActive).OrderBy(p => p.SortOrder).ToList() ?? new List<GoIPGateway.Domain.Entities.ServiceParameter>();
+    var subscriptions = Model.TenantSubscriptions?.Where(ts => !ts.IsDelete).ToList() ?? new List<GoIPGateway.Domain.Entities.TenantService>();
+
+    string FormatUssdDisplay(string cmd)
+    {
+        if (string.IsNullOrEmpty(cmd)) return "";
+        var formatted = System.Web.HttpUtility.HtmlEncode(cmd);
+        formatted = formatted.Replace("{Password}", "<span class=\"ussd-tag tag-pwd\"><i class=\"bi bi-key-fill\"></i> {Password}</span>");
+        formatted = formatted.Replace("{Amount}", "<span class=\"ussd-tag tag-amt\"><i class=\"bi bi-cash\"></i> {Amount}</span>");
+        formatted = formatted.Replace("{MobileNumber}", "<span class=\"ussd-tag tag-phone\"><i class=\"bi bi-phone\"></i> {MobileNumber}</span>");
+        formatted = formatted.Replace("{PhoneNumber}", "<span class=\"ussd-tag tag-phone\"><i class=\"bi bi-phone\"></i> {PhoneNumber}</span>");
+        formatted = formatted.Replace("{MerchantCode}", "<span class=\"ussd-tag tag-merchant\"><i class=\"bi bi-shop\"></i> {MerchantCode}</span>");
+        return formatted;
+    }
+
+    var opBadge = Model.Operator switch
+    {
+        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "bg-danger",
+        GoIPGateway.Domain.Enums.OperatorType.Orange => "bg-warning text-dark",
+        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "bg-success",
+        GoIPGateway.Domain.Enums.OperatorType.WE => "bg-secondary",
+        _ => "bg-dark"
+    };
+
+    var opTitle = Model.Operator switch
+    {
+        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "فودافون كاش",
+        GoIPGateway.Domain.Enums.OperatorType.Orange => "أورانج كاش",
+        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "اتصالات كاش",
+        GoIPGateway.Domain.Enums.OperatorType.WE => "وي باي (WE)",
+        _ => "جميع الشبكات"
+    };
+
+    var catBadge = (int)Model.Category switch
+    {
+        1 => "bg-success text-white",
+        5 => "bg-primary text-white",
+        2 => "bg-info text-dark",
+        6 => "bg-warning text-dark",
+        _ => "bg-secondary text-white"
+    };
+
+    var catTitle = (int)Model.Category switch
+    {
+        1 => "دفع إلكتروني / تاجر",
+        5 => "تحويل كاش",
+        2 => "استعلام رصيد",
+        6 => "استعلام رقم",
+        _ => Model.Category.ToString()
+    };
+}
+
+<style>
+    .ussd-console {
+        background: #0f172a;
+        color: #f8fafc;
+        border-radius: 12px;
+        padding: 14px 18px;
+        border: 1px solid #1e293b;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+    [data-bs-theme="light"] .ussd-console {
+        background: #1e293b;
+        color: #f1f5f9;
+        border-color: #334155;
+    }
+    .ussd-code-ltr {
+        direction: ltr !important;
+        text-align: left !important;
+        unicode-bidi: isolate !important;
+        display: block;
+        font-family: 'JetBrains Mono', Consolas, monospace !important;
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    .ussd-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        margin: 0 2px;
+    }
+    .tag-pwd { background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .tag-amt { background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .tag-phone { background: rgba(14, 165, 233, 0.25); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); }
+    .tag-merchant { background: rgba(168, 85, 247, 0.25); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+    .step-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.1rem;
+        background: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+    }
+</style>
+
+<div class="container-xl px-0 py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة التحكم</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">كتالوج الخدمات</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">تفاصيل الخدمة: @Model.NameAr</li>
+        </ol>
+    </nav>
+
+    <!-- Header Card -->
+    <div class="portal-card p-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-2" style="width: 68px; height: 68px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi @(string.IsNullOrEmpty(Model.IconClass) ? "bi-lightning-charge" : Model.IconClass)"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                        <h3 class="fw-black mb-0 text-main">@Model.NameAr</h3>
+                        <span class="badge bg-light text-dark font-monospace fs-6 px-3 py-1 border shadow-xs fw-bold">
+                            @Model.ServiceCode
+                        </span>
+                        <span class="badge @(Model.IsActive ? "bg-success" : "bg-danger") px-3 py-1 rounded-pill">
+                            @(Model.IsActive ? "الخدمة نشطة" : "الخدمة معطلة")
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.NameEn))
+                    {
+                        <div class="text-muted font-monospace small mb-2">@Model.NameEn</div>
+                    }
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge @opBadge px-3 py-1 rounded-pill">@opTitle</span>
+                        <span class="badge @catBadge px-3 py-1 rounded-pill">@catTitle</span>
+                        @switch (Model.BalanceActionType)
+                        {
+                            case GoIPGateway.Domain.Enums.BalanceActionType.Increment:
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                    <i class="bi bi-plus-circle me-1"></i> إضافة للرصيد (+)
+                                </span>
+                                break;
+                            case GoIPGateway.Domain.Enums.BalanceActionType.Decrement:
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">
+                                    <i class="bi bi-dash-circle me-1"></i> تخفيض من الرصيد (-)
+                                </span>
+                                break;
+                            default:
+                                <span class="badge bg-secondary bg-opacity-10 text-muted px-2 py-1">
+                                    <i class="bi bi-dash me-1"></i> بدون تأثير على الرصيد
+                                </span>
+                                break;
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a asp-action="ConfigureSteps" asp-route-id="@Model.Id" class="btn btn-primary fw-bold px-3 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2">
+                    <i class="bi bi-sliders"></i>
+                    <span>تهيئة أوامر USSD</span>
+                </a>
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary fw-bold px-3 py-2 rounded-3">
+                    <i class="bi bi-pencil me-1"></i> تعديل الخدمة
+                </a>
+                <a asp-action="Index" class="btn btn-outline-secondary px-3 py-2 rounded-3">
+                    <i class="bi bi-arrow-right me-1"></i> رجوع للكتالوج
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-bold">الرسوم الأساسية</div>
+                        <div class="fs-4 fw-black text-main">@Model.BaseCost.ToString("N2") <small class="fs-8 fw-normal text-muted">ج.م</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-sliders"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-bold">أوامر USSD</div>
+                        <div class="fs-4 fw-black text-main">@steps.Count <small class="fs-8 fw-normal text-muted">خطوات</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-code-slash"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-bold">بارامترات الـ API</div>
+                        <div class="fs-4 fw-black text-main">@parameters.Count <small class="fs-8 fw-normal text-muted">مطلوبة</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-box bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-building-check"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-bold">الشركات المشتركة</div>
+                        <div class="fs-4 fw-black text-main">@subscriptions.Count <small class="fs-8 fw-normal text-muted">شركة</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Description Card -->
+    @if (!string.IsNullOrEmpty(Model.Description))
+    {
+        <div class="portal-card p-3 mb-4 shadow-sm">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi bi-info-circle-fill text-primary"></i>
+                <span class="fw-bold text-main small">وصف الخدمة وملاحظات التشغيل:</span>
+            </div>
+            <p class="text-muted small mb-0 pe-4">@Model.Description</p>
+        </div>
+    }
+
+    <!-- Content Row: USSD Steps & Parameters -->
+    <div class="row g-4">
+        <!-- Main: USSD Execution Pipeline (8 Cols) -->
+        <div class="col-12 col-lg-8">
+            <div class="portal-card p-4 shadow-sm mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-black mb-0 d-flex align-items-center gap-2">
+                        <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-terminal fs-5"></i>
+                        </span>
+                        <span>مسار تنفيذ أوامر USSD (@steps.Count خطوات)</span>
+                    </h5>
+                    <a asp-action="ConfigureSteps" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-primary px-3 py-1 rounded-pill fw-bold">
+                        <i class="bi bi-pencil-square me-1"></i> تعديل المسار
+                    </a>
+                </div>
+
+                @if (!steps.Any())
+                {
+                    <div class="text-center py-5">
+                        <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning d-inline-block mb-3">
+                            <i class="bi bi-exclamation-triangle fs-2"></i>
+                        </div>
+                        <h6 class="fw-bold text-main">لم يتم تعريف خطوات USSD لهذه الخدمة بعد</h6>
+                        <p class="text-muted small mb-3">يجب تهيئة أوامر الـ USSD حتى تتمكن الـ Gateway من تنفيذ معاملات هذه الخدمة على الشرائح.</p>
+                        <a asp-action="ConfigureSteps" asp-route-id="@Model.Id" class="btn btn-primary btn-sm px-4 py-2 rounded-3 fw-bold">
+                            <i class="bi bi-plus-lg me-1"></i> إضافة أول خطوة USSD
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var step in steps)
+                        {
+                            <div class="p-3 rounded-3" style="background: var(--bg-app); border: 1px solid var(--card-border);">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="step-badge">@step.StepOrder</div>
+                                        <div>
+                                            <h6 class="fw-bold text-main mb-0">@(string.IsNullOrEmpty(step.StepTitle) ? $"خطوة {step.StepOrder}" : step.StepTitle)</h6>
+                                            <small class="text-muted">مهلة الانتظار: <strong>@step.TimeoutSeconds ثانية</strong> • تأخير بعد التنفيذ: <strong>@step.DelayAfterMs م.ث</strong></small>
+                                        </div>
+                                    </div>
+                                    <span class="badge @(step.IsActive ? "bg-success" : "bg-secondary") rounded-pill px-2 py-1">
+                                        @(step.IsActive ? "نشطة" : "معطلة")
+                                    </span>
+                                </div>
+
+                                <!-- USSD Command Console with Strict LTR Isolation -->
+                                <div class="ussd-console mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1 text-muted small border-bottom border-secondary border-opacity-25 pb-1">
+                                        <span class="font-monospace fs-8 text-uppercase"><i class="bi bi-terminal me-1"></i> USSD Command:</span>
+                                    </div>
+                                    <div class="ussd-code-ltr">
+                                        @Html.Raw(FormatUssdDisplay(step.UssdCommand))
+                                    </div>
+                                </div>
+
+                                <!-- Patterns Row -->
+                                @{
+                                    var successRules = step.ParsedSuccessRules;
+                                    var failureRules = step.ParsedFailureRules;
+                                }
+                                <div class="row g-2 small">
+                                    <div class="col-md-6">
+                                        <div class="p-2 rounded bg-light border h-100">
+                                            <strong class="text-success d-block mb-1"><i class="bi bi-check-circle-fill me-1"></i> شروط النجاح (@successRules.Count):</strong>
+                                            @if (successRules.Any())
+                                            {
+                                                <div class="d-flex flex-column gap-1">
+                                                    @foreach (var s in successRules)
+                                                    {
+                                                        <div class="d-flex align-items-center justify-content-between p-1 rounded bg-white border border-success border-opacity-25 fs-8">
+                                                            <span class="font-monospace text-success fw-bold">@s.Pattern</span>
+                                                            @if (!string.IsNullOrEmpty(s.ClientMessage))
+                                                            {
+                                                                <span class="text-primary fw-normal">➔ "@s.ClientMessage"</span>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted font-monospace">NoNeedToWait (فوري بدون انتظار)</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-2 rounded bg-light border h-100">
+                                            <strong class="text-danger d-block mb-1"><i class="bi bi-x-circle-fill me-1"></i> شروط الفشل والردود البديلة (@failureRules.Count):</strong>
+                                            @if (failureRules.Any())
+                                            {
+                                                <div class="d-flex flex-column gap-1">
+                                                    @foreach (var fail in failureRules)
+                                                    {
+                                                        <div class="d-flex align-items-center justify-content-between p-1 rounded bg-white border border-danger border-opacity-25 fs-8">
+                                                            <span class="font-monospace text-danger fw-bold">@fail.Pattern</span>
+                                                            @if (!string.IsNullOrEmpty(fail.ClientMessage))
+                                                            {
+                                                                <span class="text-primary fw-normal">➔ "@fail.ClientMessage"</span>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">تلقائي حسب الشبكة</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Sidebar: Parameters & Subscribed Companies (4 Cols) -->
+        <div class="col-12 col-lg-4">
+            <!-- API Parameters -->
+            <div class="portal-card p-4 shadow-sm mb-4">
+                <h5 class="fw-black mb-3 d-flex align-items-center gap-2">
+                    <span class="p-2 rounded-3 bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-input-cursor-text fs-5"></i>
+                    </span>
+                    <span>بارامترات الـ API المطلوب تمريرها</span>
+                </h5>
+
+                @if (!parameters.Any())
+                {
+                    <div class="text-center py-4 text-muted small">
+                        <i class="bi bi-code-slash fs-3 d-block mb-2 text-secondary"></i>
+                        لا توجد بارامترات مطلوبة (تُنفذ الخدمة بدون متغيرات إضافية).
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush bg-transparent">
+                        @foreach (var p in parameters)
+                        {
+                            <div class="list-group-item bg-transparent px-0 py-2 border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-bold fs-6 text-main font-monospace">
+                                        {@p.ParameterKey}
+                                        @if (p.IsRequired)
+                                        {
+                                            <span class="text-danger fw-bold ms-1" title="حقل إجباري">*</span>
+                                        }
+                                    </div>
+                                    <div class="text-muted small">@(p.DisplayNameAr ?? p.ParameterName)</div>
+                                </div>
+                                <span class="badge bg-secondary bg-opacity-10 text-muted">@p.DataType</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Subscribed Tenants -->
+            <div class="portal-card p-4 shadow-sm">
+                <h5 class="fw-black mb-3 d-flex align-items-center gap-2">
+                    <span class="p-2 rounded-3 bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-building-check fs-5"></i>
+                    </span>
+                    <span>الشركات المشتركة في الخدمة (@subscriptions.Count)</span>
+                </h5>
+
+                @if (!subscriptions.Any())
+                {
+                    <div class="text-center py-4 text-muted small">
+                        <i class="bi bi-buildings fs-3 d-block mb-2 text-secondary"></i>
+                        لم يتم تفعيل هذه الخدمة لأي شركة حتى الآن.
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush bg-transparent">
+                        @foreach (var sub in subscriptions)
+                        {
+                            <div class="list-group-item bg-transparent px-0 py-2 border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-bold text-main">@sub.Tenant.CompanyName</div>
+                                    <small class="text-muted font-monospace">@(sub.Tenant.CompanyNameEn ?? $"ID: #{sub.Tenant.Id}")</small>
+                                </div>
+                                <div class="text-end">
+                                    @if (sub.CustomPrice.HasValue)
+                                    {
+                                        <div class="fw-bold text-primary small">@sub.CustomPrice.Value.ToString("N2") ج.م</div>
+                                        <small class="text-muted fs-8">سعر مخصص</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-muted border">السعر الأساسي</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

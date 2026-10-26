@@ -1,0 +1,96 @@
+@model GoIPGateway.Application.Features.Tenants.Commands.CreateTenantCommand
+@{
+    ViewData["Title"] = "إضافة شركة جديدة";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="portal-card p-4 p-md-5 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-4 bg-primary bg-opacity-25 text-primary fs-3">
+                        <i class="bi bi-building-add"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1">إضافة شركة مستأجرة جديدة (New Tenant)</h4>
+                        <p class="text-muted small mb-0">تهيئة حساب الشركة المستأجرة وحدود العمليات ومفتاح الـ API الافتراضي</p>
+                    </div>
+                </div>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-right me-1"></i> رجوع للقائمة
+                </a>
+            </div>
+
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger small p-2" role="alert"></div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold">اسم الشركة بالعربية <span class="text-danger">*</span></label>
+                        <input asp-for="CompanyName" class="form-control" placeholder="مثال: شركة الدفع الذكي" required />
+                        <span asp-validation-for="CompanyName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold">اسم الشركة بالإنجليزية (Company Name En)</label>
+                        <input asp-for="CompanyNameEn" class="form-control" placeholder="Smart Pay Ltd." />
+                        <span asp-validation-for="CompanyNameEn" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">اسم المسؤول / جهة الاتصال</label>
+                        <input asp-for="ContactPerson" class="form-control" placeholder="محمد علي" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">البريد الإلكتروني للشركة</label>
+                        <input asp-for="ContactEmail" type="email" class="form-control" placeholder="info@smartpay.com" />
+                        <span asp-validation-for="ContactEmail" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">رقم الهاتف</label>
+                        <input asp-for="ContactPhone" class="form-control" placeholder="010XXXXXXXX" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">العنوان والمقر الرئيسي</label>
+                        <input asp-for="Address" class="form-control" placeholder="القاهرة، مصر" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold">أقصى عدد أجهزة مسموح</label>
+                        <input asp-for="MaxDevices" type="number" min="1" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold">حد العمليات اليومي</label>
+                        <input asp-for="MaxDailyOperations" type="number" min="1" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold">حد الائتمان (Credit Limit)</label>
+                        <div class="input-group">
+                            <input asp-for="CreditLimit" type="number" step="0.01" min="0" class="form-control" />
+                            <span class="input-group-text">ج.م</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary py-3 fw-bold shadow">
+                        <i class="bi bi-check-circle-fill me-2"></i> حفظ الشركة وإنشاء مفتاح API
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

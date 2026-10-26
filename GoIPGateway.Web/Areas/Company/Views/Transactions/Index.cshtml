@@ -1,0 +1,96 @@
+@model GoIPGateway.Application.Common.Models.PagedResult<GoIPGateway.Application.DTOs.TransactionResultDto>
+@{
+    ViewData["Title"] = "سجل معاملاتي";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-receipt text-primary me-2"></i> سجل العمليات والمعاملات</h3>
+        <p class="text-muted small mb-0">كشف حساب ومعاملات الدفع والشحن والاستعلام المنفذة على حسابك</p>
+    </div>
+    <div>
+        <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="btn btn-warning btn-merchant-action text-dark">
+            <i class="bi bi-plus-lg me-1"></i> تنفيذ عملية جديدة
+        </a>
+    </div>
+</div>
+
+<div class="portal-card p-4 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>رقم المرجع</th>
+                    <th>المرجع الخاص بك</th>
+                    <th>الحالة</th>
+                    <th>الاستجابة والنتيجة</th>
+                    <th>الرصيد قبل</th>
+                    <th>الرصيد بعد</th>
+                    <th>توقيت العملية</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            لا توجد عمليات مسجلة حتى الآن.
+                        </td>
+                    </tr>
+                }
+                @foreach (var tx in Model.Items)
+                {
+                    <tr>
+                        <td class="fw-bold"><code>@tx.TransactionRef</code></td>
+                        <td>@(tx.ExternalRef ?? "-")</td>
+                        <td>
+                            @if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Completed)
+                            {
+                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 py-1">
+                                    <i class="bi bi-check-circle-fill me-1"></i> مكتملة بنجاح
+                                </span>
+                            }
+                            else if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Processing)
+                            {
+                                <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-2 py-1">
+                                    <i class="bi bi-hourglass-split me-1"></i> قيد التنفيذ
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-2 py-1">
+                                    <i class="bi bi-x-circle-fill me-1"></i> فشلت
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 320px;" title="@(tx.Message ?? tx.RawResponse)">
+                                @(tx.Message ?? tx.RawResponse ?? "-")
+                            </div>
+                        </td>
+                        <td class="fw-bold">@(tx.SimBalanceBefore.HasValue ? tx.SimBalanceBefore.Value.ToString("N2") + " ج.م" : "-")</td>
+                        <td class="fw-bold text-success">@(tx.SimBalanceAfter.HasValue ? tx.SimBalanceAfter.Value.ToString("N2") + " ج.م" : "-")</td>
+                        <td class="small text-muted">@tx.CompletedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-25">
+            <span class="small text-muted">عرض الصفحة @Model.PageNumber من @Model.TotalPages (إجمالي @Model.TotalCount عملية)</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageNumber - 1)">السابق</a>
+                </li>
+                <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageNumber + 1)">التالي</a>
+                </li>
+            </ul>
+        </div>
+    }
+</div>
