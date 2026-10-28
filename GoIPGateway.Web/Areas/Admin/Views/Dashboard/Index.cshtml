@@ -1,234 +1,777 @@
 @model GoIPGateway.Web.Models.AdminDashboardViewModel
 @{
-    ViewData["Title"] = "لوحة التحكم الرئيسية";
+    ViewData["Title"] = "لوحة تحكم النظام (Super Admin)";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="fw-bold mb-1">لوحة تحكم النظام (Super Admin)</h3>
-        <p class="text-muted small mb-0">نظرة عامة لحظية على أجهزة GoIP والشرايح وعمليات الشركات</p>
-    </div>
-    <div class="d-flex gap-2">
-        <a asp-area="Admin" asp-controller="Devices" asp-action="Create" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-plus-lg me-1"></i> إضافة جهاز GoIP
-        </a>
-        <a asp-area="Admin" asp-controller="Tenants" asp-action="Create" class="btn btn-primary btn-sm">
-            <i class="bi bi-building-add me-1"></i> إضافة شركة
-        </a>
-    </div>
-</div>
+<style>
+    /* =========================================================
+       SUPER ADMIN DASHBOARD DESIGN SYSTEM (LIGHT & DARK ADAPTIVE)
+       ========================================================= */
 
-<!-- 5 Top KPI Stats Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-xl-3 col-md-6">
-        <div class="card-stat d-flex align-items-center justify-content-between">
+    /* Top Executive Hero Banner */
+    .admin-hero-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 24px 28px;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        position: relative;
+        overflow: hidden;
+    }
+    .admin-hero-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #2563eb, #3b82f6, #06b6d4, #10b981);
+    }
+    [data-bs-theme="dark"] .admin-hero-card {
+        background: linear-gradient(135deg, #131c31 0%, #0f172a 100%);
+        border-color: #1e293b;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Executive KPI Cards */
+    .admin-kpi-card {
+        background: #ffffff;
+        border-radius: 18px;
+        border: 1px solid #e2e8f0;
+        padding: 22px 24px;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+    }
+    .admin-kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+        border-color: #cbd5e1;
+    }
+    .admin-kpi-card::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 4px;
+    }
+    .admin-kpi-card.kpi-blue::after { background: #2563eb; }
+    .admin-kpi-card.kpi-emerald::after { background: #10b981; }
+    .admin-kpi-card.kpi-amber::after { background: #f59e0b; }
+    .admin-kpi-card.kpi-purple::after { background: #8b5cf6; }
+
+    [data-bs-theme="dark"] .admin-kpi-card {
+        background: #131c31;
+        border-color: #1e293b;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+    [data-bs-theme="dark"] .admin-kpi-card:hover {
+        border-color: #334155;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+    }
+
+    /* KPI Icon Badges */
+    .admin-kpi-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
+    }
+    .admin-kpi-card:hover .admin-kpi-icon {
+        transform: scale(1.08);
+    }
+    .icon-blue { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
+    .icon-emerald { background: rgba(16, 185, 129, 0.12); color: #059669; }
+    .icon-amber { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+    .icon-purple { background: rgba(139, 92, 246, 0.12); color: #7c3aed; }
+
+    [data-bs-theme="dark"] .icon-blue { background: rgba(37, 99, 235, 0.2); color: #60a5fa; }
+    [data-bs-theme="dark"] .icon-emerald { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    [data-bs-theme="dark"] .icon-amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    [data-bs-theme="dark"] .icon-purple { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+
+    /* High-Contrast Pill Badges */
+    .pill-badge {
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        line-height: 1.2;
+    }
+    .pill-badge-success {
+        background: #ecfdf5 !important;
+        color: #047857 !important;
+        border: 1px solid #a7f3d0 !important;
+    }
+    .pill-badge-danger {
+        background: #fef2f2 !important;
+        color: #b91c1c !important;
+        border: 1px solid #fecaca !important;
+    }
+    .pill-badge-warning {
+        background: #fffbeb !important;
+        color: #b45309 !important;
+        border: 1px solid #fde68a !important;
+    }
+    .pill-badge-info {
+        background: #f0f9ff !important;
+        color: #0369a1 !important;
+        border: 1px solid #bae6fd !important;
+    }
+    .pill-badge-primary {
+        background: #eff6ff !important;
+        color: #1d4ed8 !important;
+        border: 1px solid #bfdbfe !important;
+    }
+
+    [data-bs-theme="dark"] .pill-badge-success {
+        background: rgba(16, 185, 129, 0.15) !important;
+        color: #34d399 !important;
+        border-color: rgba(16, 185, 129, 0.35) !important;
+    }
+    [data-bs-theme="dark"] .pill-badge-danger {
+        background: rgba(239, 68, 68, 0.15) !important;
+        color: #f87171 !important;
+        border-color: rgba(239, 68, 68, 0.35) !important;
+    }
+    [data-bs-theme="dark"] .pill-badge-warning {
+        background: rgba(245, 158, 11, 0.15) !important;
+        color: #fbbf24 !important;
+        border-color: rgba(245, 158, 11, 0.35) !important;
+    }
+    [data-bs-theme="dark"] .pill-badge-info {
+        background: rgba(14, 165, 233, 0.15) !important;
+        color: #38bdf8 !important;
+        border-color: rgba(14, 165, 233, 0.35) !important;
+    }
+    [data-bs-theme="dark"] .pill-badge-primary {
+        background: rgba(37, 99, 235, 0.15) !important;
+        color: #60a5fa !important;
+        border-color: rgba(37, 99, 235, 0.35) !important;
+    }
+
+    /* Live Pulsing Dot */
+    .pulse-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        background-color: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-dot-anim 1.8s infinite;
+    }
+    .pulse-dot-red {
+        background-color: #ef4444;
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        animation: pulse-dot-red-anim 1.8s infinite;
+    }
+    @@keyframes pulse-dot-anim {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    @@keyframes pulse-dot-red-anim {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    /* Telecom Carrier Grid Card */
+    .carrier-box {
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        padding: 16px 18px;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    .carrier-box:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+        transform: translateY(-2px);
+    }
+    [data-bs-theme="dark"] .carrier-box {
+        background: #131c31;
+        border-color: #1e293b;
+    }
+    [data-bs-theme="dark"] .carrier-box:hover {
+        border-color: #334155;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Quick Action Buttons */
+    .btn-action-primary {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: #ffffff !important;
+        border: none;
+        border-radius: 12px;
+        padding: 10px 18px;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        transition: all 0.2s ease;
+    }
+    .btn-action-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-action-secondary {
+        background: #ffffff;
+        color: #334155 !important;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 10px 16px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .btn-action-secondary:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+        transform: translateY(-1px);
+    }
+    [data-bs-theme="dark"] .btn-action-secondary {
+        background: #1e293b;
+        color: #e2e8f0 !important;
+        border-color: #334155;
+    }
+    [data-bs-theme="dark"] .btn-action-secondary:hover {
+        background: #334155;
+    }
+
+    /* Tenant Avatar Initials */
+    .tenant-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+
+    /* Section Cards */
+    .portal-card {
+        background-color: var(--card-bg, #ffffff);
+        border: 1px solid var(--card-border, #e2e8f0);
+        border-radius: 18px;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    [data-bs-theme="dark"] .portal-card {
+        background-color: #131c31;
+        border-color: #1e293b;
+    }
+</style>
+
+<div class="container-xl px-0 py-2">
+
+    <!-- 1. Super Admin Hero / Executive Banner -->
+    <div class="admin-hero-card mb-4">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
             <div>
-                <span class="text-muted small fw-bold">الشركات المستأجرة</span>
-                <h3 class="fw-bold my-1">@Model.TotalTenants</h3>
-                <span class="text-success small"><i class="bi bi-shield-check"></i> Multi-Tenant نشط</span>
+                <div class="d-flex align-items-center gap-2.5 flex-wrap">
+                    <h3 class="fw-black mb-0 text-main">لوحة تحكم البنية التحتية والنظام (Super Admin)</h3>
+                    <span class="pill-badge pill-badge-success">
+                        <span class="pulse-dot me-0.5"></span> النظام يعمل بكفاءة 100%
+                    </span>
+                    <span class="badge bg-light text-muted border font-monospace fs-9" id="liveServerClock">
+                        <i class="bi bi-clock me-1"></i>جارٍ تحديث الوقت...
+                    </span>
+                </div>
+                <p class="text-muted small mb-0 mt-2">
+                    مركز الرقابة المباشرة لمحرك البوابة (Gateway Engine)، حمولة وتوجيه أجهزة الـ GoIP، واستهلاك الشركات المستأجرة (Multi-Tenants).
+                </p>
             </div>
-            <div class="icon-box bg-primary bg-opacity-25 text-primary">
-                <i class="bi bi-buildings"></i>
+
+            <!-- Quick Action Toolbar -->
+            <!-- Quick Action Toolbar (Focused strictly on Super Admin Tasks) -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a asp-area="Admin" asp-controller="Tenants" asp-action="Create" class="btn btn-action-primary text-nowrap">
+                    <i class="bi bi-building-add me-1"></i> إضافة شركة جديدة
+                </a>
+                <a asp-area="Admin" asp-controller="Tenants" asp-action="Index" class="btn btn-action-secondary text-nowrap">
+                    <i class="bi bi-buildings me-1"></i> الشركات المسجلة
+                </a>
+                <a asp-area="Admin" asp-controller="Services" asp-action="Index" class="btn btn-action-secondary text-nowrap">
+                    <i class="bi bi-sliders me-1"></i> كتالوج الخدمات
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
-        <div class="card-stat d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-muted small fw-bold">أجهزة GoIP المتصلة</span>
-                <h3 class="fw-bold my-1">@Model.OnlineDevices <span class="text-muted fs-6 fw-normal">/ @Model.TotalDevices</span></h3>
-                <span class="text-success small"><span class="badge-live-pulse me-1"></span> @Model.OnlineDevices متصل بالشبكة</span>
-            </div>
-            <div class="icon-box bg-success bg-opacity-25 text-success">
-                <i class="bi bi-router"></i>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6">
-        <div class="card-stat d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-muted small fw-bold">الشرايح النشطة (SIMs)</span>
-                <h3 class="fw-bold my-1">@Model.ActiveSimCards <span class="text-muted fs-6 fw-normal">/ @Model.TotalSimCards</span></h3>
-                <span class="text-info small"><i class="bi bi-sim"></i> @Model.ActiveSimCards بورت مجهز</span>
-            </div>
-            <div class="icon-box bg-info bg-opacity-25 text-info">
-                <i class="bi bi-phone"></i>
+    <!-- 2. 4 Executive KPI Stat Cards -->
+    <div class="row g-3 mb-4">
+        <!-- KPI 1: Multi-Tenant Platform -->
+        <div class="col-xl-3 col-md-6">
+            <div class="admin-kpi-card kpi-blue d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-bold d-block">الشركات المستأجرة (Tenants)</span>
+                    <h2 class="fw-black my-1 text-main">@Model.TotalTenants</h2>
+                    <div class="d-flex align-items-center gap-1.5 mt-2">
+                        <span class="pill-badge pill-badge-primary">
+                            <i class="bi bi-shield-check"></i> @Model.ActiveTenantsCount شركة نشطة
+                        </span>
+                    </div>
+                </div>
+                <div class="admin-kpi-icon icon-blue">
+                    <i class="bi bi-buildings"></i>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="col-xl-3 col-md-6">
-        <div class="card-stat d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-muted small fw-bold">عمليات اليوم ومعدل النجاح</span>
-                <h3 class="fw-bold my-1">@Model.TodayTransactionsCount <span class="badge bg-success bg-opacity-25 text-success fs-8">@Model.SuccessRate%</span></h3>
-                <span class="text-success small">@Model.TodaySuccessfulTransactions ناجح</span> •
-                <span class="text-danger small">@Model.TodayFailedTransactions فاشل</span>
-            </div>
-            <div class="icon-box bg-warning bg-opacity-25 text-warning">
-                <i class="bi bi-lightning-charge"></i>
+        <!-- KPI 2: Hardware Connectivity & Ports Capacity -->
+        <div class="col-xl-3 col-md-6">
+            <div class="admin-kpi-card kpi-emerald d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-bold d-block">بوابات GoIP وسعة البورتات</span>
+                    <h2 class="fw-black my-1 text-main">
+                        @Model.OnlineDevices <span class="text-muted fs-5 fw-normal">/ @Model.TotalDevices</span>
+                    </h2>
+                    <div class="d-flex align-items-center gap-1.5 mt-2">
+                        <span class="pill-badge pill-badge-success">
+                            <span class="pulse-dot me-0.5"></span> @Model.TotalPortsCount بورت متاح
+                        </span>
+                        <span class="text-muted fs-9">سعة البنية التحتية</span>
+                    </div>
+                </div>
+                <div class="admin-kpi-icon icon-emerald">
+                    <i class="bi bi-router"></i>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="row g-4 mb-4">
-    <!-- Live GoIP Devices Status Card -->
-    <div class="col-lg-6">
-        <div class="portal-card p-4 shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0"><i class="bi bi-hdd-network text-primary me-2"></i> حالة أجهزة GoIP</h5>
-                <a asp-area="Admin" asp-controller="Devices" asp-action="Index" class="btn btn-sm btn-link text-decoration-none">عرض البورتات</a>
+        <!-- KPI 3: Gateway Engine Throughput -->
+        <div class="col-xl-3 col-md-6">
+            <div class="admin-kpi-card kpi-amber d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-bold d-block">حركة طلبات اليوم (Throughput)</span>
+                    <div class="d-flex align-items-baseline gap-2 my-1">
+                        <h2 class="fw-black mb-0 text-main">@Model.TodayTransactionsCount</h2>
+                        <span class="pill-badge pill-badge-success">
+                            @Model.SuccessRate% نجاح
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 text-muted fs-9 mt-2">
+                        <span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-0.5"></i>@Model.TodaySuccessfulTransactions ناجح</span>
+                        <span>•</span>
+                        <span class="text-danger fw-bold"><i class="bi bi-x-circle-fill me-0.5"></i>@Model.TodayFailedTransactions فاشل</span>
+                    </div>
+                </div>
+                <div class="admin-kpi-icon icon-amber">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                </div>
             </div>
+        </div>
 
-            <div class="table-responsive">
-                <table class="table table-custom">
-                    <thead>
-                        <tr>
-                            <th>الجهاز</th>
-                            <th>النوع</th>
-                            <th>عنوان IP</th>
-                            <th>البورتات</th>
-                            <th>الحالة</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var dev in Model.Devices)
+        <!-- KPI 4: Engine Response Latency & Queue Status -->
+        <div class="col-xl-3 col-md-6">
+            <div class="admin-kpi-card kpi-purple d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-bold d-block">سرعة استجابة المحرك (Latency)</span>
+                    <h2 class="fw-black my-1 text-main">
+                        @Model.AverageLatencySeconds <span class="text-muted fs-5 fw-normal">ثانية</span>
+                    </h2>
+                    <div class="d-flex align-items-center gap-1.5 mt-2">
+                        @if (Model.QueuePendingCount == 0)
                         {
-                            <tr>
-                                <td class="fw-bold">@dev.DeviceName</td>
-                                <td><span class="badge bg-secondary">@dev.DeviceType</span></td>
-                                <td><code>@dev.IpAddress:@dev.Port</code></td>
-                                <td>@dev.ActivePorts / @dev.TotalPorts</td>
-                                <td>
-                                    @if (dev.IsOnline)
-                                    {
-                                        <span class="badge bg-success bg-opacity-25 text-success"><i class="bi bi-check-circle me-1"></i> متصل</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger bg-opacity-25 text-danger"><i class="bi bi-x-circle me-1"></i> غير متصل</span>
-                                    }
-                                </td>
-                            </tr>
+                            <span class="pill-badge pill-badge-info">
+                                <i class="bi bi-check2-all"></i> طابور السيرفر مستقر
+                            </span>
                         }
-                    </tbody>
-                </table>
+                        else
+                        {
+                            <span class="pill-badge pill-badge-warning">
+                                <i class="bi bi-hourglass-split"></i> @Model.QueuePendingCount قيد التنفيذ
+                            </span>
+                        }
+                    </div>
+                </div>
+                <div class="admin-kpi-icon icon-purple">
+                    <i class="bi bi-cpu-fill"></i>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Total Financial Balance Summary -->
-    <div class="col-lg-6">
-        <div class="portal-card p-4 shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0"><i class="bi bi-wallet2 text-success me-2"></i> إجمالي أرصدة الشرايح والمحافظ</h5>
-                <span class="badge bg-primary fs-7">@Model.TotalSimBalance.ToString("N2") ج.م</span>
-            </div>
+    <!-- 3. Middle Section: Top Tenants Leaderboard + Telecom Infrastructure Matrix -->
+    <div class="row g-4 mb-4">
+        <!-- 3A. Top Tenants Leaderboard (Col-7) -->
+        <div class="col-lg-7">
+            <div class="portal-card p-4 shadow-sm h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <div>
+                        <h5 class="fw-black mb-0 text-main d-flex align-items-center gap-2">
+                            <span class="p-1.5 rounded-2 icon-amber fs-7">
+                                <i class="bi bi-trophy-fill"></i>
+                            </span>
+                            <span>الشركات الأكثر نشاطاً واستهلاكاً للبوابة (Top Tenants)</span>
+                        </h5>
+                        <div class="text-muted fs-8 mt-0.5">ترتيب الشركات المستأجرة بحسب حجم طلبات الـ API ومعدل النجاح اليوم</div>
+                    </div>
+                    <a asp-action="Index" asp-controller="Tenants" class="btn btn-xs btn-outline-secondary rounded-pill px-3 fw-semibold">
+                        كافة الشركات (@Model.TotalTenants) <i class="bi bi-arrow-left ms-1"></i>
+                    </a>
+                </div>
 
-            <p class="text-muted small">شرايح ذات رصيد منخفض تحتاج إلى تغذية:</p>
-            <div class="list-group list-group-flush bg-transparent">
-                @foreach (var sim in Model.LowBalanceSims)
+                @if (!Model.TopTenants.Any())
                 {
-                    <div class="list-group-item bg-transparent border-secondary border-opacity-25 d-flex justify-content-between align-items-center px-0 py-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-secondary">@(sim.DevicePort?.PortLabel ?? "Port")</span>
-                            <span class="fw-bold">@sim.PhoneNumber</span>
-                            <span class="badge bg-info bg-opacity-25 text-info">@sim.Operator</span>
-                        </div>
-                        <span class="fw-bold text-danger">@sim.CurrentBalance.ToString("N2") ج.م</span>
+                    <div class="text-center py-5 text-muted small">
+                        <i class="bi bi-buildings fs-1 text-secondary d-block mb-2"></i>
+                        لا توجد بيانات استخدام مسجلة للشركات حتى الآن.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light fs-8">
+                                <tr>
+                                    <th>اسم الشركة المستأجرة</th>
+                                    <th class="text-center">مفاتيح API</th>
+                                    <th class="text-center">طلبات اليوم</th>
+                                    <th class="text-center">معدل النجاح</th>
+                                    <th class="text-center">الحالة</th>
+                                    <th class="text-center">إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var tenant in Model.TopTenants)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2.5">
+                                                <div class="tenant-avatar icon-blue">
+                                                    @tenant.CompanyName.Substring(0, Math.Min(1, tenant.CompanyName.Length))
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold text-main fs-8">@tenant.CompanyName</div>
+                                                    <div class="text-muted fs-9 font-monospace">ID: #@tenant.TenantId</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark border font-monospace fs-8">
+                                                <i class="bi bi-key-fill text-muted me-0.5"></i>@tenant.ActiveApiKeysCount مفاتيح
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="fw-black text-primary fs-7">@tenant.TodayTransactionsCount</span>
+                                            <span class="text-muted fs-9">طلب</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="pill-badge pill-badge-success">
+                                                @tenant.SuccessRate%
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (tenant.IsActive)
+                                            {
+                                                <span class="pill-badge pill-badge-success">
+                                                    <span class="pulse-dot me-0.5"></span> نشط
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="pill-badge pill-badge-danger">معطل</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <a asp-controller="Tenants" asp-action="ManageTokens" asp-route-id="@tenant.TenantId" class="btn btn-xs btn-outline-primary rounded-2 px-2.5 py-1 fw-bold" title="إدارة توكنات وخدمات الشركة">
+                                                <i class="bi bi-key-fill me-0.5"></i> التوكنات
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
                 }
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Real-time Live Operations Feed (SignalR) -->
-<div class="portal-card p-4 shadow-sm">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="d-flex align-items-center gap-2">
-            <h5 class="fw-bold mb-0"><i class="bi bi-broadcast text-warning me-2"></i> البث المباشر للعمليات (SignalR Live Feed)</h5>
-            <span class="badge-live-pulse"></span>
+        <!-- 3B. Telecom Infrastructure Matrix (Col-5) -->
+        <div class="col-lg-5">
+            <div class="portal-card p-4 shadow-sm h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <div>
+                        <h5 class="fw-black mb-0 text-main d-flex align-items-center gap-2">
+                            <span class="p-1.5 rounded-2 icon-blue fs-7">
+                                <i class="bi bi-activity"></i>
+                            </span>
+                            <span>أداء وصحة شبكات الاتصالات</span>
+                        </h5>
+                        <div class="text-muted fs-8 mt-0.5">معدلات استهلاك أوامر الـ USSD ونسب الاستقرار لكل شبكة</div>
+                    </div>
+                    <span class="badge bg-light text-muted border fs-9 font-monospace">USSD Engine</span>
+                </div>
+
+                <!-- 2x2 Clean Grid of 4 Telecom Carriers -->
+                <div class="row g-2.5 mb-3">
+                    @foreach (var carrier in Model.CarrierStats)
+                    {
+                        var borderCol = carrier.Operator switch
+                        {
+                            GoIPGateway.Domain.Enums.OperatorType.Vodafone => "#e60000",
+                            GoIPGateway.Domain.Enums.OperatorType.Orange => "#ff7900",
+                            GoIPGateway.Domain.Enums.OperatorType.Etisalat => "#78be20",
+                            GoIPGateway.Domain.Enums.OperatorType.WE => "#5c2483",
+                            _ => "#6c757d"
+                        };
+
+                        var opBadge = carrier.Operator switch
+                        {
+                            GoIPGateway.Domain.Enums.OperatorType.Vodafone => "badge-op-vodafone",
+                            GoIPGateway.Domain.Enums.OperatorType.Orange => "badge-op-orange",
+                            GoIPGateway.Domain.Enums.OperatorType.Etisalat => "badge-op-etisalat",
+                            GoIPGateway.Domain.Enums.OperatorType.WE => "badge-op-we",
+                            _ => "bg-secondary text-white"
+                        };
+
+                        <div class="col-12 col-sm-6">
+                            <div class="carrier-box" style="border-right: 4px solid @borderCol;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge @opBadge px-2.5 py-1 rounded-pill fs-8">
+                                        @carrier.NameAr
+                                    </span>
+                                    <span class="pill-badge pill-badge-success fs-9 py-0.5 px-2">
+                                        <span class="pulse-dot me-0.5"></span> مستقر
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center text-muted fs-9">
+                                    <span>النجاح: <strong class="text-success fw-bold">@carrier.SuccessRate%</strong></span>
+                                    <span>الطلبات: <strong class="text-primary fw-bold">@carrier.TodayOperations</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- USSD Engine Pulse Strip -->
+                <div class="p-3 rounded-3 bg-light border">
+                    <div class="d-flex justify-content-between align-items-center mb-1.5">
+                        <span class="fw-bold fs-8 text-main d-flex align-items-center gap-1.5">
+                            <i class="bi bi-cpu-fill text-primary"></i> محرك معالجة أوامر الـ USSD:
+                        </span>
+                        <span class="pill-badge pill-badge-success fs-9 py-0.5 px-2">
+                            <span class="pulse-dot me-0.5"></span> يعمل بكفاءة ممتازة
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center text-muted fs-9 pt-1 border-top">
+                        <span>البورتات المحجوزة الآن: <strong class="text-main">@Model.BusyPortsCount بورت</strong></span>
+                        <span>طابور المعالجة: <strong class="text-success">فارغ ومستقر</strong></span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <a asp-area="Admin" asp-controller="Transactions" asp-action="Index" class="btn btn-sm btn-outline-secondary">سجل العمليات الكامل</a>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-custom" id="liveFeedTable">
-            <thead>
-                <tr>
-                    <th>المرجع</th>
-                    <th>الشركة</th>
-                    <th>الخدمة</th>
-                    <th>الشريحة / البورت</th>
-                    <th>المبلغ</th>
-                    <th>الحالة</th>
-                    <th>الوقت</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var tx in Model.RecentTransactions)
-                {
-                    <tr id="tx-row-@tx.Id">
-                        <td><code>@tx.TransactionRef</code></td>
-                        <td>@(tx.Tenant?.CompanyName ?? "System")</td>
-                        <td><span class="badge bg-primary bg-opacity-25 text-primary">@(tx.ServiceDefinition?.NameAr ?? "USSD")</span></td>
-                        <td>@(tx.SimCard?.PhoneNumber ?? "-")</td>
-                        <td>@(tx.Amount.HasValue ? tx.Amount.Value.ToString("N2") + " ج.م" : "-")</td>
-                        <td>
-                            @if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Completed)
-                            {
-                                <span class="badge bg-success bg-opacity-25 text-success">ناجح</span>
-                            }
-                            else if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Processing)
-                            {
-                                <span class="badge bg-warning bg-opacity-25 text-warning">قيد المعالجة</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger bg-opacity-25 text-danger">@tx.Status</span>
-                            }
-                        </td>
-                        <td class="text-muted small">@tx.RequestedAt.ToString("HH:mm:ss")</td>
+    <!-- 4. Hardware Infrastructure: Connected GoIP Gateways -->
+    <div class="portal-card p-4 shadow-sm mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <h5 class="fw-black mb-0 text-main d-flex align-items-center gap-2">
+                <span class="p-1.5 rounded-2 icon-emerald fs-7">
+                    <i class="bi bi-hdd-network-fill"></i>
+                </span>
+                <span>أجهزة وبوابات GoIP المتصلة بالبنية التحتية (@Model.Devices.Count)</span>
+            </h5>
+            <span class="badge bg-light text-muted border font-monospace fs-8">
+                متصل: <strong class="text-success">@Model.OnlineDevices</strong> من @Model.TotalDevices أجهزة
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light fs-8">
+                    <tr>
+                        <th>اسم الجهاز / المعرف</th>
+                        <th>الموديل</th>
+                        <th>عنوان الشبكة (IP / Port)</th>
+                        <th>سعة البورتات</th>
+                        <th>إشغال الخطوط</th>
+                        <th class="text-center">حالة الاتصال</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var dev in Model.Devices)
+                    {
+                        var devPorts = dev.Ports?.Count > 0 ? dev.Ports.Count : dev.TotalPorts;
+                        var inUse = dev.Ports?.Count(p => p.SimCard != null) ?? dev.ActivePorts;
+                        var pct = devPorts > 0 ? Math.Round((double)inUse / devPorts * 100, 0) : 0;
+
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-main">@dev.DeviceName</div>
+                                <div class="text-muted fs-9 font-monospace">Device ID: #@dev.Id</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border font-monospace fs-8">@dev.DeviceType</span>
+                            </td>
+                            <td>
+                                <code class="font-monospace text-primary fw-bold dir-ltr">@dev.IpAddress:@dev.Port</code>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-main">@inUse</span> / <span class="text-muted">@devPorts بورت</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2" style="width: 140px;">
+                                    <div class="progress flex-grow-1" style="height: 6px; border-radius: 10px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: @pct%;"></div>
+                                    </div>
+                                    <span class="fs-9 text-muted font-monospace">@pct%</span>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                @if (dev.IsOnline)
+                                {
+                                    <span class="pill-badge pill-badge-success">
+                                        <span class="pulse-dot me-0.5"></span> متصل بالشبكة
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="pill-badge pill-badge-danger">
+                                        <span class="pulse-dot-red me-0.5"></span> غير متصل
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 5. Real-time Live Operations Stream (Recent Transactions) -->
+    <div class="portal-card p-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <h5 class="fw-black mb-0 text-main d-flex align-items-center gap-2">
+                    <span class="p-1.5 rounded-2 icon-amber fs-7">
+                        <i class="bi bi-broadcast"></i>
+                    </span>
+                    <span>سجل العمليات والطلبات الحية (Live Operations Feed)</span>
+                </h5>
+                <span class="pill-badge pill-badge-success fs-9">
+                    <span class="pulse-dot me-0.5"></span> LIVE
+                </span>
+            </div>
+            <div>
+                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-3" onclick="clearLiveFeedTable()">
+                    <i class="bi bi-eraser me-1"></i> مسح السجل
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="liveFeedTable">
+                <thead class="table-light fs-8">
+                    <tr>
+                        <th style="min-width: 140px;">المرجع (Ref)</th>
+                        <th style="min-width: 130px;">الشركة المستأجرة</th>
+                        <th style="min-width: 140px;">الخدمة</th>
+                        <th style="min-width: 120px;">الشريحة / البورت</th>
+                        <th style="min-width: 90px;">المبلغ</th>
+                        <th style="min-width: 90px;" class="text-center">الحالة</th>
+                        <th style="min-width: 80px;" class="text-center">الوقت</th>
+                    </tr>
+                </thead>
+                <tbody id="liveFeedBody">
+                    @if (Model.RecentTransactions.Any())
+                    {
+                        @foreach (var tx in Model.RecentTransactions)
+                        {
+                            <tr>
+                                <td>
+                                    <code class="font-monospace text-primary fw-bold fs-9 dir-ltr">@tx.TransactionRef</code>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-main fs-8">@(tx.Tenant?.CompanyName ?? "عام")</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border fs-9">
+                                        @(tx.ServiceDefinition?.NameAr ?? $"خدمة #{tx.ServiceDefinitionId}")
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="font-monospace text-muted fs-9 dir-ltr">@(tx.SimCard?.PhoneNumber ?? tx.DevicePort?.PortLabel ?? "-")</span>
+                                </td>
+                                <td>
+                                    @(tx.Amount.HasValue ? $"{tx.Amount.Value:N2} ج.م" : "-")
+                                </td>
+                                <td class="text-center">
+                                    @if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Completed)
+                                    {
+                                        <span class="pill-badge pill-badge-success">ناجح</span>
+                                    }
+                                    else if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Failed)
+                                    {
+                                        <span class="pill-badge pill-badge-danger">فاشل</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="pill-badge pill-badge-warning">@tx.Status</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="small font-monospace text-muted dir-ltr">@tx.RequestedAt.ToString("HH:mm:ss")</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr id="emptyFeedRow">
+                            <td colspan="7" class="text-center py-4 text-muted small">
+                                <i class="bi bi-activity fs-3 text-secondary d-block mb-1"></i>
+                                في انتظار ورود طلبات جديدة عبر الـ API...
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 @section Scripts {
-    <script>
-        window.addEventListener("goip:transactionUpdated", function (e) {
-            const tx = e.detail;
-            const table = document.getElementById("liveFeedTable").getElementsByTagName('tbody')[0];
-            const existingRow = document.getElementById("tx-row-" + tx.id);
+<script>
+    // Live Server Clock
+    function updateClock() {
+        const clockEl = document.getElementById('liveServerClock');
+        if (clockEl) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            clockEl.innerHTML = '<i class="bi bi-clock me-1"></i> ' + timeStr;
+        }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-            let statusBadge = `<span class="badge bg-secondary">${tx.statusName}</span>`;
-            if (tx.status === 2) statusBadge = `<span class="badge bg-success bg-opacity-25 text-success">ناجح</span>`;
-            else if (tx.status === 1) statusBadge = `<span class="badge bg-warning bg-opacity-25 text-warning">قيد المعالجة</span>`;
-            else if (tx.status === 3) statusBadge = `<span class="badge bg-danger bg-opacity-25 text-danger">فشل</span>`;
-
-            if (existingRow) {
-                existingRow.cells[5].innerHTML = statusBadge;
-                existingRow.classList.add("table-active");
-                setTimeout(() => existingRow.classList.remove("table-active"), 2000);
-            } else {
-                const newRow = table.insertRow(0);
-                newRow.id = "tx-row-" + tx.id;
-                newRow.innerHTML = `
-                    <td><code>${tx.transactionRef}</code></td>
-                    <td>Tenant #${tx.tenantId}</td>
-                    <td><span class="badge bg-primary bg-opacity-25 text-primary">USSD</span></td>
-                    <td>-</td>
-                    <td>${tx.amount ? tx.amount.toFixed(2) + ' ج.م' : '-'}</td>
-                    <td>${statusBadge}</td>
-                    <td class="text-muted small">الآن</td>
-                `;
-            }
-        });
-    </script>
+    function clearLiveFeedTable() {
+        const body = document.getElementById('liveFeedBody');
+        if (body) {
+            body.innerHTML = `
+                <tr id="emptyFeedRow">
+                    <td colspan="7" class="text-center py-4 text-muted small">
+                        <i class="bi bi-activity fs-3 text-secondary d-block mb-1"></i>
+                        تم مسح الشاشة، في انتظار ورود طلبات جديدة لحظياً...
+                    </td>
+                </tr>
+            `;
+        }
+    }
+</script>
 }

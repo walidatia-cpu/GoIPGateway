@@ -1,7 +1,63 @@
 @model GoIPGateway.Domain.Entities.Device
 @{
-    ViewData["Title"] = $"منافذ الجهاز: {Model.DeviceName}";
+    ViewData["Title"] = $"خريطة ومنافذ الجهاز: {Model.DeviceName}";
+    var totalPorts = Model.TotalPorts;
+    var activePorts = Model.Ports.Count(p => p.SimCard != null && p.SimCard.IsActive && !p.SimCard.IsDelete);
+    var busyPorts = Model.Ports.Count(p => p.IsBusy);
+    var emptyPorts = totalPorts - activePorts;
+    var totalSimBalance = Model.Ports.Where(p => p.SimCard != null).Sum(p => p.SimCard!.CurrentBalance);
+
+    var vfCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == GoIPGateway.Domain.Enums.OperatorType.Vodafone);
+    var orCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == GoIPGateway.Domain.Enums.OperatorType.Orange);
+    var etCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == GoIPGateway.Domain.Enums.OperatorType.Etisalat);
+    var weCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == GoIPGateway.Domain.Enums.OperatorType.WE);
 }
+
+<style>
+    .port-legend-box {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 16px;
+    }
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .legend-chip {
+        width: 16px;
+        height: 16px;
+        border-radius: 5px;
+        display: inline-block;
+    }
+    .legend-chip.active { background: rgba(34, 197, 94, 0.2); border: 1.5px solid #22c55e; }
+    .legend-chip.busy { background: rgba(234, 179, 8, 0.25); border: 1.5px solid #eab308; }
+    .legend-chip.empty { background: var(--port-empty-bg); border: 1.5px solid var(--port-empty-border); }
+    .legend-chip.error { background: rgba(239, 68, 68, 0.2); border: 1.5px solid #ef4444; }
+
+    .pulse-online {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background-color: #22c55e;
+        display: inline-block;
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+        animation: pulse-green 1.8s infinite;
+    }
+    @@keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+
+    .row-highlighted {
+        background-color: rgba(37, 99, 235, 0.12) !important;
+        transition: background-color 0.8s ease;
+    }
+</style>
 
 <div class="container-xl px-0 py-2">
     <!-- Breadcrumb -->
@@ -9,80 +65,272 @@
         <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item"><a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة المتابعة</a></li>
             <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">أجهزة GoIP</a></li>
-            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">منافذ: @Model.DeviceName</li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">خريطة بورتات @Model.DeviceName</li>
         </ol>
     </nav>
 
-    <!-- Header Card -->
-    <div class="portal-card p-4 mb-4 shadow-sm">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-            <div class="d-flex align-items-center gap-3">
-                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-2" style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-grid-3x3-gap-fill"></i>
-                </div>
-                <div>
-                    <h4 class="fw-black mb-1 text-main">@Model.DeviceName</h4>
-                    <div class="text-muted small">
-                        <span class="badge bg-primary bg-opacity-10 text-primary font-monospace">@Model.DeviceType</span>
-                        <span class="ms-2 font-monospace">IP: @Model.IpAddress:@Model.Port</span>
-                        <span class="ms-2">• إجمالي المنافذ: <strong>@Model.TotalPorts</strong></span>
+    <!-- Header & Action Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h3 class="fw-black mb-1 d-flex align-items-center gap-2">
+                <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-router fs-4"></i>
+                </span>
+                <span>@Model.DeviceName</span>
+                @if (Model.IsOnline)
+                {
+                    <span class="pill-badge pill-badge-success fs-8">
+                        <span class="pulse-online"></span>متصل لحظياً
+                    </span>
+                }
+                else
+                {
+                    <span class="pill-badge pill-badge-danger fs-8">
+                        <span class="dot-indicator"></span>غير متصل
+                    </span>
+                }
+            </h3>
+            <p class="text-muted small mb-0">
+                <span class="font-monospace">@Model.DeviceType</span> • 
+                <code class="text-primary font-monospace">@Model.IpAddress:@Model.Port</code> • 
+                سعة الجهاز: <strong>@Model.TotalPorts بورت</strong> • 
+                الشرائح النشطة: <strong class="text-success">@activePorts</strong>
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a asp-area="Company" asp-controller="SimCards" asp-action="Create" class="btn btn-primary px-4 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center gap-2">
+                <i class="bi bi-plus-circle-fill fs-5"></i>
+                <span>تركيب شريحة جديدة</span>
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold d-flex align-items-center gap-1.5">
+                <i class="bi bi-arrow-right"></i>
+                <span>العودة للأجهزة</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 KPI Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-xl-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-bold">سعة المنافذ الكلية</div>
+                        <div class="fs-4 fw-black text-main my-1 font-monospace">@totalPorts</div>
+                        <div class="text-muted fs-8">إجمالي منافذ الجهاز</div>
+                    </div>
+                    <div class="icon-box bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="d-flex align-items-center gap-2">
-                <a asp-area="Company" asp-controller="SimCards" asp-action="Create" class="btn btn-primary px-3 py-2 rounded-3 fw-bold">
-                    <i class="bi bi-plus-circle-fill me-1"></i> تركيب شريحة جديدة
-                </a>
-                <a asp-action="Index" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold">
-                    <i class="bi bi-arrow-right me-1"></i> العودة للأجهزة
-                </a>
+        <div class="col-6 col-xl-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-bold">الشرائح النشطة</div>
+                        <div class="fs-4 fw-black text-success my-1 font-monospace">@activePorts <span class="fs-7 text-muted fw-normal">جاهزة</span></div>
+                        <div class="text-muted fs-8">خطوط مركبة بالبوابات</div>
+                    </div>
+                    <div class="icon-box bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-sim-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-xl-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-bold">إجمالي أرصدة المحافظ</div>
+                        <div class="fs-4 fw-black text-primary font-monospace my-1">@totalSimBalance.ToString("N0") <span class="fs-8 text-muted">ج.م</span></div>
+                        <div class="text-muted fs-8">رصيد كاش متاح بالخطوط</div>
+                    </div>
+                    <div class="icon-box bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-xl-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-bold">المنافذ الشاغرة</div>
+                        <div class="fs-4 fw-black text-warning font-monospace my-1">@emptyPorts</div>
+                        <div class="text-muted fs-8">بورت متاح لتركيب خطوط</div>
+                    </div>
+                    <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-inbox"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Ports Grid / Table Card -->
-    <div class="portal-card p-4 shadow-sm">
-        <h5 class="fw-black mb-3 pb-2 border-bottom text-main">منافذ الجهاز والشرائح المركبة</h5>
+    <!-- Interactive Visual Port Grid (128 / 512 Ports) -->
+    <div class="portal-card p-4 shadow-sm mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+            <div>
+                <h5 class="fw-black mb-1 text-main d-flex align-items-center gap-2">
+                    <i class="bi bi-grid-3x3-gap-fill text-primary"></i>
+                    <span>مصفوفة وخريطة البورتات اللحظية (GoIP Port Matrix)</span>
+                </h5>
+                <span class="text-muted small">اضغط على أي منفذ لعرض كارت الشريحة أو القفز لبياناته في الجدول أدناه</span>
+            </div>
+            <div class="port-legend-box bg-light px-3 py-2 rounded-3 border">
+                <span class="legend-item"><span class="legend-chip active"></span> نشطة (@activePorts)</span>
+                <span class="legend-item"><span class="legend-chip busy"></span> جاري التنفيذ (<span id="busy-count" class="text-warning fw-bold">@busyPorts</span>)</span>
+                <span class="legend-item"><span class="legend-chip empty"></span> شاغر (@emptyPorts)</span>
+            </div>
+        </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light fs-8">
+        <div class="port-grid">
+            @foreach (var port in Model.Ports.OrderBy(p => p.PortNumber))
+            {
+                var cellClass = "empty";
+                if (port.IsBusy) cellClass = "busy";
+                else if (port.SimCard != null && port.SimCard.IsActive && !port.SimCard.IsDelete) cellClass = "active";
+
+                <div class="port-cell @cellClass"
+                     id="port-cell-@port.Id"
+                     data-port-id="@port.Id"
+                     data-port-label="@port.PortLabel"
+                     data-port-num="@port.PortNumber"
+                     data-has-sim="@(port.SimCard != null ? "true" : "false")"
+                     data-sim-id="@(port.SimCard?.Id ?? 0)"
+                     data-sim-phone="@(port.SimCard?.PhoneNumber ?? "لا توجد شريحة")"
+                     data-sim-balance="@(port.SimCard?.CurrentBalance.ToString("N2") ?? "0.00")"
+                     data-operator="@(port.SimCard?.Operator.ToString() ?? "-")"
+                     onclick="handlePortClick(this)"
+                     title="بورت @port.PortLabel: @(port.SimCard?.PhoneNumber ?? "منفذ فارغ")">
+                    <span>@port.PortNumber</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Toolbar: Search & Network Filter Pills -->
+    <div class="portal-card p-3 mb-4 shadow-sm">
+        <div class="row g-3 align-items-center">
+            <div class="col-12 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" id="portSearchInput" class="form-control border-start-0" 
+                           placeholder="ابحث برقم المنفذ (مثل 1 أو L001)، رقم الهاتف، أو الشبكة..." 
+                           onkeyup="filterPortsTable()" />
+                </div>
+            </div>
+
+            <div class="col-12 col-md-7 d-flex align-items-center justify-content-md-between flex-wrap gap-2">
+                <div class="d-flex flex-wrap gap-1.5">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-filter="ALL" onclick="setPortFilter(this, 'ALL')">
+                        الكل (@totalPorts)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="HAS_SIM" onclick="setPortFilter(this, 'HAS_SIM')">
+                        بها خط (@activePorts)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="EMPTY" onclick="setPortFilter(this, 'EMPTY')">
+                        شاغرة (@emptyPorts)
+                    </button>
+                    @if (vfCount > 0)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="Vodafone" onclick="setPortFilter(this, 'Vodafone')">
+                            فودافون (@vfCount)
+                        </button>
+                    }
+                    @if (orCount > 0)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="Orange" onclick="setPortFilter(this, 'Orange')">
+                            أورانج (@orCount)
+                        </button>
+                    }
+                    @if (etCount > 0)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="Etisalat" onclick="setPortFilter(this, 'Etisalat')">
+                            اتصالات (@etCount)
+                        </button>
+                    }
+                    @if (weCount > 0)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="WE" onclick="setPortFilter(this, 'WE')">
+                            WE (@weCount)
+                        </button>
+                    }
+                </div>
+                <div class="text-muted small">
+                    عرض <strong class="text-primary font-monospace" id="visiblePortsCount">@totalPorts</strong> من أصل @totalPorts
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ports Detailed Table Card -->
+    <div class="portal-card shadow-sm table-card-container mb-4">
+        <div class="table-responsive table-responsive-custom">
+            <table class="table table-custom align-middle mb-0" id="portsMasterTable">
+                <thead>
                     <tr>
-                        <th style="width: 60px;" class="text-center">المنفذ</th>
-                        <th>التسمية</th>
-                        <th>حالة المنفذ</th>
-                        <th>الشريحة المركبة</th>
-                        <th>الشبكة</th>
-                        <th>الرصيد الحالي</th>
-                        <th class="text-center">إجراء</th>
+                        <th style="min-width: 90px;" class="text-center">المنفذ</th>
+                        <th style="min-width: 120px;">التسمية</th>
+                        <th style="min-width: 140px;">حالة المنفذ</th>
+                        <th style="min-width: 170px;">الشريحة المركبة</th>
+                        <th style="min-width: 130px;">الشبكة</th>
+                        <th style="min-width: 140px;">الرصيد اللحظي</th>
+                        <th class="text-center" style="min-width: 140px;">الإجراءات السريعة</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="portsTableBody">
                     @foreach (var port in Model.Ports.OrderBy(p => p.PortNumber))
                     {
                         var sim = port.SimCard;
-                        <tr>
+                        var hasSim = sim != null && !sim.IsDelete;
+                        var opKey = sim?.Operator.ToString() ?? "NONE";
+                        var filterStatus = hasSim ? (sim!.IsActive ? "HAS_SIM" : "INACTIVE") : "EMPTY";
+                        var searchKeywords = $"{port.PortNumber} {port.PortLabel} {sim?.PhoneNumber} {sim?.Operator}".ToLower();
+
+                        <tr class="port-row" 
+                            id="port-row-@port.PortNumber"
+                            data-filter="@filterStatus"
+                            data-op="@opKey"
+                            data-search="@searchKeywords">
                             <td class="text-center fw-bold">
-                                <span class="badge bg-secondary bg-opacity-10 text-main border">#@port.PortNumber</span>
+                                <span class="badge bg-light text-primary border font-monospace fs-7">#@port.PortNumber</span>
                             </td>
-                            <td class="font-monospace fw-bold">@port.PortLabel</td>
+                            <td class="font-monospace fw-bold text-main">@port.PortLabel</td>
                             <td>
-                                @if (sim != null)
+                                @if (hasSim && sim!.IsActive)
                                 {
-                                    <span class="badge bg-success bg-opacity-25 text-success">
-                                        <i class="bi bi-sim-fill me-1"></i> به شريحة
+                                    <span class="pill-badge pill-badge-success">
+                                        <span class="dot-indicator"></span>شريحة نشطة
+                                    </span>
+                                }
+                                else if (hasSim)
+                                {
+                                    <span class="pill-badge pill-badge-danger">
+                                        <span class="dot-indicator"></span>معطلة
                                     </span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary bg-opacity-10 text-muted">فارغ</span>
+                                    <span class="pill-badge pill-badge-neutral">
+                                        <span class="dot-indicator"></span>منفذ فارغ
+                                    </span>
                                 }
                             </td>
                             <td>
-                                @if (sim != null)
+                                @if (hasSim)
                                 {
-                                    <span class="fw-bold font-monospace text-primary">@sim.PhoneNumber</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-phone text-primary"></i>
+                                        <span class="fw-bold font-monospace text-main fs-6">@sim!.PhoneNumber</span>
+                                    </div>
                                 }
                                 else
                                 {
@@ -90,36 +338,72 @@
                                 }
                             </td>
                             <td>
-                                @if (sim != null)
+                                @if (hasSim)
                                 {
-                                    <span class="badge bg-primary bg-opacity-10 text-primary">@sim.Operator</span>
+                                    switch (sim!.Operator)
+                                    {
+                                        case GoIPGateway.Domain.Enums.OperatorType.Vodafone:
+                                            <span class="pill-badge pill-badge-danger">
+                                                <span class="dot-indicator"></span>فودافون
+                                            </span>
+                                            break;
+                                        case GoIPGateway.Domain.Enums.OperatorType.Orange:
+                                            <span class="pill-badge pill-badge-warning">
+                                                <span class="dot-indicator"></span>أورانج
+                                            </span>
+                                            break;
+                                        case GoIPGateway.Domain.Enums.OperatorType.Etisalat:
+                                            <span class="pill-badge pill-badge-success">
+                                                <span class="dot-indicator"></span>اتصالات
+                                            </span>
+                                            break;
+                                        default:
+                                            <span class="pill-badge pill-badge-primary">
+                                                <span class="dot-indicator"></span>WE
+                                            </span>
+                                            break;
+                                    }
                                 }
                                 else
                                 {
-                                    <span class="text-muted">-</span>
+                                    <span class="text-muted fs-8">-</span>
                                 }
                             </td>
                             <td>
-                                @if (sim != null)
+                                @if (hasSim)
                                 {
-                                    <span class="fw-bold text-success font-monospace">@sim.CurrentBalance.ToString("N2") ج.م</span>
+                                    <span class="fw-bold text-success font-monospace fs-6">@sim!.CurrentBalance.ToString("N2") <small class="text-muted fs-8">ج.م</small></span>
                                 }
                                 else
                                 {
-                                    <span class="text-muted">-</span>
+                                    <span class="text-muted fs-8">-</span>
                                 }
                             </td>
                             <td class="text-center">
-                                @if (sim != null)
+                                @if (hasSim)
                                 {
-                                    <a asp-area="Company" asp-controller="SimCards" asp-action="Edit" asp-route-id="@sim.Id" class="btn btn-sm btn-outline-primary" title="تعديل الشريحة">
-                                        <i class="bi bi-pencil"></i> تعديل الشريحة
-                                    </a>
+                                    <div class="actions-btn-group justify-content-center">
+                                        <!-- Edit SIM -->
+                                        <a asp-area="Company" asp-controller="SimCards" asp-action="Edit" asp-route-id="@sim!.Id" class="btn-action-icon btn-action-view" title="تعديل بيانات الشريحة والباسورد">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+
+                                        <!-- Execute Manual USSD -->
+                                        <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="btn-action-icon" style="color: #d97706;" title="تنفيذ عملية فورية على الخط">
+                                            <i class="bi bi-lightning-charge"></i>
+                                        </a>
+
+                                        <!-- Quick Info Modal -->
+                                        <button type="button" class="btn-action-icon" onclick="openPortDetailsByRow('@port.PortLabel', '@sim.PhoneNumber', '@sim.Operator', '@sim.CurrentBalance.ToString("N2")', @sim.Id)" title="عرض كارت الشريحة">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <a asp-area="Company" asp-controller="SimCards" asp-action="Create" asp-route-portId="@port.Id" class="btn btn-sm btn-outline-success" title="تركيب شريحة">
-                                        <i class="bi bi-plus-lg"></i> تركيب شريحة
+                                    <a asp-area="Company" asp-controller="SimCards" asp-action="Create" asp-route-portId="@port.Id" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-plus-lg"></i>
+                                        <span>تركيب شريحة</span>
                                     </a>
                                 }
                             </td>
@@ -130,3 +414,174 @@
         </div>
     </div>
 </div>
+
+<!-- Port Quick Actions Modal -->
+<div class="modal fade" id="portModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0 rounded-4 p-2">
+            <div class="modal-header border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-grid-fill fs-5"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold" id="modalPortTitle">تفاصيل البورت</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <div id="modalSimInfo">
+                    <div class="mb-3">
+                        <label class="text-muted small fw-bold">رقم الشريحة (Phone Number)</label>
+                        <h4 id="modalSimPhone" class="fw-black text-primary font-monospace mt-1"></h4>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="text-muted small fw-bold">شركة المحمول</label>
+                            <div id="modalSimOperator" class="fw-bold mt-1"></div>
+                        </div>
+                        <div class="col-6">
+                            <label class="text-muted small fw-bold">الرصيد اللحظي</label>
+                            <h4 id="modalSimBalance" class="fw-black text-success font-monospace mt-1"></h4>
+                        </div>
+                    </div>
+                </div>
+                <div id="modalEmptyInfo" class="text-center py-4 d-none">
+                    <i class="bi bi-sim text-muted opacity-50 fs-1 d-block mb-2"></i>
+                    <h6 class="fw-bold text-main">هذا المنفذ فارغ حالياً</h6>
+                    <p class="text-muted small mb-0">يمكنك تركيب شريحة SIM جديدة في هذا البورت فوراً.</p>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3 rounded-3" data-bs-dismiss="modal">إغلاق</button>
+                <a href="#" id="modalEditSimBtn" class="btn btn-primary btn-sm px-3 fw-bold rounded-3">
+                    <i class="bi bi-pencil-square me-1"></i> تعديل الشريحة
+                </a>
+                <a href="#" id="modalAddSimBtn" class="btn btn-success btn-sm px-3 fw-bold rounded-3 d-none">
+                    <i class="bi bi-plus-circle-fill me-1"></i> تركيب شريحة الآن
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentFilter = 'ALL';
+
+        function setPortFilter(btn, filter) {
+            document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = filter;
+            filterPortsTable();
+        }
+
+        function filterPortsTable() {
+            const query = (document.getElementById('portSearchInput')?.value || '').trim().toLowerCase();
+            const rows = document.querySelectorAll('.port-row');
+            let visible = 0;
+
+            rows.forEach(row => {
+                const rowFilter = row.getAttribute('data-filter');
+                const rowOp = row.getAttribute('data-op');
+                const rowSearch = row.getAttribute('data-search') || '';
+
+                let matchesFilter = false;
+                if (currentFilter === 'ALL') matchesFilter = true;
+                else if (currentFilter === 'HAS_SIM') matchesFilter = (rowFilter === 'HAS_SIM' || rowFilter === 'INACTIVE');
+                else if (currentFilter === 'EMPTY') matchesFilter = (rowFilter === 'EMPTY');
+                else matchesFilter = (rowOp === currentFilter);
+
+                const matchesQuery = !query || rowSearch.includes(query);
+
+                if (matchesFilter && matchesQuery) {
+                    row.style.display = '';
+                    visible++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            const countEl = document.getElementById('visiblePortsCount');
+            if (countEl) countEl.innerText = visible;
+        }
+
+        function handlePortClick(cell) {
+            const portNum = cell.getAttribute('data-port-num');
+            const targetRow = document.getElementById('port-row-' + portNum);
+            if (targetRow) {
+                targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetRow.classList.add('row-highlighted');
+                setTimeout(() => targetRow.classList.remove('row-highlighted'), 2000);
+            }
+            openPortModal(cell);
+        }
+
+        function openPortDetailsByRow(portLabel, phone, op, balance, simId) {
+            document.getElementById('modalPortTitle').innerText = 'تفاصيل بورت: ' + portLabel;
+            document.getElementById('modalSimInfo').classList.remove('d-none');
+            document.getElementById('modalEmptyInfo').classList.add('d-none');
+            document.getElementById('modalEditSimBtn').classList.remove('d-none');
+            document.getElementById('modalAddSimBtn').classList.add('d-none');
+
+            document.getElementById('modalSimPhone').innerText = phone;
+            document.getElementById('modalSimOperator').innerText = op;
+            document.getElementById('modalSimBalance').innerText = balance + ' ج.م';
+            document.getElementById('modalEditSimBtn').href = '/Company/SimCards/Edit/' + simId;
+
+            new bootstrap.Modal(document.getElementById('portModal')).show();
+        }
+
+        function openPortModal(cell) {
+            const portLabel = cell.getAttribute('data-port-label');
+            const portId = cell.getAttribute('data-port-id');
+            const hasSim = cell.getAttribute('data-has-sim') === 'true';
+            const simId = cell.getAttribute('data-sim-id');
+            const simPhone = cell.getAttribute('data-sim-phone');
+            const simOperator = cell.getAttribute('data-operator');
+            const simBalance = cell.getAttribute('data-sim-balance');
+
+            document.getElementById('modalPortTitle').innerText = 'تفاصيل بورت: ' + portLabel;
+
+            const simInfoEl = document.getElementById('modalSimInfo');
+            const emptyInfoEl = document.getElementById('modalEmptyInfo');
+            const editBtn = document.getElementById('modalEditSimBtn');
+            const addBtn = document.getElementById('modalAddSimBtn');
+
+            if (hasSim) {
+                simInfoEl.classList.remove('d-none');
+                emptyInfoEl.classList.add('d-none');
+                editBtn.classList.remove('d-none');
+                addBtn.classList.add('d-none');
+
+                document.getElementById('modalSimPhone').innerText = simPhone;
+                document.getElementById('modalSimOperator').innerText = simOperator;
+                document.getElementById('modalSimBalance').innerText = simBalance + ' ج.م';
+                editBtn.href = '/Company/SimCards/Edit/' + simId;
+            } else {
+                simInfoEl.classList.add('d-none');
+                emptyInfoEl.classList.remove('d-none');
+                editBtn.classList.add('d-none');
+                addBtn.classList.remove('d-none');
+                addBtn.href = '/Company/SimCards/Create?portId=' + portId;
+            }
+
+            new bootstrap.Modal(document.getElementById('portModal')).show();
+        }
+
+        // Live SignalR Realtime Updates for Ports
+        window.addEventListener("goip:portStatusChanged", function (e) {
+            const port = e.detail;
+            const cell = document.getElementById("port-cell-" + port.id);
+            if (cell) {
+                cell.className = "port-cell";
+                if (port.isBusy) {
+                    cell.classList.add("busy");
+                } else if (port.status === 1) {
+                    cell.classList.add("active");
+                } else {
+                    cell.classList.add("empty");
+                }
+            }
+        });
+    </script>
+}

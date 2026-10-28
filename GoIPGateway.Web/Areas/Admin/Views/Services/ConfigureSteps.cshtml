@@ -3,6 +3,24 @@
     ViewData["Title"] = $"خطوات أوامر USSD: {Model.NameAr}";
     var steps = Model.UssdSteps.Where(s => !s.IsDelete).OrderBy(s => s.StepOrder).ToList();
 
+    var opBadge = Model.Operator switch
+    {
+        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "badge-op-vodafone",
+        GoIPGateway.Domain.Enums.OperatorType.Orange => "badge-op-orange",
+        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "badge-op-etisalat",
+        GoIPGateway.Domain.Enums.OperatorType.WE => "badge-op-we",
+        _ => "bg-secondary text-white"
+    };
+
+    var opArabic = Model.Operator switch
+    {
+        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "فودافون كاش",
+        GoIPGateway.Domain.Enums.OperatorType.Orange => "أورانج كاش",
+        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "اتصالات كاش",
+        GoIPGateway.Domain.Enums.OperatorType.WE => "وي باي WE",
+        _ => "عامة"
+    };
+
     string FormatUssdDisplay(string cmd)
     {
         if (string.IsNullOrEmpty(cmd)) return "";
@@ -17,56 +35,105 @@
 }
 
 <style>
-    .step-num-badge {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
+    /* Step Number Badge */
+    .step-order-pill {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         font-weight: 800;
-        font-size: 0.95rem;
-        background: #2563eb;
+        font-size: 1rem;
+        background: linear-gradient(135deg, var(--primary-accent, #2563eb), #1d4ed8);
         color: #ffffff;
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
     }
 
-    .ussd-code-cell {
+    /* Modern USSD Code Container (Strict horizontal flow, NO word-break vertical wrap) */
+    .ussd-code-box {
         direction: ltr !important;
         text-align: left !important;
         unicode-bidi: isolate !important;
-        font-family: 'JetBrains Mono', Consolas, monospace !important;
-        font-size: 0.95rem;
+        font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace !important;
+        font-size: 0.92rem;
         font-weight: 700;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.4px;
         background: #0f172a;
         color: #38bdf8;
-        padding: 6px 12px;
-        border-radius: 8px;
-        display: inline-block;
-        max-width: 360px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        padding: 8px 14px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+        white-space: nowrap !important;
+        overflow-x: auto;
+        word-break: normal !important;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
     }
 
-    [data-bs-theme="light"] .ussd-code-cell {
+    [data-bs-theme="light"] .ussd-code-box {
         background: #1e293b;
         color: #38bdf8;
+        border-color: #334155;
     }
 
     .ussd-tag {
         display: inline-flex;
         align-items: center;
-        gap: 2px;
-        padding: 1px 6px;
-        border-radius: 4px;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 6px;
         font-size: 0.8rem;
         font-weight: 700;
+        letter-spacing: 0;
+        white-space: nowrap !important;
     }
-    .tag-pwd { background: rgba(245, 158, 11, 0.25); color: #fbbf24; }
-    .tag-amt { background: rgba(16, 185, 129, 0.25); color: #34d399; }
-    .tag-phone { background: rgba(14, 165, 233, 0.25); color: #38bdf8; }
-    .tag-merchant { background: rgba(168, 85, 247, 0.25); color: #c084fc; }
+    .tag-pwd { background: rgba(245, 158, 11, 0.22); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .tag-amt { background: rgba(16, 185, 129, 0.22); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .tag-phone { background: rgba(14, 165, 233, 0.22); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.35); }
+    .tag-merchant { background: rgba(168, 85, 247, 0.22); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); }
+
+    /* Pill Badges (High Contrast, No Opacity Glitches) */
+    .pill-badge {
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        line-height: 1.2;
+    }
+    .pill-badge-success {
+        background: #ecfdf5 !important;
+        color: #047857 !important;
+        border: 1px solid #a7f3d0 !important;
+    }
+    .pill-badge-danger {
+        background: #fef2f2 !important;
+        color: #b91c1c !important;
+        border: 1px solid #fecaca !important;
+    }
+    .actions-btn-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Action Buttons in Table */
+    .btn-action-step {
+        padding: 5px 10px;
+        font-size: 0.82rem;
+        border-radius: 8px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.15s ease;
+    }
 </style>
 
 <div class="container-xl px-0 py-2">
@@ -84,39 +151,44 @@
     <div class="portal-card p-4 mb-4 shadow-sm">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div class="d-flex align-items-center gap-3">
-                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-2" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
+                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-2" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
                     <i class="bi @(string.IsNullOrEmpty(Model.IconClass) ? "bi-terminal" : Model.IconClass)"></i>
                 </div>
                 <div>
                     <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                         <h4 class="fw-black mb-0 text-main">@Model.NameAr</h4>
-                        <span class="badge bg-light text-dark font-monospace fs-7 px-3 py-1 border shadow-xs fw-bold">
+                        <span class="badge @opBadge px-2.5 py-1 rounded-pill fs-8">
+                            @opArabic
+                        </span>
+                        <code class="font-monospace text-primary fw-bold bg-primary bg-opacity-10 px-2.5 py-1 rounded-2 fs-8 border border-primary border-opacity-25">
                             @Model.ServiceCode
-                        </span>
-                        <span class="badge @(Model.IsActive ? "bg-success" : "bg-danger") px-2 py-1 rounded-pill fs-8">
-                            @(Model.IsActive ? "نشطة" : "معطلة")
-                        </span>
-                    </div>
-                    <div class="d-flex align-items-center gap-3 text-muted small flex-wrap">
-                        @if (Model.Operator.HasValue)
+                        </code>
+                        @if (Model.IsActive)
                         {
-                            <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1">
-                                @Model.Operator.Value
+                            <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2.5 py-1 rounded-pill fs-8">
+                                <i class="bi bi-check-circle-fill me-1"></i>نشطة
                             </span>
                         }
+                        else
+                        {
+                            <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-2.5 py-1 rounded-pill fs-8">
+                                <i class="bi bi-x-circle-fill me-1"></i>معطلة
+                            </span>
+                        }
+                    </div>
+                    <div class="d-flex align-items-center gap-3 text-muted small flex-wrap">
+                        <span><i class="bi bi-tag me-1 text-primary"></i> التصنيف: <strong>@Model.Category</strong></span>
                         <span>•</span>
-                        <span><i class="bi bi-tag me-1"></i> @Model.Category</span>
+                        <span><i class="bi bi-cash me-1 text-success"></i> الرسوم الأساسية: <strong class="text-success">@Model.BaseCost.ToString("N2") ج.م</strong></span>
                         <span>•</span>
-                        <span><i class="bi bi-cash me-1"></i> الرسوم: <strong class="text-primary">@Model.BaseCost.ToString("N2") ج.م</strong></span>
-                        <span>•</span>
-                        <span><i class="bi bi-layers me-1"></i> الخطوات الحالية: <strong class="text-warning">@steps.Count</strong></span>
+                        <span><i class="bi bi-layers me-1 text-primary"></i> إجمالي الخطوات: <strong class="text-primary">@steps.Count</strong></span>
                     </div>
                 </div>
             </div>
 
             <!-- Top Action Buttons -->
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <a asp-action="CreateStep" asp-route-serviceId="@Model.Id" class="btn btn-primary fw-bold px-3 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2">
+                <a asp-action="CreateStep" asp-route-serviceId="@Model.Id" class="btn btn-primary fw-black px-3.5 py-2 rounded-3 shadow-sm d-flex align-items-center gap-2">
                     <i class="bi bi-plus-circle-fill"></i>
                     <span>إضافة خطوة جديدة</span>
                 </a>
@@ -135,25 +207,25 @@
         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
             <h5 class="fw-black mb-0 d-flex align-items-center gap-2 text-main">
                 <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
-                    <i class="bi bi-table fs-5"></i>
+                    <i class="bi bi-list-ol fs-5"></i>
                 </span>
-                <span>جدول خطوات أوامر USSD (@steps.Count خطوات)</span>
+                <span>مسار وخطوات تنفيذ أوامر الـ USSD (@steps.Count خطوات)</span>
             </h5>
-            <a asp-action="CreateStep" asp-route-serviceId="@Model.Id" class="btn btn-sm btn-primary fw-bold px-3">
+            <a asp-action="CreateStep" asp-route-serviceId="@Model.Id" class="btn btn-sm btn-primary fw-bold px-3 rounded-pill">
                 <i class="bi bi-plus-lg me-1"></i> إضافة خطوة
             </a>
         </div>
 
         @if (!steps.Any())
         {
-            <div class="text-center py-5 border rounded-3 border-dashed" style="border-color: var(--card-border) !important;">
+            <div class="text-center py-5 border rounded-4 border-dashed bg-light bg-opacity-50">
                 <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning d-inline-block mb-3">
-                    <i class="bi bi-terminal fs-2"></i>
+                    <i class="bi bi-terminal fs-1"></i>
                 </div>
-                <h5 class="fw-bold text-main mb-2">لا توجد خطوات USSD بعد</h5>
-                <p class="text-muted small mb-3">اضغط على زر إضافة خطوة جديدة لتعريف الخطوات التي ستنفذها الـ Gateway على الشريحة.</p>
+                <h5 class="fw-bold text-main mb-1">لا توجد خطوات USSD معرفة لهذه الخدمة بعد</h5>
+                <p class="text-muted small mb-3">قم بإضافة الخطوات التفاعلية التي سترسلها بوابة الـ Gateway إلى شرائح الـ GoIP بالترتيب.</p>
                 <a asp-action="CreateStep" asp-route-serviceId="@Model.Id" class="btn btn-primary px-4 py-2 rounded-3 fw-bold">
-                    <i class="bi bi-plus-circle-fill me-1"></i> إضافة أول خطوة USSD
+                    <i class="bi bi-plus-circle-fill me-1"></i> إضافة أول خطوة الآن
                 </a>
             </div>
         }
@@ -161,15 +233,15 @@
         {
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                    <thead class="table-light fs-8">
                         <tr>
-                            <th style="width: 50px;" class="text-center">#</th>
-                            <th style="min-width: 140px;">عنوان الخطوة</th>
-                            <th style="min-width: 220px;">أمر الـ USSD</th>
-                            <th style="min-width: 160px;">شروط النجاح</th>
-                            <th style="min-width: 160px;">شروط الفشل</th>
+                            <th style="width: 60px;" class="text-center">#</th>
+                            <th style="min-width: 150px;">عنوان الخطوة</th>
+                            <th style="min-width: 280px;">أمر الـ USSD وقوالب المتغيرات</th>
+                            <th style="min-width: 170px;">شروط النجاح</th>
+                            <th style="min-width: 170px;">شروط الفشل والرد البديل</th>
                             <th style="min-width: 110px;">المهلة / التأخير</th>
-                            <th style="width: 160px;" class="text-center">الإجراءات</th>
+                            <th style="width: 170px;" class="text-center">الإجراءات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -180,77 +252,108 @@
 
                             <tr>
                                 <td class="text-center">
-                                    <span class="step-num-badge">@step.StepOrder</span>
+                                    <span class="step-order-pill">@step.StepOrder</span>
                                 </td>
                                 <td>
                                     <div class="fw-bold text-main">@(string.IsNullOrEmpty(step.StepTitle) ? $"خطوة {step.StepOrder}" : step.StepTitle)</div>
-                                    <small class="text-muted">ID: #@step.Id</small>
+                                    <div class="text-muted fs-9 mt-0.5">
+                                        <span class="badge bg-light text-muted border font-monospace">ID: #@step.Id</span>
+                                    </div>
                                 </td>
                                 <td>
-                                    <div class="ussd-code-cell" dir="ltr" title="@step.UssdCommand">
-                                        @Html.Raw(FormatUssdDisplay(step.UssdCommand))
+                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                        <div class="ussd-code-box" dir="ltr" title="@step.UssdCommand">
+                                            @Html.Raw(FormatUssdDisplay(step.UssdCommand))
+                                        </div>
+                                        <button type="button" class="btn btn-xs btn-outline-secondary p-1 border-0" onclick="navigator.clipboard.writeText('@step.UssdCommand'); alert('تم نسخ أمر الـ USSD');" title="نسخ الأمر">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
                                     </div>
                                 </td>
                                 <td>
                                     @if (successRules.Any())
                                     {
-                                        <div class="d-flex flex-wrap gap-1">
-                                            @foreach (var s in successRules.Take(2))
+                                        <div class="d-flex flex-column gap-1">
+                                            @foreach (var s in successRules)
                                             {
-                                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8">
-                                                    @s.Pattern
-                                                </span>
-                                            }
-                                            @if (successRules.Count > 2)
-                                            {
-                                                <span class="badge bg-secondary bg-opacity-10 text-muted fs-8">+@(successRules.Count - 2)</span>
+                                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                    <span class="pill-badge pill-badge-success">
+                                                        <i class="bi bi-check-lg me-0.5"></i>@s.Pattern
+                                                    </span>
+                                                    @if (!string.IsNullOrWhiteSpace(s.ClientMessage))
+                                                    {
+                                                        <span class="text-muted fs-9" title="الرد للعميل: @s.ClientMessage">
+                                                            ➔ @(s.ClientMessage.Length > 18 ? s.ClientMessage[..18] + "..." : s.ClientMessage)
+                                                        </span>
+                                                    }
+                                                </div>
                                             }
                                         </div>
                                     }
                                     else
                                     {
-                                        <span class="text-muted small">NoNeedToWait (فوري)</span>
+                                        <span class="badge bg-light text-muted border fs-9">
+                                            <i class="bi bi-lightning-charge me-1"></i>NoNeedToWait (فوري)
+                                        </span>
                                     }
                                 </td>
                                 <td>
                                     @if (failureRules.Any())
                                     {
-                                        <div class="d-flex flex-wrap gap-1">
-                                            @foreach (var f in failureRules.Take(2))
+                                        <div class="d-flex flex-column gap-1">
+                                            @foreach (var f in failureRules)
                                             {
-                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fs-8">
-                                                    @f.Pattern
-                                                </span>
-                                            }
-                                            @if (failureRules.Count > 2)
-                                            {
-                                                <span class="badge bg-secondary bg-opacity-10 text-muted fs-8">+@(failureRules.Count - 2)</span>
+                                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                    <span class="pill-badge pill-badge-danger">
+                                                        <i class="bi bi-x-lg me-0.5"></i>@f.Pattern
+                                                    </span>
+                                                    @if (!string.IsNullOrWhiteSpace(f.ClientMessage))
+                                                    {
+                                                        <span class="text-muted fs-9" title="الرد البديل للعميل: @f.ClientMessage">
+                                                            ➔ @(f.ClientMessage.Length > 18 ? f.ClientMessage[..18] + "..." : f.ClientMessage)
+                                                        </span>
+                                                    }
+                                                </div>
                                             }
                                         </div>
                                     }
                                     else
                                     {
-                                        <span class="text-muted small">تلقائي</span>
+                                        <span class="text-muted fs-9">فحص تلقائي</span>
                                     }
                                 </td>
                                 <td>
-                                    <div class="small text-muted">مهلة: <strong>@step.TimeoutSeconds ث</strong></div>
-                                    <div class="small text-muted">تأخير: <strong>@step.DelayAfterMs م.ث</strong></div>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="badge bg-light text-dark border font-monospace fs-9 d-inline-flex align-items-center gap-1">
+                                            <i class="bi bi-stopwatch text-primary"></i> مهلة: @step.TimeoutSeconds ث
+                                        </span>
+                                        <span class="badge bg-light text-muted border font-monospace fs-9 d-inline-flex align-items-center gap-1">
+                                            <i class="bi bi-hourglass-split text-warning"></i> تأخير: @step.DelayAfterMs م.ث
+                                        </span>
+                                    </div>
                                 </td>
                                 <td class="text-center">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a asp-action="StepDetails" asp-route-id="@step.Id" class="btn btn-outline-info" title="عرض تفاصيل الخطوة">
+                                    <div class="actions-btn-group justify-content-center">
+                                        <a asp-action="StepDetails" asp-route-id="@step.Id" class="btn btn-action-step btn-outline-info" title="عرض تفاصيل الخطوة">
                                             <i class="bi bi-eye"></i> عرض
                                         </a>
-                                        <a asp-action="EditStep" asp-route-id="@step.Id" class="btn btn-outline-primary" title="تعديل الخطوة">
-                                            <i class="bi bi-pencil"></i> تعديل
+                                        <a asp-action="EditStep" asp-route-id="@step.Id" class="btn btn-action-step btn-outline-primary" title="تعديل الخطوة">
+                                            <i class="bi bi-pencil-square"></i> تعديل
                                         </a>
-                                        <form asp-action="DeleteStep" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذه الخطوة من المسار؟');">
+                                        <form asp-action="DeleteStep" method="post" class="d-inline"
+                                              data-confirm="true"
+                                              data-confirm-title="حذف خطوة USSD"
+                                              data-confirm-message="هل أنت متأكد من حذف هذه الخطوة من مسار التنفيذ؟"
+                                              data-confirm-detail="خطوة رقم #@step.StepOrder: @(step.StepTitle ?? step.UssdCommand)"
+                                              data-confirm-detail-label="الخطوة:"
+                                              data-confirm-consequence="سيؤدي حذف الخطوة إلى تعديل تسلسل الخطوات البرمجية في محرك الـ Gateway وقد يفشل تنفيذ الخدمة إذا كانت الخطوة إلزامية."
+                                              data-confirm-btn="نعم، حذف الخطوة"
+                                              data-confirm-type="danger">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@step.Id" />
                                             <input type="hidden" name="serviceId" value="@Model.Id" />
-                                            <button type="submit" class="btn btn-outline-danger" title="حذف الخطوة">
-                                                <i class="bi bi-trash"></i>
+                                            <button type="submit" class="btn btn-action-step btn-outline-danger" title="حذف الخطوة">
+                                                <i class="bi bi-trash3-fill"></i>
                                             </button>
                                         </form>
                                     </div>
@@ -265,33 +368,39 @@
 
     <!-- Required API Parameters Card -->
     <div class="portal-card p-4 shadow-sm">
-        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3 pb-2 border-bottom">
             <div>
                 <h5 class="fw-black mb-0 d-flex align-items-center gap-2 text-main">
                     <span class="p-2 rounded-3 bg-info bg-opacity-10 text-info">
                         <i class="bi bi-input-cursor-text fs-5"></i>
                     </span>
-                    <span>بارامترات الـ API المطلوبة للخدمة</span>
+                    <span>بارامترات الـ API المطلوبة للخدمة (@Model.Parameters.Count(p => p.IsActive))</span>
                 </h5>
-                <p class="text-muted small mb-0 mt-1">المتغيرات التي تستقبلها الـ Gateway من الشركة لاستبدالها داخل أوامر الـ USSD (مثل: amount أو merchantCode)</p>
+                <p class="text-muted small mb-0 mt-1">المتغيرات التي تستقبلها الـ Gateway من تطبيق الشركة لاستبدالها داخل أوامر الـ USSD (مثل: amount أو merchantCode)</p>
             </div>
             <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#addParamInline" aria-expanded="false">
-                <i class="bi bi-plus-lg me-1"></i> إضافة بارامتر
+                <i class="bi bi-plus-lg me-1"></i> إضافة بارامتر جديد
             </button>
         </div>
 
         <!-- Inline Add Parameter Form (Collapsible) -->
         <div class="collapse mb-3" id="addParamInline">
-            <div class="p-3 rounded-3 border bg-light border-primary border-opacity-25">
-                <h6 class="fw-bold text-primary mb-2 small"><i class="bi bi-plus-circle me-1"></i> إضافة بارامتر API جديد</h6>
+            <div class="p-3.5 rounded-3 border bg-light bg-opacity-75 border-primary border-opacity-25 shadow-xs">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="fw-bold text-primary mb-0 small d-flex align-items-center gap-1.5">
+                        <i class="bi bi-plus-circle-fill"></i>
+                        <span>إضافة بارامتر API جديد للخدمة</span>
+                    </h6>
+                    <button type="button" class="btn-close fs-9" data-bs-toggle="collapse" data-bs-target="#addParamInline" aria-label="Close"></button>
+                </div>
                 <form asp-action="AddParameter" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="serviceId" value="@Model.Id" />
 
-                    <div class="row g-2">
+                    <div class="row g-2.5 align-items-end">
                         <div class="col-md-3">
                             <label class="form-label small fw-bold mb-1">مفتاح الـ API <span class="text-danger">*</span></label>
-                            <input type="text" name="ParameterKey" class="form-control form-control-sm font-monospace" placeholder="مثال: amount" required />
+                            <input type="text" name="ParameterKey" class="form-control form-control-sm font-monospace" placeholder="مثال: amount أو merchantCode" required />
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small fw-bold mb-1">الاسم بالعربية <span class="text-danger">*</span></label>
@@ -300,20 +409,19 @@
                         <div class="col-md-3">
                             <label class="form-label small fw-bold mb-1">نوع البيانات</label>
                             <select name="DataType" class="form-select form-select-sm">
-                                <option value="0">نص (String)</option>
-                                <option value="1">رقم صحيح (Integer)</option>
-                                <option value="2">مبلغ عشري (Decimal)</option>
-                                <option value="3">منطقي (Boolean)</option>
+                                <option value="1">نص (String)</option>
+                                <option value="2">رقم صحيح (Integer/Number)</option>
+                                <option value="3">مبلغ عشري (Decimal)</option>
                                 <option value="4">رقم هاتف (Phone)</option>
+                                <option value="5">منطقي (Boolean)</option>
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end gap-2">
-                            <div class="form-check form-switch mb-1">
+                        <div class="col-md-3 d-flex align-items-center gap-2">
+                            <div class="form-check form-switch mb-0">
                                 <input type="checkbox" name="IsRequired" value="true" class="form-check-input" role="switch" checked id="isReqParamInline" />
                                 <label class="form-check-label small fw-bold" for="isReqParamInline">إجباري</label>
                             </div>
-                            <button type="submit" class="btn btn-sm btn-primary fw-bold px-3">حفظ</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#addParamInline">إلغاء</button>
+                            <button type="submit" class="btn btn-sm btn-primary fw-bold px-3 ms-auto rounded-2">حفظ البارامتر</button>
                         </div>
                     </div>
                 </form>
@@ -322,52 +430,81 @@
 
         @if (!Model.Parameters.Any())
         {
-            <div class="text-center py-4 border rounded-3 border-dashed" style="border-color: var(--card-border) !important;">
-                <span class="text-muted small d-block mb-2">لا توجد بارامترات مسجلة</span>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#addParamInline">
-                    + إضافة أول بارامتر (مثل amount)
+            <div class="text-center py-4 border rounded-3 border-dashed bg-light bg-opacity-30">
+                <span class="text-muted small d-block mb-2">لا توجد بارامترات مسجلة لهذه الخدمة بعد.</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#addParamInline">
+                    + إضافة أول بارامتر (مثل {amount})
                 </button>
             </div>
         }
         else
         {
             <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light fs-8">
                         <tr>
-                            <th>مفتاح الـ API</th>
-                            <th>الاسم بالعربية</th>
-                            <th>نوع البيانات</th>
-                            <th>إجباري؟</th>
+                            <th style="min-width: 140px;">مفتاح الـ API</th>
+                            <th style="min-width: 160px;">الاسم بالعربية</th>
+                            <th style="min-width: 120px;">نوع البيانات</th>
+                            <th style="min-width: 100px;">الإلزامية</th>
                             <th style="width: 80px;" class="text-center">إجراء</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var p in Model.Parameters.Where(p => p.IsActive).OrderBy(p => p.SortOrder))
                         {
+                            var typeBadge = p.DataType switch
+                            {
+                                GoIPGateway.Domain.Enums.ParameterDataType.String => "bg-primary bg-opacity-10 text-primary border-primary border-opacity-25",
+                                GoIPGateway.Domain.Enums.ParameterDataType.Number => "bg-info bg-opacity-10 text-info border-info border-opacity-25",
+                                GoIPGateway.Domain.Enums.ParameterDataType.Decimal => "bg-success bg-opacity-10 text-success border-success border-opacity-25",
+                                GoIPGateway.Domain.Enums.ParameterDataType.Phone => "bg-purple bg-opacity-10 text-purple border-purple border-opacity-25",
+                                _ => "bg-light text-muted border"
+                            };
+
                             <tr>
                                 <td>
-                                    <span class="font-monospace fw-bold text-primary">{@p.ParameterKey}</span>
+                                    <code class="font-monospace fw-bold text-primary bg-primary bg-opacity-10 px-2.5 py-1 rounded-2 fs-8 border border-primary border-opacity-25">
+                                        {@p.ParameterKey}
+                                    </code>
                                 </td>
-                                <td>@(p.DisplayNameAr ?? p.ParameterName)</td>
-                                <td><span class="badge bg-secondary bg-opacity-10 text-muted">@p.DataType</span></td>
+                                <td>
+                                    <span class="fw-bold text-main">@(p.DisplayNameAr ?? p.ParameterName)</span>
+                                </td>
+                                <td>
+                                    <span class="badge @typeBadge border px-2 py-0.5 rounded-pill fs-8">
+                                        @p.DataType
+                                    </span>
+                                </td>
                                 <td>
                                     @if (p.IsRequired)
                                     {
-                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">إجباري</span>
+                                        <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-2 py-0.5 rounded-pill fs-9 fw-bold">
+                                            <i class="bi bi-asterisk fs-9 me-0.5"></i> إجباري
+                                        </span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-light text-muted border">اختياري</span>
+                                        <span class="badge bg-light text-muted border px-2 py-0.5 rounded-pill fs-9">
+                                            اختياري
+                                        </span>
                                     }
                                 </td>
                                 <td class="text-center">
-                                    <form asp-action="DeleteParameter" method="post" class="d-inline" onsubmit="return confirm('حذف هذا البارامتر؟');">
+                                    <form asp-action="DeleteParameter" method="post" class="d-inline"
+                                          data-confirm="true"
+                                          data-confirm-title="حذف بارامتر الخدمة"
+                                          data-confirm-message="هل أنت متأكد من حذف هذا المتغير/البارامتر؟"
+                                          data-confirm-detail="@p.ParameterKey (@(p.DisplayNameAr ?? p.ParameterName))"
+                                          data-confirm-detail-label="المتغير:"
+                                          data-confirm-consequence="إذا كان هذا المتغير مستخدماً داخل نصوص أو قوالب USSD، فقد تفشل الطلبات القادمة من الـ API."
+                                          data-confirm-btn="نعم، حذف المتغير"
+                                          data-confirm-type="danger">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@p.Id" />
                                         <input type="hidden" name="serviceId" value="@Model.Id" />
-                                        <button type="submit" class="btn btn-sm text-danger p-0 border-0 bg-transparent" title="حذف">
-                                            <i class="bi bi-trash"></i>
+                                        <button type="submit" class="btn btn-xs btn-outline-danger p-1 border-0" title="حذف البارامتر">
+                                            <i class="bi bi-trash3-fill fs-6"></i>
                                         </button>
                                     </form>
                                 </td>

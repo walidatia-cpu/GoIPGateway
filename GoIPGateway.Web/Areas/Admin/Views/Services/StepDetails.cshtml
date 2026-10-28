@@ -14,6 +14,7 @@
         formatted = formatted.Replace("{MobileNumber}", "<span class=\"ussd-tag tag-phone\"><i class=\"bi bi-phone\"></i> {MobileNumber}</span>");
         formatted = formatted.Replace("{PhoneNumber}", "<span class=\"ussd-tag tag-phone\"><i class=\"bi bi-phone\"></i> {PhoneNumber}</span>");
         formatted = formatted.Replace("{MerchantCode}", "<span class=\"ussd-tag tag-merchant\"><i class=\"bi bi-shop\"></i> {MerchantCode}</span>");
+        formatted = System.Text.RegularExpressions.Regex.Replace(formatted, @"\{([A-Za-z0-9_]+)\}", "<span class=\"ussd-tag tag-custom\"><i class=\"bi bi-braces\"></i> {$1}</span>");
         return formatted;
     }
 }

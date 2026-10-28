@@ -1,84 +1,199 @@
 @model GoIPGateway.Domain.Entities.Tenant
 @{
     ViewData["Title"] = "إعدادات الربط البرمجي (API Keys)";
+    var activeKeys = Model.ApiKeys.Count(k => k.IsActive);
+    var totalKeys = Model.ApiKeys.Count;
+    var maxDaily = Model.MaxDailyOperations;
+    var maxMonthly = Model.MaxMonthlyOps;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="fw-bold mb-1"><i class="bi bi-key text-primary me-2"></i> إعدادات الربط البرمجي (API Keys & Integration)</h3>
-        <p class="text-muted small mb-0">بيانات التوثيق لربط نظام شركتكم وموقعكم مع بوابة GoIP Gateway REST API</p>
+<div class="container-xl px-0 py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة المتابعة</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">مفاتيح الربط البرمجي (API Keys)</li>
+        </ol>
+    </nav>
+
+    <!-- Header & Action Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h3 class="fw-black mb-1 d-flex align-items-center gap-2">
+                <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-key-fill fs-4"></i>
+                </span>
+                <span>إعدادات الربط البرمجي ومفاتيح الـ API</span>
+            </h3>
+            <p class="text-muted small mb-0">بيانات التوثيق لربط نظام شركتكم وموقعكم مع بوابة GoIP Gateway REST API</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/swagger" target="_blank" class="btn btn-outline-primary px-3 py-2 rounded-3 fw-bold d-flex align-items-center gap-2 shadow-sm">
+                <i class="bi bi-file-code-fill fs-5"></i>
+                <span>توثيق Swagger التفاعلي</span>
+            </a>
+        </div>
     </div>
-    <a href="/swagger" target="_blank" class="btn btn-outline-info btn-sm">
-        <i class="bi bi-file-code me-1"></i> فتح توثيق Swagger التفاعلي
-    </a>
-</div>
 
-<!-- API Keys Table -->
-<div class="portal-card p-4 mb-4">
-    <h5 class="fw-bold mb-3"><i class="bi bi-shield-lock-fill text-warning me-2"></i> مفاتيح الـ API المعتمدة لحسابكم</h5>
+    <!-- 4 KPI Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-xl-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-bold">مفاتيح الـ API</div>
+                        <div class="fs-4 fw-black text-main my-1 font-monospace">@activeKeys <span class="fs-7 text-muted fw-normal">/ @totalKeys</span></div>
+                        <div class="text-muted fs-8">مفاتيح معتمدة ونشطة</div>
+                    </div>
+                    <div class="icon-box bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-shield-lock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <div class="table-responsive">
-        <table class="table table-custom">
-            <thead>
-                <tr>
-                    <th>اسم المفتاح</th>
-                    <th>مفتاح API (API Key)</th>
-                    <th>المفتاح السري (Secret Key)</th>
-                    <th>حد الطلبات (Rate Limit)</th>
-                    <th>الحالة</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var key in Model.ApiKeys)
-                {
+        <div class="col-6 col-xl-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-bold">الحد اليومي للعمليات</div>
+                        <div class="fs-4 fw-black text-success my-1 font-monospace">@maxDaily.ToString("N0")</div>
+                        <div class="text-muted fs-8">طلب API / اليوم</div>
+                    </div>
+                    <div class="icon-box bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-speedometer2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-xl-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-bold">كوتة العمليات الشهرية</div>
+                        <div class="fs-4 fw-black text-info my-1 font-monospace">@maxMonthly.ToString("N0")</div>
+                        <div class="text-muted fs-8">طلب مسموح شهرياً</div>
+                    </div>
+                    <div class="icon-box bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-xl-3">
+            <div class="card-stat p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-bold">حالة التوثيق الأمني</div>
+                        <div class="fs-4 fw-black text-primary my-1">REST API</div>
+                        <div class="text-muted fs-8">Bearer / Header Auth</div>
+                    </div>
+                    <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Keys Table Card -->
+    <div class="portal-card shadow-sm table-card-container mb-4">
+        <div class="p-3 border-bottom d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock-fill text-primary fs-5"></i>
+            <h5 class="fw-bold mb-0 text-main">مفاتيح الـ API المعتمدة لحسابكم</h5>
+        </div>
+
+        <div class="table-responsive table-responsive-custom">
+            <table class="table table-custom align-middle mb-0">
+                <thead>
                     <tr>
-                        <td class="fw-bold">@key.KeyName</td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <code>@key.ApiKey</code>
-                                <button type="button" class="btn btn-sm btn-link text-primary p-0" onclick="navigator.clipboard.writeText('@key.ApiKey')" title="نسخ"><i class="bi bi-clipboard"></i></button>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <code>@key.SecretKey[..10]...</code>
-                                <button type="button" class="btn btn-sm btn-link text-primary p-0" onclick="navigator.clipboard.writeText('@key.SecretKey')" title="نسخ"><i class="bi bi-clipboard"></i></button>
-                            </div>
-                        </td>
-                        <td>@key.RateLimit طلب / دقيقة</td>
-                        <td>
-                            @if (key.IsActive)
-                            {
-                                <span class="badge bg-success bg-opacity-25 text-success">نشط</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger bg-opacity-25 text-danger">معطل</span>
-                            }
-                        </td>
+                        <th style="min-width: 160px;">اسم المفتاح</th>
+                        <th style="min-width: 220px;">مفتاح API (API Key)</th>
+                        <th style="min-width: 220px;">المفتاح السري (Secret Key)</th>
+                        <th style="min-width: 140px;">حد الطلبات</th>
+                        <th style="min-width: 100px;">الحالة</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var key in Model.ApiKeys)
+                    {
+                        <tr>
+                            <td class="fw-bold text-main">@key.KeyName</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <code class="text-primary font-monospace fw-bold">@key.ApiKey</code>
+                                    <button type="button" class="btn btn-sm btn-action-icon" onclick="copyToClip('@key.ApiKey', this)" title="نسخ المفتاح">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <code class="font-monospace text-muted">@key.SecretKey[..Math.Min(12, key.SecretKey.Length)]••••••••</code>
+                                    <button type="button" class="btn btn-sm btn-action-icon" onclick="copyToClip('@key.SecretKey', this)" title="نسخ المفتاح السري">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="font-monospace fw-bold text-main">@key.RateLimit</span> <small class="text-muted fs-8">طلب / دقيقة</small>
+                            </td>
+                            <td>
+                                @if (key.IsActive)
+                                {
+                                    <span class="pill-badge pill-badge-success">
+                                        <span class="dot-indicator"></span>نشط
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="pill-badge pill-badge-danger">
+                                        <span class="dot-indicator"></span>معطل
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
 
-<!-- Quick Integration Code Sample -->
-<div class="portal-card p-4 shadow-sm">
-    <h5 class="fw-bold mb-3"><i class="bi bi-code-slash text-success me-2"></i> نموذج استدعاء الـ API (cURL Example)</h5>
+    <!-- Quick Integration Code Sample -->
+    <div class="portal-card p-4 shadow-sm mb-4">
+        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-code-slash text-success fs-5"></i>
+            <span>نموذج استدعاء الـ API (cURL Integration Example)</span>
+        </h5>
 
-    <pre class="p-3 rounded-3 small mb-0" style="direction: ltr; text-align: left; background: var(--bg-app); border: 1px solid var(--card-border); color: var(--text-main); font-family: monospace;">
-curl -X POST "http://localhost:5200/api/v1/services/execute" \
+        <pre class="p-3 rounded-3 small mb-0" style="direction: ltr; text-align: left; background: var(--bg-app); border: 1px solid var(--card-border); color: var(--text-main); font-family: 'JetBrains Mono', Consolas, monospace;">
+curl -X POST "http://localhost:7239/api/v1/services/execute" \
      -H "Content-Type: application/json" \
      -H "X-Api-Key: @(Model.ApiKeys.FirstOrDefault()?.ApiKey ?? "YOUR_API_KEY")" \
      -H "X-Secret-Key: @(Model.ApiKeys.FirstOrDefault()?.SecretKey ?? "YOUR_SECRET_KEY")" \
      -d '{
-       "serviceCode": "QR_PAY",
+       "serviceCode": "VF_PAY",
        "externalRef": "ORDER-987654",
        "parameters": {
          "merchantCode": "12345",
          "amount": "500.00"
        }
-     }'
-    </pre>
+     }'</pre>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        function copyToClip(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = 'bi bi-check2 text-success';
+                    setTimeout(() => { icon.className = 'bi bi-clipboard'; }, 2000);
+                }
+            });
+        }
+    </script>
+}

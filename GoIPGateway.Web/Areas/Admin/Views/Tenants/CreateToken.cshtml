@@ -1,0 +1,384 @@
+@model GoIPGateway.Domain.Entities.Tenant
+@{
+    ViewData["Title"] = $"توليد توكن API جديد: {Model.CompanyName}";
+    var services = Model.SubscribedServices.Where(s => s.IsActive).Select(s => s.ServiceDefinition).ToList();
+
+    var opList = new[]
+    {
+        (Op: GoIPGateway.Domain.Enums.OperatorType.Vodafone, Name: "فودافون كاش", Badge: "badge-op-vodafone", BorderColor: "#e60000"),
+        (Op: GoIPGateway.Domain.Enums.OperatorType.Orange, Name: "أورانج كاش", Badge: "badge-op-orange", BorderColor: "#ff7900"),
+        (Op: GoIPGateway.Domain.Enums.OperatorType.Etisalat, Name: "اتصالات كاش", Badge: "badge-op-etisalat", BorderColor: "#78be20"),
+        (Op: GoIPGateway.Domain.Enums.OperatorType.WE, Name: "وي باي (WE)", Badge: "badge-op-we", BorderColor: "#5c2483")
+    };
+}
+
+<style>
+    .service-perm-tile {
+        cursor: pointer;
+        user-select: none;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px 14px;
+        background: #ffffff;
+        transition: all 0.18s ease;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        height: 100%;
+    }
+    .service-perm-tile:hover {
+        border-color: #3b82f6;
+        background: #f8fbff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    }
+    .service-perm-tile.perm-active {
+        border-color: #2563eb;
+        background: #eff6ff;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+    }
+    .service-perm-tile input[type="checkbox"] {
+        cursor: pointer;
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-top: 2px;
+        accent-color: #2563eb;
+    }
+    .btn-preset {
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 5px 12px;
+        border-radius: 20px;
+        transition: all 0.15s ease;
+    }
+    .badge-op-vodafone { background-color: #e60000; color: #fff; }
+    .badge-op-orange { background-color: #ff7900; color: #fff; }
+    .badge-op-etisalat { background-color: #78be20; color: #fff; }
+    .badge-op-we { background-color: #5c2483; color: #fff; }
+</style>
+
+<div class="container-fluid p-0">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 fs-8">
+                    <li class="breadcrumb-item"><a asp-action="Index">الشركات المسجلة</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id">@Model.CompanyName</a></li>
+                    <li class="breadcrumb-item"><a asp-action="ManageTokens" asp-route-id="@Model.Id">مفاتيح الربط والتوكنات</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">توليد توكن جديد</li>
+                </ol>
+            </nav>
+            <h3 class="fw-black text-main d-flex align-items-center gap-2 mb-1">
+                <i class="bi bi-shield-plus text-primary"></i>
+                <span>توليد توكن API جديد وتحديد الصلاحيات</span>
+            </h3>
+            <p class="text-muted small mb-0">
+                إنشاء مفتاح ربط برمجي جديد لشركة <strong class="text-dark">@Model.CompanyName</strong> مع ضبط معدل الاستهلاك والخدمات المصرح باستدعائها فقط.
+            </p>
+        </div>
+
+        <div>
+            <a asp-action="ManageTokens" asp-route-id="@Model.Id" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-arrow-right"></i>
+                <span>العودة للتوكنات</span>
+            </a>
+        </div>
+    </div>
+
+    @if (!services.Any())
+    {
+        <div class="portal-card p-5 text-center shadow-sm">
+            <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning d-inline-block mb-3">
+                <i class="bi bi-exclamation-triangle fs-1"></i>
+            </div>
+            <h5 class="fw-bold text-main mb-2">لم يتم تفعيل أي خدمات لهذه الشركة بعد!</h5>
+            <p class="text-muted mb-4">يجب أولاً تعيين الخدمات المتاحة للشركة وتفعيلها حتى تتمكن من تفويض التوكنات البرمجية بها.</p>
+            <a asp-action="ManageServices" asp-route-id="@Model.Id" class="btn btn-primary rounded-pill px-4 py-2 fw-bold">
+                <i class="bi bi-gear-wide me-1"></i> تعيين الخدمات المتاحة للشركة الآن
+            </a>
+        </div>
+    }
+    else
+    {
+        <form asp-action="CreateToken" method="post" id="createTokenForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="tenantId" value="@Model.Id" />
+
+            <!-- Card 1: Basic Token Metadata -->
+            <div class="portal-card p-4 shadow-sm mb-4 border-0 rounded-4">
+                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                    <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-sliders fs-5"></i>
+                    </span>
+                    <div>
+                        <h5 class="fw-black text-main mb-0">البيانات الأساسية للمفتاح</h5>
+                        <p class="text-muted fs-8 mb-0">حدد غرض الاستخدام، معدل تدفق الطلبات، ومدة صلاحية التوكن.</p>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <!-- Key Name -->
+                    <div class="col-12 col-md-5">
+                        <label class="form-label fw-bold small text-main">اسم التوكن / الغرض <span class="text-danger">*</span></label>
+                        <input type="text" name="keyName" class="form-control form-control-lg fs-7" placeholder="مثال: سيرفر المدفوعات، تطبيق الجوال، أو نظام الكاشير" required />
+                        <div class="form-text fs-9 text-muted">اسم وصفي لتسهيل التعرف على المفتاح في السجلات والتقارير.</div>
+                    </div>
+
+                    <!-- Rate Limit -->
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <label class="form-label fw-bold small text-main">معدل الطلب (طلبات/دقيقة)</label>
+                        <div class="input-group input-group-lg">
+                            <input type="number" name="rateLimit" class="form-control font-monospace fs-7 text-center" value="300" min="10" max="10000" />
+                            <span class="input-group-text bg-light text-muted small fs-8">طلب/د</span>
+                        </div>
+                        <div class="form-text fs-9 text-muted">الحد الأقصى للطلبات الواردة في الدقيقة الواحدة.</div>
+                    </div>
+
+                    <!-- Expiry Days -->
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <label class="form-label fw-bold small text-main">مدة الصلاحية (بالأيام) <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-lg">
+                            <input type="number" name="expiryDays" id="expiryDaysInput" class="form-control font-monospace fs-7 text-center" value="365" min="1" max="3650" required />
+                            <span class="input-group-text bg-light text-muted small fs-8">يوم</span>
+                        </div>
+                        <div class="d-flex gap-1.5 mt-2 flex-wrap">
+                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-0.5 fs-9" onclick="document.getElementById('expiryDaysInput').value = 30;">30 يوم</button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-0.5 fs-9" onclick="document.getElementById('expiryDaysInput').value = 90;">90 يوم</button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-0.5 fs-9" onclick="document.getElementById('expiryDaysInput').value = 180;">180 يوم</button>
+                            <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 fs-9 fw-bold" onclick="document.getElementById('expiryDaysInput').value = 365;">365 يوم (سنة)</button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-0.5 fs-9" onclick="document.getElementById('expiryDaysInput').value = 730;">سنتين</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Scoped Permissions Builder -->
+            <div class="portal-card p-4 shadow-sm mb-4 border-0 rounded-4">
+                <!-- Header & Live Counter -->
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3 pb-3 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="p-2 rounded-3 bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-shield-check fs-5"></i>
+                        </span>
+                        <div>
+                            <h5 class="fw-black text-main mb-0">تحديد صلاحيات الخدمات المصرح بها (Scope)</h5>
+                            <p class="text-muted fs-8 mb-0">حدد الخدمات المسموح لهذا التوكن باستدعائها فقط. أي طلب لخدمة غير محددة سيتم رفضه برمجياً.</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill fs-7 fw-bold d-inline-flex align-items-center gap-1.5">
+                            <i class="bi bi-check2-circle fs-6"></i>
+                            <span>تم تحديد <strong id="totalSelectedCount">@services.Count</strong> من إجمالي @services.Count خدمة</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Presets & Search Filter Toolbar -->
+                <div class="bg-light p-3 rounded-3 border mb-3">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-12 col-lg-7">
+                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                <span class="text-muted fs-8 fw-bold me-1">قوالب سريعة:</span>
+                                <button type="button" class="btn btn-outline-primary btn-preset" onclick="setPreset('ALL')">
+                                    <i class="bi bi-check-all me-1"></i> تحديد كافة الخدمات
+                                </button>
+                                <button type="button" class="btn btn-outline-success btn-preset" onclick="setPreset('Payment')">
+                                    <i class="bi bi-cash-coin me-1"></i> خدمات الدفع فقط
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-preset" onclick="setPreset('Inquiry')">
+                                    <i class="bi bi-search me-1"></i> خدمات الاستعلام فقط
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-preset" onclick="setPreset('NONE')">
+                                    <i class="bi bi-x-circle me-1"></i> إلغاء التحديد
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-5">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="tokenPermSearch" class="form-control border-start-0" placeholder="ابحث باسم الخدمة، كود الخدمة، أو الشبكة..." onkeyup="filterPermCards()" />
+                                <button type="button" class="btn btn-white border border-start-0 text-muted" onclick="document.getElementById('tokenPermSearch').value=''; filterPermCards();" title="مسح">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Operator Filter Tabs -->
+                    <div class="d-flex flex-wrap align-items-center gap-1.5 mt-2.5 pt-2 border-top">
+                        <span class="text-muted fs-8 fw-bold me-1">تصفية الشبكة:</span>
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill op-filter-tab active" data-op="ALL" onclick="filterByOpTab(this, 'ALL')">الكل (@services.Count)</button>
+                        @foreach (var opInfo in opList)
+                        {
+                            var opCount = services.Count(s => s.Operator == opInfo.Op);
+                            if (opCount > 0)
+                            {
+                                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill op-filter-tab" data-op="@opInfo.Op.ToString()" onclick="filterByOpTab(this, '@opInfo.Op.ToString()')">
+                                    <span class="d-inline-block rounded-circle me-1" style="width: 8px; height: 8px; background-color: @opInfo.BorderColor;"></span>
+                                    @opInfo.Name (@opCount)
+                                </button>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <!-- Services Grid -->
+                <div class="row g-3" id="servicesContainer">
+                    @foreach (var srv in services)
+                    {
+                        var opKey = srv.Operator?.ToString() ?? "ALL";
+                        var catKey = srv.Category switch
+                        {
+                            GoIPGateway.Domain.Enums.ServiceCategory.Payment or GoIPGateway.Domain.Enums.ServiceCategory.Transfer => "Payment",
+                            GoIPGateway.Domain.Enums.ServiceCategory.Inquiry => "Inquiry",
+                            _ => "Other"
+                        };
+                        var opName = srv.Operator switch
+                        {
+                            GoIPGateway.Domain.Enums.OperatorType.Vodafone => "فودافون",
+                            GoIPGateway.Domain.Enums.OperatorType.Orange => "أورانج",
+                            GoIPGateway.Domain.Enums.OperatorType.Etisalat => "اتصالات",
+                            GoIPGateway.Domain.Enums.OperatorType.WE => "وي",
+                            _ => "عامة"
+                        };
+                        var opBadge = srv.Operator switch
+                        {
+                            GoIPGateway.Domain.Enums.OperatorType.Vodafone => "badge-op-vodafone",
+                            GoIPGateway.Domain.Enums.OperatorType.Orange => "badge-op-orange",
+                            GoIPGateway.Domain.Enums.OperatorType.Etisalat => "badge-op-etisalat",
+                            GoIPGateway.Domain.Enums.OperatorType.WE => "badge-op-we",
+                            _ => "bg-secondary text-white"
+                        };
+
+                        <div class="col-12 col-md-6 col-lg-4 service-card-item" 
+                             data-op="@opKey" 
+                             data-cat="@catKey" 
+                             data-search="@($"{srv.NameAr} {srv.NameEn} {srv.ServiceCode} {opName}".ToLower())">
+                            <label class="service-perm-tile perm-active d-flex" for="chk_srv_@srv.Id">
+                                <input type="checkbox" name="allowedServiceIds" id="chk_srv_@srv.Id" value="@srv.Id" 
+                                       data-cat="@catKey" data-op="@opKey" checked onchange="onPermCheckChange(this)" />
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <div class="fw-bold text-main fs-8">@srv.NameAr</div>
+                                        <span class="badge @opBadge rounded-pill px-2 py-0.5 fs-9">@opName</span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <code class="text-primary fs-9 font-monospace dir-ltr">@srv.ServiceCode</code>
+                                        <span class="text-muted fs-9">@srv.BaseCost.ToString("N2") ج.م</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    }
+                </div>
+
+                <div id="noPermsFound" class="p-4 text-center text-muted" style="display: none;">
+                    <i class="bi bi-search fs-2 text-secondary d-block mb-1"></i>
+                    لا توجد خدمات تطابق البحث أو التصفية الحالية.
+                </div>
+            </div>
+
+            <!-- Bottom Action Controls -->
+            <div class="d-flex align-items-center justify-content-between bg-white p-4 rounded-4 shadow-sm border">
+                <div>
+                    <a asp-action="ManageTokens" asp-route-id="@Model.Id" class="btn btn-light px-4 py-2.5 rounded-3 fw-bold text-secondary border">
+                        إلغاء والعودة
+                    </a>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary px-5 py-2.5 rounded-3 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-shield-plus fs-5"></i>
+                        <span>توليد وحفظ التوكن</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function updateSelectedCount() {
+            var checked = document.querySelectorAll('input[name="allowedServiceIds"]:checked').length;
+            var counterEl = document.getElementById('totalSelectedCount');
+            if (counterEl) {
+                counterEl.textContent = checked;
+            }
+        }
+
+        function onPermCheckChange(chk) {
+            var tile = chk.closest('.service-perm-tile');
+            if (tile) {
+                if (chk.checked) {
+                    tile.classList.add('perm-active');
+                } else {
+                    tile.classList.remove('perm-active');
+                }
+            }
+            updateSelectedCount();
+        }
+
+        function setPreset(preset) {
+            var checkboxes = document.querySelectorAll('input[name="allowedServiceIds"]');
+            checkboxes.forEach(function(chk) {
+                if (preset === 'ALL') {
+                    chk.checked = true;
+                } else if (preset === 'NONE') {
+                    chk.checked = false;
+                } else if (preset === 'Payment') {
+                    chk.checked = (chk.getAttribute('data-cat') === 'Payment');
+                } else if (preset === 'Inquiry') {
+                    chk.checked = (chk.getAttribute('data-cat') === 'Inquiry');
+                }
+                var tile = chk.closest('.service-perm-tile');
+                if (tile) {
+                    if (chk.checked) tile.classList.add('perm-active');
+                    else tile.classList.remove('perm-active');
+                }
+            });
+            updateSelectedCount();
+        }
+
+        var currentOpFilter = 'ALL';
+
+        function filterByOpTab(btn, op) {
+            currentOpFilter = op;
+            document.querySelectorAll('.op-filter-tab').forEach(function(el) {
+                el.classList.remove('active', 'btn-secondary', 'text-white');
+                el.classList.add('btn-outline-secondary');
+            });
+            btn.classList.add('active', 'btn-secondary', 'text-white');
+            btn.classList.remove('btn-outline-secondary');
+            filterPermCards();
+        }
+
+        function filterPermCards() {
+            var search = (document.getElementById('tokenPermSearch').value || '').trim().toLowerCase();
+            var items = document.querySelectorAll('.service-card-item');
+            var visibleCount = 0;
+
+            items.forEach(function(item) {
+                var itemOp = item.getAttribute('data-op');
+                var itemSearch = item.getAttribute('data-search') || '';
+
+                var opMatch = (currentOpFilter === 'ALL' || itemOp === currentOpFilter);
+                var searchMatch = (!search || itemSearch.indexOf(search) !== -1);
+
+                if (opMatch && searchMatch) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            var noFound = document.getElementById('noPermsFound');
+            if (noFound) {
+                noFound.style.display = (visibleCount === 0) ? 'block' : 'none';
+            }
+        }
+    </script>
+}

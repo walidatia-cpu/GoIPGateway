@@ -1,0 +1,528 @@
+@model GoIPGateway.Domain.Entities.TenantApiKey
+@{
+    var tenant = (GoIPGateway.Domain.Entities.Tenant)ViewBag.Tenant;
+    ViewData["Title"] = $"تفاصيل المفتاح: {Model.KeyName} - {tenant.CompanyName}";
+
+    var allTenantServices = tenant.SubscribedServices
+        .Where(s => s.IsActive)
+        .Select(s => s.ServiceDefinition)
+        .ToList();
+
+    List<GoIPGateway.Domain.Entities.ServiceDefinition> allowedServices = new();
+    bool isCustomScope = !string.IsNullOrEmpty(Model.AllowedServices);
+
+    if (isCustomScope)
+    {
+        try
+        {
+            var intList = System.Text.Json.JsonSerializer.Deserialize<List<int>>(Model.AllowedServices!);
+            if (intList != null && intList.Any())
+            {
+                allowedServices = allTenantServices.Where(s => intList.Contains(s.Id)).ToList();
+            }
+        }
+        catch
+        {
+            try
+            {
+                var strList = System.Text.Json.JsonSerializer.Deserialize<List<string>>(Model.AllowedServices!);
+                if (strList != null && strList.Any())
+                {
+                    allowedServices = allTenantServices.Where(s => strList.Contains(s.ServiceCode)).ToList();
+                }
+            }
+            catch { }
+        }
+    }
+    else
+    {
+        allowedServices = allTenantServices;
+    }
+
+    var remainingDays = Model.ExpiresAt.HasValue
+        ? (int)Math.Ceiling((Model.ExpiresAt.Value - DateTime.UtcNow).TotalDays)
+        : (int?)null;
+
+    var opGroups = allowedServices.GroupBy(s => s.Operator ?? GoIPGateway.Domain.Enums.OperatorType.Vodafone).ToList();
+}
+
+<style>
+    .credential-box {
+        background: #f8fafc;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 14px 18px;
+        position: relative;
+    }
+    .credential-value {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.95rem;
+        word-break: break-all;
+    }
+    .secret-masked {
+        letter-spacing: 3px;
+        user-select: none;
+    }
+    .pill-badge {
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .pill-badge-success { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .pill-badge-danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .pill-badge-warning { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .pill-badge-info { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+    .pill-badge-primary { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .pulse-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        background-color: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-dot-anim 1.8s infinite;
+    }
+    .pulse-dot-red {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        background-color: #ef4444;
+    }
+    @@keyframes pulse-dot-anim {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .badge-op-vodafone { background-color: #e60000; color: #fff; }
+    .badge-op-orange { background-color: #ff7900; color: #fff; }
+    .badge-op-etisalat { background-color: #78be20; color: #fff; }
+    .badge-op-we { background-color: #5c2483; color: #fff; }
+    .code-terminal {
+        background: #0f172a;
+        color: #e2e8f0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.85rem;
+        border-radius: 10px;
+        padding: 16px;
+        position: relative;
+    }
+</style>
+
+<div class="container-fluid p-0">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 fs-8">
+                    <li class="breadcrumb-item"><a asp-action="Index">الشركات المسجلة</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@tenant.Id">@tenant.CompanyName</a></li>
+                    <li class="breadcrumb-item"><a asp-action="ManageTokens" asp-route-id="@tenant.Id">مفاتيح الربط والتوكنات</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">تفاصيل المفتاح</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <h3 class="fw-black text-main d-flex align-items-center gap-2 mb-0">
+                    <i class="bi bi-key-fill text-primary"></i>
+                    <span>@Model.KeyName</span>
+                </h3>
+                @if (Model.IsActive)
+                {
+                    <span class="pill-badge pill-badge-success">
+                        <span class="pulse-dot"></span> نشط ويعمل
+                    </span>
+                }
+                else
+                {
+                    <span class="pill-badge pill-badge-danger">
+                        <span class="pulse-dot-red"></span> معطل مؤقتاً
+                    </span>
+                }
+            </div>
+            <p class="text-muted small mt-1 mb-0">
+                مفتاح API خاص بشركة <strong class="text-dark">@tenant.CompanyName</strong> • أُنشئ في: @Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")
+            </p>
+        </div>
+
+        <!-- Top Actions -->
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            @if (Model.IsActive)
+            {
+                <form asp-action="RevokeToken" method="post" class="d-inline"
+                      data-confirm="true"
+                      data-confirm-title="تعطيل مفتاح الـ API"
+                      data-confirm-message="هل تريد إيقاف هذا المفتاح مؤقتاً؟"
+                      data-confirm-detail="@Model.KeyName"
+                      data-confirm-detail-label="المفتاح:"
+                      data-confirm-consequence="لن يتمكن النظام الخارجي من استدعاء أي عمليات باستخدام هذا التوكن حتى إعادة تفعيله."
+                      data-confirm-btn="نعم، تعطيل المفتاح"
+                      data-confirm-type="warning">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="tenantId" value="@tenant.Id" />
+                    <input type="hidden" name="returnAction" value="TokenDetails" />
+                    <button type="submit" class="btn btn-outline-warning text-dark px-3 py-2 rounded-3 fw-bold d-inline-flex align-items-center gap-1.5">
+                        <i class="bi bi-pause-circle"></i>
+                        <span>تعطيل المفتاح</span>
+                    </button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="ActivateToken" method="post" class="d-inline"
+                      data-confirm="true"
+                      data-confirm-title="تفعيل مفتاح الـ API"
+                      data-confirm-message="هل تريد إعادة تفعيل هذا المفتاح؟"
+                      data-confirm-detail="@Model.KeyName"
+                      data-confirm-detail-label="المفتاح:"
+                      data-confirm-consequence="سيتم استئناف استقبال العمليات البرمجية فوراً."
+                      data-confirm-btn="نعم، تفعيل المفتاح"
+                      data-confirm-type="success">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="tenantId" value="@tenant.Id" />
+                    <input type="hidden" name="returnAction" value="TokenDetails" />
+                    <button type="submit" class="btn btn-outline-success px-3 py-2 rounded-3 fw-bold d-inline-flex align-items-center gap-1.5">
+                        <i class="bi bi-play-circle"></i>
+                        <span>تفعيل المفتاح</span>
+                    </button>
+                </form>
+            }
+
+            <!-- Delete Form -->
+            <form asp-action="DeleteToken" method="post" class="d-inline"
+                  data-confirm="true"
+                  data-confirm-title="حذف مفتاح الـ API نهائياً"
+                  data-confirm-message="هل أنت متأكد من حذف هذا المفتاح نهائياً؟"
+                  data-confirm-detail="@Model.KeyName"
+                  data-confirm-detail-label="المفتاح:"
+                  data-confirm-consequence="هذا الإجراء نهائي ولا يمكن التراجع عنه!"
+                  data-confirm-btn="نعم، حذف المفتاح"
+                  data-confirm-type="danger">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" name="tenantId" value="@tenant.Id" />
+                <button type="submit" class="btn btn-outline-danger px-3 py-2 rounded-3 fw-bold d-inline-flex align-items-center gap-1.5">
+                    <i class="bi bi-trash3"></i>
+                    <span>حذف</span>
+                </button>
+            </form>
+
+            <a asp-action="ManageTokens" asp-route-id="@tenant.Id" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-arrow-right"></i>
+                <span>العودة للتوكنات</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2 fs-6"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-6"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Row 1: Credentials & Metadata -->
+    <div class="row g-4 mb-4">
+        <!-- Security Keys Box -->
+        <div class="col-12 col-lg-7">
+            <div class="portal-card p-4 shadow-sm border-0 rounded-4 h-100">
+                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                    <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-shield-lock fs-5"></i>
+                    </span>
+                    <div>
+                        <h5 class="fw-black text-main mb-0">بيانات التوثيق والأمان (API Credentials)</h5>
+                        <p class="text-muted fs-8 mb-0">المفاتيح البرمجية المستخدمة في ترويسات الطلبات (HTTP Headers).</p>
+                    </div>
+                </div>
+
+                <!-- API Key (Public Key) -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-main small d-flex justify-content-between align-items-center">
+                        <span>المفتاح العام (API Key / Client ID)</span>
+                        <span class="text-muted fs-9">Header: <code>X-Api-Key</code></span>
+                    </label>
+                    <div class="credential-box d-flex align-items-center justify-content-between">
+                        <div class="credential-value text-primary fw-bold dir-ltr" id="apiKeyDisplay">
+                            @Model.ApiKey
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" 
+                                onclick="copyToClipboard('@Model.ApiKey', this)">
+                            <i class="bi bi-clipboard me-1"></i> نسخ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Secret Key (Private Secret) -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-main small d-flex justify-content-between align-items-center">
+                        <span>المفتاح السري (Secret Key)</span>
+                        <span class="text-muted fs-9">Header: <code>X-Api-Secret</code></span>
+                    </label>
+                    <div class="credential-box d-flex align-items-center justify-content-between">
+                        <div class="credential-value text-dark fw-bold dir-ltr" id="secretKeyDisplay">
+                            <span class="secret-masked text-muted">••••••••••••••••••••••••••••••••</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1.5">
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1" id="toggleSecretBtn" onclick="toggleSecretVisibility()">
+                                <i class="bi bi-eye" id="toggleSecretIcon"></i>
+                                <span id="toggleSecretText">إظهار</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold" 
+                                    onclick="copyToClipboard('@Model.SecretKey', this)">
+                                <i class="bi bi-clipboard me-1"></i> نسخ
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-muted fs-9 mt-1.5 d-flex align-items-center gap-1">
+                        <i class="bi bi-info-circle text-info"></i>
+                        <span>المفتاح السري يجب حفظه بأمان في بيئة الخادم (Backend) وعدم مشاركته في الكود الموجه للمتصفح.</span>
+                    </div>
+                </div>
+
+                <!-- Summary Info Row -->
+                <div class="row g-2 pt-2 border-top">
+                    <div class="col-6 col-sm-4">
+                        <div class="p-2.5 rounded-3 bg-light border">
+                            <div class="text-muted fs-9 fw-semibold">معدل الطلب</div>
+                            <div class="fw-bold fs-7 text-main font-monospace">@Model.RateLimit طلب / دقيقة</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-4">
+                        <div class="p-2.5 rounded-3 bg-light border">
+                            <div class="text-muted fs-9 fw-semibold">الصلاحية والانتهاء</div>
+                            <div class="fw-bold fs-7 text-main">
+                                @if (remainingDays.HasValue)
+                                {
+                                    <span class="@(remainingDays.Value <= 30 ? "text-danger" : "text-success")">
+                                        متبقي @remainingDays.Value يوم
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-success">دائم (غير محدد)</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <div class="p-2.5 rounded-3 bg-light border">
+                            <div class="text-muted fs-9 fw-semibold">آخر استخدام</div>
+                            <div class="fw-bold fs-7 text-main font-monospace">
+                                @(Model.LastUsedAt?.ToString("yyyy-MM-dd HH:mm") ?? "لم يُستخدم بعد")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Integration Guide Box -->
+        <div class="col-12 col-lg-5">
+            <div class="portal-card p-4 shadow-sm border-0 rounded-4 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="p-2 rounded-3 bg-dark bg-opacity-10 text-dark">
+                            <i class="bi bi-terminal fs-5"></i>
+                        </span>
+                        <div>
+                            <h5 class="fw-black text-main mb-0">دليل الاستدعاء البرمجي</h5>
+                            <p class="text-muted fs-8 mb-0">نموذج ترويسات HTTP لتنفيذ العمليات عبر بوابة الـ API.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-1" onclick="copyCurlExample(this)">
+                        <i class="bi bi-clipboard me-1"></i> نسخ cURL
+                    </button>
+                </div>
+
+                <div class="code-terminal dir-ltr mb-3" id="curlSnippet">
+curl -X POST "https://gateway.domain.com/api/v1/services/execute" \
+  -H "X-Api-Key: @Model.ApiKey" \
+  -H "X-Api-Secret: @Model.SecretKey" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "serviceCode": "@(allowedServices.FirstOrDefault()?.ServiceCode ?? "VF_PAY")",
+    "parameters": {
+      "amount": "100.00",
+      "phoneNumber": "01000000000"
+    }
+  }'
+                </div>
+
+                <div class="p-3 rounded-3 bg-light border">
+                    <div class="fw-bold fs-8 text-main mb-1">
+                        <i class="bi bi-plug-fill text-primary me-1"></i> نقاط الربط المتاحة (API Endpoints):
+                    </div>
+                    <ul class="list-unstyled mb-0 fs-9 text-muted font-monospace dir-ltr">
+                        <li class="mb-1"><code>POST /api/v1/services/execute</code> - تنفيذ الخدمة عبر GoIP</li>
+                        <li><code>GET  /api/v1/services</code> - استعراض دليل الخدمات المتاحة</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Detailed Scoped Services -->
+    <div class="portal-card p-4 shadow-sm border-0 rounded-4 mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3 pb-3 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <span class="p-2 rounded-3 bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-collection-play fs-5"></i>
+                </span>
+                <div>
+                    <h5 class="fw-black text-main mb-0">الخدمات المصرح بها بالتفصيل (@allowedServices.Count خدمة)</h5>
+                    <p class="text-muted fs-8 mb-0">
+                        @if (!isCustomScope)
+                        {
+                            <span>هذا المفتاح مصرح له باستدعاء <strong>كافة الخدمات المفعلة للشركة</strong> (@allTenantServices.Count خدمة).</span>
+                        }
+                        else
+                        {
+                            <span>صلاحيات مخصصة (Custom Scope): مصرح له باستدعاء <strong>@allowedServices.Count</strong> من إجمالي @allTenantServices.Count خدمة للشركة.</span>
+                        }
+                    </p>
+                </div>
+            </div>
+
+            <div>
+                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fs-8 fw-semibold">
+                    إجمالي المشغلين: @opGroups.Count مشغل
+                </span>
+            </div>
+        </div>
+
+        @if (!allowedServices.Any())
+        {
+            <div class="text-center py-5 text-muted small">
+                <i class="bi bi-exclamation-triangle fs-1 text-warning d-block mb-2"></i>
+                <div class="fw-bold fs-6 text-main mb-1">لا توجد خدمات مصرح بها لهذا التوكن</div>
+                <p class="text-muted">هذا التوكن غير مفوض لتنفيذ أي خدمة حالياً.</p>
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var grp in opGroups)
+                {
+                    var opName = grp.Key switch
+                    {
+                        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "فودافون كاش",
+                        GoIPGateway.Domain.Enums.OperatorType.Orange => "أورانج كاش",
+                        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "اتصالات كاش",
+                        GoIPGateway.Domain.Enums.OperatorType.WE => "وي باي WE",
+                        _ => "خدمات عامة"
+                    };
+                    var opBadge = grp.Key switch
+                    {
+                        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "badge-op-vodafone",
+                        GoIPGateway.Domain.Enums.OperatorType.Orange => "badge-op-orange",
+                        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "badge-op-etisalat",
+                        GoIPGateway.Domain.Enums.OperatorType.WE => "badge-op-we",
+                        _ => "bg-secondary text-white"
+                    };
+
+                    <div class="col-12 col-md-6">
+                        <div class="p-3.5 rounded-4 border bg-light bg-opacity-50 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge @opBadge px-3 py-1 rounded-pill fs-8 fw-bold">@opName</span>
+                                    <span class="text-muted fs-8">(@grp.Count() خدمة)</span>
+                                </div>
+                                <span class="badge bg-white text-success border border-success border-opacity-25 px-2.5 py-1 rounded-pill fs-9 fw-semibold">
+                                    <i class="bi bi-check-circle me-1"></i> مصرح بها
+                                </span>
+                            </div>
+
+                            <div class="d-flex flex-column gap-2">
+                                @foreach (var srv in grp)
+                                {
+                                    var catName = srv.Category switch
+                                    {
+                                        GoIPGateway.Domain.Enums.ServiceCategory.Payment => "دفع تاجر",
+                                        GoIPGateway.Domain.Enums.ServiceCategory.Transfer => "تحويل كاش",
+                                        GoIPGateway.Domain.Enums.ServiceCategory.Inquiry => "استعلام رصيد",
+                                        GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry => "استعلام رقم",
+                                        _ => srv.Category.ToString()
+                                    };
+
+                                    <div class="p-2.5 rounded-3 bg-white border d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <div class="fw-bold text-main fs-8">@srv.NameAr</div>
+                                            <div class="d-flex align-items-center gap-1.5 mt-0.5">
+                                                <code class="text-primary fs-9 font-monospace dir-ltr">@srv.ServiceCode</code>
+                                                <span class="text-muted fs-9">•</span>
+                                                <span class="badge bg-light text-muted border px-1.5 py-0 fs-9">@catName</span>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="fw-bold text-dark fs-8">@srv.BaseCost.ToString("N2") ج.م</div>
+                                            <div class="text-muted fs-9">تكلفة العملية</div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var realSecretKey = '@Html.Raw(Model.SecretKey)';
+        var isSecretVisible = false;
+
+        function toggleSecretVisibility() {
+            var displayEl = document.getElementById('secretKeyDisplay');
+            var iconEl = document.getElementById('toggleSecretIcon');
+            var textEl = document.getElementById('toggleSecretText');
+
+            if (isSecretVisible) {
+                displayEl.innerHTML = '<span class="secret-masked text-muted">••••••••••••••••••••••••••••••••</span>';
+                iconEl.className = 'bi bi-eye';
+                textEl.textContent = 'إظهار';
+                isSecretVisible = false;
+            } else {
+                displayEl.textContent = realSecretKey;
+                iconEl.className = 'bi bi-eye-slash';
+                textEl.textContent = 'إخفاء';
+                isSecretVisible = true;
+            }
+        }
+
+        function copyToClipboard(text, btnElement) {
+            navigator.clipboard.writeText(text).then(function() {
+                var originalHtml = btnElement.innerHTML;
+                btnElement.innerHTML = '<i class="bi bi-check2 text-success me-1"></i> تم النسخ';
+                setTimeout(function() {
+                    btnElement.innerHTML = originalHtml;
+                }, 1800);
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+
+        function copyCurlExample(btnElement) {
+            var snippet = document.getElementById('curlSnippet').innerText;
+            copyToClipboard(snippet, btnElement);
+        }
+    </script>
+}

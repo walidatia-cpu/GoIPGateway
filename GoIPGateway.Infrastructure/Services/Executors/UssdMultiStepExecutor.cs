@@ -241,6 +241,10 @@ public class UssdMultiStepExecutor : IServiceExecutor
                 RawResponse = lastResponse,
                 SimBalanceBefore = transaction.SimBalanceBefore,
                 SimBalanceAfter = transaction.SimBalanceAfter,
+                SimCardId = sim.Id,
+                SimPhoneNumber = sim.PhoneNumber,
+                PortNumber = sim.DevicePort?.PortNumber,
+                Operator = sim.Operator,
                 CompletedAt = transaction.CompletedAt.Value,
                 Logs = logs.Select(l => new TransactionLogDto
                 {

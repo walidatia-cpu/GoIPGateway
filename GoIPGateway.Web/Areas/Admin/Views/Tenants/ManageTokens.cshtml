@@ -1,176 +1,444 @@
 @model GoIPGateway.Domain.Entities.Tenant
 @{
-    ViewData["Title"] = $"إدارة التوكنات ومفاتيح الـ API: {Model.CompanyName}";
+    ViewData["Title"] = $"مفاتيح الـ API والربط: {Model.CompanyName}";
     var services = Model.SubscribedServices.Where(s => s.IsActive).Select(s => s.ServiceDefinition).ToList();
+    var activeCount = Model.ApiKeys.Count(k => k.IsActive);
+    var inactiveCount = Model.ApiKeys.Count(k => !k.IsActive);
 }
 
-<div class="container-xl px-0 py-2">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة التحكم</a></li>
-            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">إدارة الشركات</a></li>
-            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">مفاتيح API: @Model.CompanyName</li>
-        </ol>
-    </nav>
+<style>
+    .kpi-chip {
+        border-radius: 12px;
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.07);
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .kpi-chip-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    .pill-badge {
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        line-height: 1.2;
+    }
+    .pill-badge-success {
+        background: #ecfdf5 !important;
+        color: #047857 !important;
+        border: 1px solid #a7f3d0 !important;
+    }
+    .pill-badge-danger {
+        background: #fef2f2 !important;
+        color: #b91c1c !important;
+        border: 1px solid #fecaca !important;
+    }
+    .pill-badge-warning {
+        background: #fffbeb !important;
+        color: #b45309 !important;
+        border: 1px solid #fde68a !important;
+    }
+    .pill-badge-info {
+        background: #f0f9ff !important;
+        color: #0369a1 !important;
+        border: 1px solid #bae6fd !important;
+    }
+    .pill-badge-primary {
+        background: #eff6ff !important;
+        color: #1d4ed8 !important;
+        border: 1px solid #bfdbfe !important;
+    }
+    .pulse-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        background-color: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-dot-anim 1.8s infinite;
+    }
+    .pulse-dot-red {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        background-color: #ef4444;
+    }
+    @@keyframes pulse-dot-anim {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .token-grid-table th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.82rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding: 12px 14px;
+        white-space: nowrap;
+    }
+    .token-grid-table td {
+        padding: 12px 14px;
+        vertical-align: middle;
+        font-size: 0.85rem;
+    }
+</style>
 
-    <!-- Header Card -->
-    <div class="portal-card p-4 mb-4 shadow-sm">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-            <div class="d-flex align-items-center gap-3">
-                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-2" style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;">
+<div class="container-fluid p-0">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 fs-8">
+                    <li class="breadcrumb-item"><a asp-action="Index">الشركات المسجلة</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id">@Model.CompanyName</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">مفاتيح الربط والتوكنات</li>
+                </ol>
+            </nav>
+            <h3 class="fw-black text-main d-flex align-items-center gap-2 mb-1">
+                <i class="bi bi-shield-lock-fill text-primary"></i>
+                <span>مفاتيح الـ API وتوكنات الربط</span>
+                <span class="badge bg-light text-secondary border fs-8 fw-semibold ms-2">@Model.CompanyName</span>
+            </h3>
+            <p class="text-muted small mb-0">
+                استعراض وإدارة مفاتيح الـ API المصرح بها للشركة، مع تحديد معدلات الطلب وصلاحيات الخدمات لكل توكن.
+            </p>
+        </div>
+
+        <!-- Quick Action Buttons -->
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a asp-action="CreateToken" asp-route-tenantId="@Model.Id" class="btn btn-primary px-3 py-2 rounded-3 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                <i class="bi bi-plus-lg"></i>
+                <span>توليد توكن جديد</span>
+            </a>
+            <a asp-action="ManageServices" asp-route-id="@Model.Id" class="btn btn-outline-info px-3 py-2 rounded-3 fw-bold d-inline-flex align-items-center gap-1.5" title="الخدمات المفعلة للشركة">
+                <i class="bi bi-gear-wide"></i>
+                <span>الخدمات المتاحة للشركة</span>
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-arrow-right"></i>
+                <span>العودة للشركات</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2 fs-6"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-6"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Quick Stats Cards Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="kpi-chip">
+                <div class="kpi-chip-icon bg-primary bg-opacity-10 text-primary">
                     <i class="bi bi-key-fill"></i>
                 </div>
                 <div>
-                    <h4 class="fw-black mb-1 text-main">مفاتيح الـ API وتوكنات الخدمات</h4>
-                    <div class="text-muted small">
-                        الشركة: <strong class="text-primary">@Model.CompanyName</strong> 
-                        <span class="badge bg-light text-dark font-monospace border ms-2">ID: #@Model.Id</span>
-                        <span class="ms-2">• المفاتيح النشطة: <strong class="text-success">@Model.ApiKeys.Count(k => k.IsActive)</strong></span>
-                    </div>
+                    <div class="text-muted fs-8 fw-semibold">إجمالي المفاتيح</div>
+                    <div class="fs-4 fw-black text-main">@Model.ApiKeys.Count</div>
                 </div>
             </div>
-
-            <div class="d-flex align-items-center gap-2">
-                <a href="#createTokenCard" class="btn btn-primary px-3 py-2 rounded-3 fw-bold">
-                    <i class="bi bi-plus-circle-fill me-1"></i> توليد توكن جديد
-                </a>
-                <a asp-action="ManageServices" asp-route-id="@Model.Id" class="btn btn-outline-info px-3 py-2 rounded-3 fw-bold">
-                    <i class="bi bi-gear-wide me-1"></i> الخدمات المتاحة
-                </a>
-                <a asp-action="Index" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-bold">
-                    <i class="bi bi-arrow-right me-1"></i> العودة للشركات
-                </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-chip">
+                <div class="kpi-chip-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <div class="text-muted fs-8 fw-semibold">المفاتيح النشطة</div>
+                    <div class="fs-4 fw-black text-success">@activeCount</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-chip">
+                <div class="kpi-chip-icon bg-secondary bg-opacity-10 text-secondary">
+                    <i class="bi bi-shield-slash"></i>
+                </div>
+                <div>
+                    <div class="text-muted fs-8 fw-semibold">المفاتيح المعطلة</div>
+                    <div class="fs-4 fw-black text-secondary">@inactiveCount</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-chip">
+                <div class="kpi-chip-icon bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-cpu-fill"></i>
+                </div>
+                <div>
+                    <div class="text-muted fs-8 fw-semibold">خدمات الشركة</div>
+                    <div class="fs-4 fw-black text-info">@services.Count</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Active Tokens List Card -->
-    <div class="portal-card p-4 shadow-sm mb-4">
-        <h5 class="fw-black mb-3 pb-2 border-bottom text-main d-flex align-items-center gap-2">
-            <i class="bi bi-shield-lock-fill text-primary"></i>
-            <span>التوكنات ومفاتيح الربط المسجلة للشركة (@Model.ApiKeys.Count)</span>
-        </h5>
+    <!-- Calm & Clean Tokens Grid Card -->
+    <div class="portal-card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+        <div class="d-flex justify-content-between align-items-center p-4 border-bottom bg-white">
+            <div>
+                <h5 class="fw-black text-main mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-list-check text-primary"></i>
+                    <span>قائمة التوكنات المسجلة للشركة (@Model.ApiKeys.Count)</span>
+                </h5>
+                <p class="text-muted fs-8 mb-0">بيانات التوكنات الأساسية وحالتها التشغيلية. اضغط على "عرض التفاصيل" للاطلاع على المفتاح السري وباقي الصلاحيات والربط البرمجي.</p>
+            </div>
+            <div>
+                <a asp-action="CreateToken" asp-route-tenantId="@Model.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                    <i class="bi bi-plus-lg me-1"></i> إضافة توكن
+                </a>
+            </div>
+        </div>
 
         @if (!Model.ApiKeys.Any())
         {
-            <div class="text-center py-4 text-muted small">
-                <i class="bi bi-key fs-2 text-secondary d-block mb-2"></i>
-                لا توجد مفاتيح API مسجلة لهذه الشركة بعد. استخدم النموذج أدناه لتوليد أول توكن.
+            <div class="text-center py-5 text-muted small bg-white">
+                <div class="p-3 rounded-circle bg-light d-inline-block mb-3">
+                    <i class="bi bi-key fs-1 text-secondary"></i>
+                </div>
+                <div class="fw-bold fs-6 mb-1 text-main">لا توجد مفاتيح API مسجلة لهذه الشركة بعد</div>
+                <p class="text-muted mb-3">يمكنك توليد أول مفتاح API برمجياً مع تحديد الصلاحيات ومعدلات الطلب.</p>
+                <a asp-action="CreateToken" asp-route-tenantId="@Model.Id" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i> توليد أول مفتاح ربط الآن
+                </a>
             </div>
         }
         else
         {
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light fs-8">
+            <div class="table-responsive bg-white">
+                <table class="table table-hover align-middle mb-0 token-grid-table">
+                    <thead>
                         <tr>
-                            <th>اسم التوكن / الوصف</th>
-                            <th>المفتاح العام (API Key)</th>
-                            <th>المفتاح السري (Secret Key)</th>
-                            <th>الخدمات المصرح بها للتوكن</th>
-                            <th>معدل الطلب</th>
-                            <th>الحالة</th>
-                            <th class="text-center">إجراء</th>
+                            <th style="width: 22%;">اسم التوكن / الغرض</th>
+                            <th style="width: 23%;">المفتاح العام (API Key)</th>
+                            <th style="width: 17%;">صلاحيات الخدمات (Scope)</th>
+                            <th style="width: 14%;">مدة الصلاحية</th>
+                            <th style="width: 10%;" class="text-center">الحالة</th>
+                            <th style="width: 14%;" class="text-center">الإجراءات</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var key in Model.ApiKeys.OrderByDescending(k => k.CreatedDate))
                         {
-                            List<string> allowedLabels = new();
-                            if (!string.IsNullOrEmpty(key.AllowedServices))
+                            bool isCustomScope = !string.IsNullOrEmpty(key.AllowedServices);
+                            int customCount = 0;
+                            if (isCustomScope)
                             {
                                 try
                                 {
-                                    var intList = System.Text.Json.JsonSerializer.Deserialize<List<int>>(key.AllowedServices);
-                                    if (intList != null && intList.Any())
-                                    {
-                                        allowedLabels = intList.Select(id => services.FirstOrDefault(s => s.Id == id)?.NameAr ?? $"خدمة #{id}").ToList();
-                                    }
+                                    var ids = System.Text.Json.JsonSerializer.Deserialize<List<int>>(key.AllowedServices!);
+                                    customCount = ids?.Count ?? 0;
                                 }
                                 catch
                                 {
                                     try
                                     {
-                                        var strList = System.Text.Json.JsonSerializer.Deserialize<List<string>>(key.AllowedServices);
-                                        if (strList != null && strList.Any())
-                                        {
-                                            allowedLabels = strList.Select(code => services.FirstOrDefault(s => s.ServiceCode == code)?.NameAr ?? code).ToList();
-                                        }
+                                        var codes = System.Text.Json.JsonSerializer.Deserialize<List<string>>(key.AllowedServices!);
+                                        customCount = codes?.Count ?? 0;
                                     }
                                     catch { }
                                 }
                             }
 
+                            var remainingDays = key.ExpiresAt.HasValue
+                                ? (int)Math.Ceiling((key.ExpiresAt.Value - DateTime.UtcNow).TotalDays)
+                                : (int?)null;
+
+                            var maskedKey = key.ApiKey.Length > 16
+                                ? key.ApiKey[..10] + "..." + key.ApiKey[^6..]
+                                : key.ApiKey;
+
                             <tr>
+                                <!-- 1. اسم التوكن وتاريخ الإنشاء -->
                                 <td>
-                                    <div class="fw-bold text-main">@key.KeyName</div>
-                                    <small class="text-muted">أُنشئ: @key.CreatedDate.ToString("yyyy-MM-dd")</small>
+                                    <div class="fw-bold text-main fs-7">@key.KeyName</div>
+                                    <div class="text-muted fs-9 mt-0.5 d-flex align-items-center gap-1">
+                                        <i class="bi bi-calendar3"></i>
+                                        <span>@key.CreatedDate.ToString("yyyy-MM-dd")</span>
+                                        <span class="mx-1">•</span>
+                                        <span class="text-secondary font-monospace">@key.RateLimit طلب/د</span>
+                                    </div>
                                 </td>
+
+                                <!-- 2. المفتاح العام (API Key) -->
                                 <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <code class="font-monospace text-primary fw-bold">@key.ApiKey</code>
-                                        <button type="button" class="btn btn-xs btn-outline-secondary p-1 border-0" onclick="navigator.clipboard.writeText('@key.ApiKey'); alert('تم نسخ الـ API Key');" title="نسخ">
-                                            <i class="bi bi-clipboard"></i>
+                                    <div class="d-inline-flex align-items-center gap-1.5 p-1 px-2 rounded-2 bg-light border">
+                                        <code class="font-monospace text-primary fw-bold fs-8 dir-ltr" title="@key.ApiKey">@maskedKey</code>
+                                        <button type="button" class="btn btn-xs btn-link text-muted p-0 ms-1 copy-btn" 
+                                                onclick="copyToClipboard('@key.ApiKey', this)" title="نسخ المفتاح بالكامل">
+                                            <i class="bi bi-clipboard fs-7"></i>
                                         </button>
                                     </div>
                                 </td>
+
+                                <!-- 3. صلاحيات الخدمات (Scope) -->
                                 <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <code class="font-monospace text-muted fs-8">@(key.SecretKey.Length > 16 ? key.SecretKey[..16] + "..." : key.SecretKey)</code>
-                                        <button type="button" class="btn btn-xs btn-outline-secondary p-1 border-0" onclick="navigator.clipboard.writeText('@key.SecretKey'); alert('تم نسخ الـ Secret Key');" title="نسخ المفتاح السري">
-                                            <i class="bi bi-clipboard"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                                <td>
-                                    @if (!allowedLabels.Any())
+                                    @if (!isCustomScope)
                                     {
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8">
-                                            جميع الخدمات المتاحة للشركة
+                                        <span class="pill-badge pill-badge-primary">
+                                            <i class="bi bi-check2-all me-0.5"></i> كافة الخدمات (@services.Count)
+                                        </span>
+                                    }
+                                    else if (customCount == 0)
+                                    {
+                                        <span class="pill-badge pill-badge-warning">
+                                            <i class="bi bi-exclamation-triangle me-0.5"></i> لا توجد خدمات
                                         </span>
                                     }
                                     else
                                     {
-                                        <div class="d-flex flex-wrap gap-1">
-                                            @foreach (var lbl in allowedLabels)
-                                            {
-                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fs-8">
-                                                    @lbl
-                                                </span>
-                                            }
-                                        </div>
+                                        <span class="pill-badge pill-badge-info">
+                                            <i class="bi bi-shield-check me-0.5"></i> مخصص (@customCount من @services.Count)
+                                        </span>
                                     }
                                 </td>
+
+                                <!-- 4. مدة الصلاحية -->
                                 <td>
-                                    <span class="small font-monospace">@key.RateLimit طلب/د</span>
-                                </td>
-                                <td>
-                                    @if (key.IsActive)
+                                    @if (remainingDays.HasValue)
                                     {
-                                        <span class="badge bg-success bg-opacity-25 text-success">نشط</span>
+                                        if (remainingDays.Value > 30)
+                                        {
+                                            <span class="pill-badge pill-badge-info">
+                                                <i class="bi bi-clock-history me-0.5"></i> متبقي @remainingDays.Value يوم
+                                            </span>
+                                        }
+                                        else if (remainingDays.Value > 0)
+                                        {
+                                            <span class="pill-badge pill-badge-warning">
+                                                <i class="bi bi-exclamation-circle me-0.5"></i> متبقي @remainingDays.Value يوم
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="pill-badge pill-badge-danger">
+                                                <i class="bi bi-x-circle me-0.5"></i> منتهي
+                                            </span>
+                                        }
                                     }
                                     else
                                     {
-                                        <span class="badge bg-danger bg-opacity-25 text-danger">معطل</span>
+                                        <span class="pill-badge pill-badge-success">
+                                            <i class="bi bi-infinity me-0.5"></i> دائم (غير محدد)
+                                        </span>
                                     }
                                 </td>
+
+                                <!-- 5. الحالة -->
                                 <td class="text-center">
                                     @if (key.IsActive)
                                     {
-                                        <form asp-action="RevokeToken" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من تعطيل هذا التوكن؟ لن تتمكن الشركة من استخدامه بعد الآن.');">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@key.Id" />
-                                            <input type="hidden" name="tenantId" value="@Model.Id" />
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="تعطيل التوكن">
-                                                <i class="bi bi-slash-circle"></i> تعطيل
-                                            </button>
-                                        </form>
+                                        <span class="pill-badge pill-badge-success">
+                                            <span class="pulse-dot me-0.5"></span> نشط
+                                        </span>
                                     }
                                     else
                                     {
-                                        <span class="text-muted fs-8">معطل</span>
+                                        <span class="pill-badge pill-badge-danger">
+                                            <span class="pulse-dot-red me-0.5"></span> معطل
+                                        </span>
                                     }
+                                </td>
+
+                                <!-- 6. الإجراءات (عرض التفاصيل هو الإجراء الأساسي) -->
+                                <td class="text-center">
+                                    <div class="d-flex align-items-center justify-content-center gap-1.5">
+                                        <!-- عرض التفاصيل الكاملة (شاشة العرض المنفصلة) -->
+                                        <a asp-action="TokenDetails" asp-route-id="@key.Id" asp-route-tenantId="@Model.Id" 
+                                           class="btn btn-xs btn-outline-primary fw-bold px-2.5 py-1 rounded-2 d-inline-flex align-items-center gap-1" 
+                                           title="عرض باقي البيانات والمفتاح السري وتفاصيل الربط">
+                                            <i class="bi bi-eye-fill"></i>
+                                            <span>عرض</span>
+                                        </a>
+
+                                        @if (key.IsActive)
+                                        {
+                                            <!-- تعطيل مؤقت -->
+                                            <form asp-action="RevokeToken" method="post" class="d-inline"
+                                                  data-confirm="true"
+                                                  data-confirm-title="تعطيل مفتاح الـ API"
+                                                  data-confirm-message="هل تريد إيقاف هذا التوكن مؤقتاً؟"
+                                                  data-confirm-detail="@key.KeyName"
+                                                  data-confirm-detail-label="المفتاح:"
+                                                  data-confirm-consequence="لن تتمكن شركة '@Model.CompanyName' من إرسال طلبات الـ API عبر هذا المفتاح حتى إعادة تفعيله."
+                                                  data-confirm-btn="نعم، تعطيل المفتاح"
+                                                  data-confirm-type="warning">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@key.Id" />
+                                                <input type="hidden" name="tenantId" value="@Model.Id" />
+                                                <button type="submit" class="btn btn-xs btn-outline-warning text-dark p-1 rounded-2" title="تعطيل التوكن مؤقتاً">
+                                                    <i class="bi bi-pause-circle"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <!-- إعادة تفعيل -->
+                                            <form asp-action="ActivateToken" method="post" class="d-inline"
+                                                  data-confirm="true"
+                                                  data-confirm-title="تفعيل مفتاح الـ API"
+                                                  data-confirm-message="هل تريد إعادة تفعيل هذا المفتاح؟"
+                                                  data-confirm-detail="@key.KeyName"
+                                                  data-confirm-detail-label="المفتاح:"
+                                                  data-confirm-consequence="ستتمكن شركة '@Model.CompanyName' من استخدام هذا التوكن فوراً."
+                                                  data-confirm-btn="نعم، تفعيل المفتاح"
+                                                  data-confirm-type="success">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@key.Id" />
+                                                <input type="hidden" name="tenantId" value="@Model.Id" />
+                                                <button type="submit" class="btn btn-xs btn-outline-success p-1 rounded-2" title="إعادة تفعيل التوكن">
+                                                    <i class="bi bi-play-circle"></i>
+                                                </button>
+                                            </form>
+                                        }
+
+                                        <!-- حذف نهائي -->
+                                        <form asp-action="DeleteToken" method="post" class="d-inline"
+                                              data-confirm="true"
+                                              data-confirm-title="حذف مفتاح الـ API نهائياً"
+                                              data-confirm-message="هل أنت متأكد من حذف هذا المفتاح نهائياً؟"
+                                              data-confirm-detail="@key.KeyName"
+                                              data-confirm-detail-label="المفتاح:"
+                                              data-confirm-consequence="سيتم حذف المفتاح نهائياً ورفض أي طلبات قادمة باستخدامه فوراً."
+                                              data-confirm-btn="نعم، حذف المفتاح"
+                                              data-confirm-type="danger">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@key.Id" />
+                                            <input type="hidden" name="tenantId" value="@Model.Id" />
+                                            <button type="submit" class="btn btn-xs btn-outline-danger p-1 rounded-2" title="حذف التوكن نهائياً">
+                                                <i class="bi bi-trash3-fill"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -179,208 +447,23 @@
             </div>
         }
     </div>
-
-    <!-- Create Custom Token Card -->
-    <div id="createTokenCard" class="portal-card p-4 shadow-sm" style="border: 2px solid var(--primary-accent) !important;">
-        <h5 class="fw-black mb-2 text-main d-flex align-items-center gap-2">
-            <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
-                <i class="bi bi-shield-plus fs-5"></i>
-            </span>
-            <span>توليد توكن API جديد وتحديد صلاحيات الخدمات له</span>
-        </h5>
-        <p class="text-muted small mb-3">اختر الخدمات التي ترغب في تفويضها لهذا التوكن حصراً، بحيث لا يمكن للطلب العمل إلا على هذه الخدمات المحددة فقط:</p>
-
-        @if (!services.Any())
-        {
-            <div class="alert alert-warning">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                لم يتم تفعيل أي خدمات لهذه الشركة بعد! يجب أولاً <a asp-action="ManageServices" asp-route-id="@Model.Id" class="fw-bold">تعيين الخدمات المتاحة للشركة</a> حتى تتمكن من تفويض التوكن بها.
-            </div>
-        }
-        else
-        {
-            <form asp-action="CreateToken" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="tenantId" value="@Model.Id" />
-
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold small">اسم التوكن / الغرض <span class="text-danger">*</span></label>
-                        <input type="text" name="keyName" class="form-control form-control-sm" placeholder="مثال: توكن الكاش الرئيسي أو سيرفر التطبيق" required />
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">معدل الطلب (طلبات في الدقيقة)</label>
-                        <input type="number" name="rateLimit" class="form-control form-control-sm" value="300" />
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small">مدة الصلاحية (بالأشهر)</label>
-                        <input type="number" name="expiryMonths" class="form-control form-control-sm" value="12" />
-                    </div>
-
-                    <!-- Services Checkboxes for Token (Grouped & Filterable) -->
-                    <div class="col-12">
-                        <div class="border rounded-3 p-3 bg-white">
-                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2 pb-2 border-bottom">
-                                <div>
-                                    <label class="form-label fw-bold text-primary small d-flex align-items-center gap-2 mb-0">
-                                        <i class="bi bi-shield-check"></i>
-                                        <span>صلاحيات الخدمات المصرح بها لهذا التوكن:</span>
-                                    </label>
-                                    <div class="text-muted fs-8">حدد الخدمات المسموحة فقط لهذا التوكن:</div>
-                                </div>
-                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                    <button type="button" class="btn btn-xs btn-outline-secondary" onclick="toggleAllTokenServices(true)">تحديد المعروض</button>
-                                    <button type="button" class="btn btn-xs btn-outline-secondary" onclick="toggleAllTokenServices(false)">إلغاء التحديد</button>
-                                </div>
-                            </div>
-
-                            <!-- Search for Token Services -->
-                            <div class="row g-2 mb-2">
-                                <div class="col-12">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                                        <input type="text" id="tokenServiceSearchInput" class="form-control border-start-0" placeholder="بحث باسم الخدمة أو الكود..." onkeyup="filterTokenServicesList()" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Network Filter Pills for Token -->
-                            <div class="d-flex flex-wrap align-items-center gap-1.5 mb-2">
-                                <span class="text-muted fs-8 fw-bold me-1">الشبكة:</span>
-                                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill token-op-pill active" data-op="ALL" onclick="filterTokenByOp(this, 'ALL')">كل الشبكات</button>
-                                <button type="button" class="btn btn-xs btn-outline-danger rounded-pill token-op-pill" data-op="Vodafone" onclick="filterTokenByOp(this, 'Vodafone')">🔴 فودافون كاش</button>
-                                <button type="button" class="btn btn-xs btn-outline-warning text-dark rounded-pill token-op-pill" data-op="Orange" onclick="filterTokenByOp(this, 'Orange')">🟠 أورانج كاش</button>
-                                <button type="button" class="btn btn-xs btn-outline-success rounded-pill token-op-pill" data-op="Etisalat" onclick="filterTokenByOp(this, 'Etisalat')">🟢 اتصالات كاش</button>
-                                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill token-op-pill" data-op="WE" onclick="filterTokenByOp(this, 'WE')">🟣 وي باي WE</button>
-                            </div>
-
-                            <!-- Category Filter Pills for Token -->
-                            <div class="d-flex flex-wrap align-items-center gap-1.5 mb-3 pt-1 border-top">
-                                <span class="text-muted fs-8 fw-bold me-1">التصنيف:</span>
-                                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill token-cat-pill active" data-cat="ALL" onclick="filterTokenByCat(this, 'ALL')">كل التصنيفات</button>
-                                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill token-cat-pill" data-cat="Payment" onclick="filterTokenByCat(this, 'Payment')">💳 دفع وتحويل كاش</button>
-                                <button type="button" class="btn btn-xs btn-outline-info rounded-pill token-cat-pill" data-cat="Inquiry" onclick="filterTokenByCat(this, 'Inquiry')">🔍 استعلام رصيد</button>
-                                <button type="button" class="btn btn-xs btn-outline-warning text-dark rounded-pill token-cat-pill" data-cat="NumberInquiry" onclick="filterTokenByCat(this, 'NumberInquiry')">📱 استعلام رقم</button>
-                            </div>
-
-                            <div class="row g-2" id="tokenServicesContainer">
-                                @foreach (var srv in services)
-                                {
-                                    var opStr = srv.Operator?.ToString() ?? "ALL";
-                                    var opArabic = srv.Operator switch
-                                    {
-                                        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "فودافون كاش",
-                                        GoIPGateway.Domain.Enums.OperatorType.Orange => "أورانج كاش",
-                                        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "اتصالات كاش",
-                                        GoIPGateway.Domain.Enums.OperatorType.WE => "وي باي WE",
-                                        _ => "عامة"
-                                    };
-
-                                    var opBadge = srv.Operator switch
-                                    {
-                                        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "badge-op-vodafone",
-                                        GoIPGateway.Domain.Enums.OperatorType.Orange => "badge-op-orange",
-                                        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "badge-op-etisalat",
-                                        GoIPGateway.Domain.Enums.OperatorType.WE => "badge-op-we",
-                                        _ => "bg-secondary"
-                                    };
-
-                                    var catAr = srv.Category switch
-                                    {
-                                        GoIPGateway.Domain.Enums.ServiceCategory.Payment => "دفع كاش",
-                                        GoIPGateway.Domain.Enums.ServiceCategory.Transfer => "تحويل كاش",
-                                        GoIPGateway.Domain.Enums.ServiceCategory.Inquiry => "استعلام رصيد",
-                                        GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry => "استعلام رقم",
-                                        _ => srv.Category.ToString()
-                                    };
-
-                                    var catKey = srv.Category switch
-                                    {
-                                        GoIPGateway.Domain.Enums.ServiceCategory.Payment or GoIPGateway.Domain.Enums.ServiceCategory.Transfer => "Payment",
-                                        GoIPGateway.Domain.Enums.ServiceCategory.Inquiry => "Inquiry",
-                                        GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry => "NumberInquiry",
-                                        _ => "Other"
-                                    };
-
-                                    var searchStr = $"{srv.NameAr} {srv.NameEn} {srv.ServiceCode} {opArabic} {catAr} {opStr}".ToLower();
-
-                                    <div class="col-12 col-md-6 col-lg-4 token-service-item" 
-                                         data-op="@opStr" 
-                                         data-cat="@catKey" 
-                                         data-search="@searchStr">
-                                        <div class="form-check p-2.5 rounded-3 border bg-light h-100 d-flex align-items-center justify-content-between">
-                                            <div class="d-flex align-items-center">
-                                                <input class="form-check-input token-service-chk ms-2" type="checkbox" name="allowedServiceIds" value="@srv.Id" id="tok_srv_@srv.Id" checked />
-                                                <label class="form-check-label fw-bold text-main small cursor-pointer" for="tok_srv_@srv.Id">
-                                                    @srv.NameAr
-                                                </label>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <span class="badge @opBadge px-2 py-0.5 rounded-pill fs-9">@opArabic</span>
-                                                <span class="badge bg-secondary bg-opacity-10 text-muted border fs-9">@catAr</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 text-end pt-2">
-                        <button type="submit" class="btn btn-primary fw-bold px-5 py-2 rounded-3 shadow">
-                            <i class="bi bi-key-fill me-1"></i> توليد التوكن وحفظ الصلاحيات
-                        </button>
-                    </div>
-                </div>
-            </form>
-        }
-    </div>
 </div>
 
 @section Scripts {
-<script>
-    let tokenCurrentOp = 'ALL';
-    let tokenCurrentCat = 'ALL';
-
-    function filterTokenByOp(btn, op) {
-        document.querySelectorAll('.token-op-pill').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        tokenCurrentOp = op;
-        filterTokenServicesList();
-    }
-
-    function filterTokenByCat(btn, cat) {
-        document.querySelectorAll('.token-cat-pill').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        tokenCurrentCat = cat;
-        filterTokenServicesList();
-    }
-
-    function filterTokenServicesList() {
-        const query = (document.getElementById('tokenServiceSearchInput')?.value || '').trim().toLowerCase();
-        document.querySelectorAll('.token-service-item').forEach(item => {
-            const itemOp = item.getAttribute('data-op');
-            const itemCat = item.getAttribute('data-cat');
-            const itemSearch = item.getAttribute('data-search') || '';
-
-            const matchesOp = (tokenCurrentOp === 'ALL' || itemOp === tokenCurrentOp);
-            const matchesCat = (tokenCurrentCat === 'ALL' || itemCat === tokenCurrentCat);
-            const matchesQuery = (!query || itemSearch.includes(query));
-
-            if (matchesOp && matchesCat && matchesQuery) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    }
-
-    function toggleAllTokenServices(select) {
-        document.querySelectorAll('.token-service-item:not([style*="display: none"]) .token-service-chk').forEach(chk => {
-            chk.checked = select;
-        });
-    }
-</script>
+    <script>
+        function copyToClipboard(text, btnElement) {
+            navigator.clipboard.writeText(text).then(function() {
+                var icon = btnElement.querySelector('i');
+                if (icon) {
+                    var originalClass = icon.className;
+                    icon.className = 'bi bi-check2 text-success';
+                    setTimeout(function() {
+                        icon.className = originalClass;
+                    }, 1800);
+                }
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+    </script>
 }

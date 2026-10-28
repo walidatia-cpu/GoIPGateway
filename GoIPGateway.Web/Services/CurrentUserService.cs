@@ -35,17 +35,3 @@ public class CurrentUserService : ICurrentUserService
 
     public string? AllowedServices => User?.FindFirstValue("AllowedServices");
 }
-
-public class TenantProvider : ITenantProvider
-{
-    private int? _currentTenantId;
-
-    public int? GetCurrentTenantId() => _currentTenantId;
-
-    public void SetCurrentTenantId(int tenantId)
-    {
-        _currentTenantId = tenantId;
-    }
-
-    public bool IsMultiTenant => true;
-}

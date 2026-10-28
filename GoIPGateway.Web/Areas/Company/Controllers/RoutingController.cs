@@ -1,8 +1,11 @@
 using GoIPGateway.Application.Common.Interfaces;
+using GoIPGateway.Application.Features.SimCards.Queries;
+using GoIPGateway.Application.Features.Tenants.Commands;
+using GoIPGateway.Application.Features.Tenants.Queries;
 using GoIPGateway.Domain.Entities;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
@@ -10,63 +13,44 @@ namespace GoIPGateway.Web.Areas.Company.Controllers;
 [Authorize(Roles = "TenantAdmin,TenantOperator")]
 public class RoutingController : Controller
 {
-    private readonly IAppDbContext _context;
+    private readonly IMediator _mediator;
     private readonly ICurrentUserService _currentUser;
     private readonly ITenantProvider _tenantProvider;
 
-    public RoutingController(IAppDbContext context, ICurrentUserService currentUser, ITenantProvider tenantProvider)
+    public RoutingController(IMediator mediator, ICurrentUserService currentUser, ITenantProvider tenantProvider)
     {
-        _context = context;
+        _mediator = mediator;
         _currentUser = currentUser;
         _tenantProvider = tenantProvider;
     }
 
-    private async Task<int?> ResolveTenantIdAsync()
+    private async Task<int?> ResolveTenantIdAsync(CancellationToken cancellationToken)
     {
         var tenantId = _tenantProvider.GetCurrentTenantId() ?? _currentUser.TenantId;
         if (tenantId.HasValue) return tenantId.Value;
 
-        var userId = _currentUser.UserId;
-        if (!string.IsNullOrEmpty(userId))
+        var tenantsResult = await _mediator.Send(new GetTenantsListQuery(), cancellationToken);
+        if (tenantsResult.Succeeded && tenantsResult.Data != null)
         {
-            var tu = await _context.TenantUsers.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-            if (tu != null) return tu.TenantId;
+            var firstActive = tenantsResult.Data.FirstOrDefault(t => t.IsActive && !t.IsDelete);
+            return firstActive?.Id;
         }
 
-        var defaultTenant = await _context.Tenants.FirstOrDefaultAsync(t => t.IsActive && !t.IsDelete);
-        return defaultTenant?.Id;
+        return null;
     }
 
-    private async Task<List<int>> GetCompanyDeviceIdsAsync(int tenantId)
+    public async Task<IActionResult> Index(int? serviceId, int? simId, string tab = "byService", CancellationToken cancellationToken = default)
     {
-        return await _context.TenantDevices
-            .Where(td => td.TenantId == tenantId && td.IsActive && !td.Device.IsDelete)
-            .Select(td => td.DeviceId)
-            .ToListAsync();
-    }
-
-    public async Task<IActionResult> Index(int? serviceId, int? simId, string tab = "byService")
-    {
-        var tenantId = await ResolveTenantIdAsync();
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
         if (!tenantId.HasValue) return Forbid();
 
-        // 1. Get Subscribed Services (Only services allowed to this tenant by admin)
-        var tenantServices = await _context.TenantServices
-            .Include(ts => ts.ServiceDefinition)
-            .Where(ts => ts.TenantId == tenantId.Value && ts.IsActive && !ts.ServiceDefinition.IsDelete)
-            .OrderBy(ts => ts.ServiceDefinition.Category)
-            .ThenBy(ts => ts.ServiceDefinition.SortOrder)
-            .ToListAsync();
+        // 1. Get Subscribed Services
+        var servicesResult = await _mediator.Send(new GetTenantServicesQuery(tenantId.Value), cancellationToken);
+        var tenantServices = servicesResult.Succeeded ? servicesResult.Data ?? new List<TenantService>() : new List<TenantService>();
 
         // 2. Get Company SIM Cards
-        var deviceIds = await GetCompanyDeviceIdsAsync(tenantId.Value);
-        var sims = await _context.SimCards
-            .Include(s => s.DevicePort)
-                .ThenInclude(p => p.Device)
-            .Where(s => deviceIds.Contains(s.DevicePort.DeviceId) && s.IsActive && !s.IsDelete)
-            .OrderBy(s => s.DevicePort.Device.DeviceName)
-            .ThenBy(s => s.DevicePort.PortNumber)
-            .ToListAsync();
+        var simsResult = await _mediator.Send(new GetCompanySimCardsQuery(tenantId.Value), cancellationToken);
+        var sims = simsResult.Succeeded ? simsResult.Data ?? new List<SimCard>() : new List<SimCard>();
 
         // Active selection for Tab 1 (By Service)
         var activeServiceId = serviceId ?? tenantServices.FirstOrDefault()?.ServiceDefinitionId;
@@ -98,75 +82,41 @@ public class RoutingController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SaveByService(int serviceDefinitionId, int[]? selectedSimIds)
+    public async Task<IActionResult> SaveByService(int serviceDefinitionId, int[]? selectedSimIds, CancellationToken cancellationToken)
     {
-        var tenantId = await ResolveTenantIdAsync();
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
         if (!tenantId.HasValue) return Forbid();
 
-        var tenantService = await _context.TenantServices
-            .FirstOrDefaultAsync(ts => ts.TenantId == tenantId.Value && ts.ServiceDefinitionId == serviceDefinitionId && ts.IsActive);
-
-        if (tenantService == null)
+        var result = await _mediator.Send(new UpdateRoutingByServiceCommand(tenantId.Value, serviceDefinitionId, selectedSimIds), cancellationToken);
+        if (result.Succeeded)
         {
-            TempData["Error"] = "الخدمة المحددة غير مفعلة لحساب شركتك.";
-            return RedirectToAction(nameof(Index), new { tab = "byService" });
+            TempData["Success"] = "تم بنجاح تحديث الشرائح المعينة لتنفيذ هذه الخدمة.";
+        }
+        else
+        {
+            TempData["Error"] = result.Error?.Message ?? "فشلت عملية حفظ التوجيه.";
         }
 
-        tenantService.AssignedSimCardIds = selectedSimIds?.ToList() ?? new List<int>();
-        await _context.SaveChangesAsync();
-
-        TempData["Success"] = "تم بنجاح تحديث الشرائح المعينة لتنفيذ هذه الخدمة.";
         return RedirectToAction(nameof(Index), new { serviceId = serviceDefinitionId, tab = "byService" });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SaveBySim(int simId, int[]? selectedServiceIds)
+    public async Task<IActionResult> SaveBySim(int simId, int[]? selectedServiceIds, CancellationToken cancellationToken)
     {
-        var tenantId = await ResolveTenantIdAsync();
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
         if (!tenantId.HasValue) return Forbid();
 
-        var deviceIds = await GetCompanyDeviceIdsAsync(tenantId.Value);
-        var sim = await _context.SimCards
-            .Include(s => s.DevicePort)
-            .FirstOrDefaultAsync(s => s.Id == simId && deviceIds.Contains(s.DevicePort.DeviceId) && !s.IsDelete);
-
-        if (sim == null)
+        var result = await _mediator.Send(new UpdateRoutingBySimCommand(tenantId.Value, simId, selectedServiceIds), cancellationToken);
+        if (result.Succeeded)
         {
-            TempData["Error"] = "الشريحة المحددة لا تنتمي لأجهزة شركتك.";
-            return RedirectToAction(nameof(Index), new { tab = "bySim" });
+            TempData["Success"] = "تم بنجاح تحديث وتعيين الخدمات المصرح بتنفيذها على الشريحة.";
+        }
+        else
+        {
+            TempData["Error"] = result.Error?.Message ?? "فشلت عملية حفظ التوجيه.";
         }
 
-        var tenantServices = await _context.TenantServices
-            .Where(ts => ts.TenantId == tenantId.Value && ts.IsActive)
-            .ToListAsync();
-
-        var selectedSet = (selectedServiceIds ?? Array.Empty<int>()).ToHashSet();
-
-        foreach (var ts in tenantServices)
-        {
-            var simIds = ts.AssignedSimCardIds;
-            if (selectedSet.Contains(ts.ServiceDefinitionId))
-            {
-                if (!simIds.Contains(simId))
-                {
-                    simIds.Add(simId);
-                    ts.AssignedSimCardIds = simIds;
-                }
-            }
-            else
-            {
-                if (simIds.Contains(simId))
-                {
-                    simIds.Remove(simId);
-                    ts.AssignedSimCardIds = simIds;
-                }
-            }
-        }
-
-        await _context.SaveChangesAsync();
-
-        TempData["Success"] = $"تم بنجاح تحديث وتعيين الخدمات المصرح بتنفيذها على شريحة '{sim.PhoneNumber}'.";
         return RedirectToAction(nameof(Index), new { simId = simId, tab = "bySim" });
     }
 }

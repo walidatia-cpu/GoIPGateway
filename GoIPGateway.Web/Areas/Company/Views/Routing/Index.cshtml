@@ -361,7 +361,7 @@
                                                         data-sim-id="@sim.Id"
                                                         data-op="@opName"
                                                         data-assigned="@(isChecked ? "true" : "false")"
-                                                        data-search="@sim.PhoneNumber.ToLower() @sim.DevicePort.Device.DeviceName.ToLower() @sim.DevicePort.PortLabel.ToLower() @opName.ToLower()"
+                                                        data-search="@((sim.PhoneNumber ?? "").ToLower()) @((sim.DevicePort?.Device?.DeviceName ?? "").ToLower()) @((sim.DevicePort?.PortLabel ?? "").ToLower()) @opName.ToLower()"
                                                         onclick="toggleSimRowSelection(@sim.Id, event)">
                                                         
                                                         <td class="text-center" onclick="event.stopPropagation();">
@@ -381,8 +381,8 @@
                                                             <span class="badge @opBadge px-2 py-0.5 rounded-pill fs-9">@sim.Operator</span>
                                                         </td>
                                                         <td>
-                                                            <span class="text-muted small">@sim.DevicePort.Device.DeviceName</span>
-                                                            <span class="badge bg-light text-dark border font-monospace fs-9">@sim.DevicePort.PortLabel</span>
+                                                            <span class="text-muted small">@(sim.DevicePort?.Device?.DeviceName ?? "-")</span>
+                                                            <span class="badge bg-light text-dark border font-monospace fs-9">@(sim.DevicePort?.PortLabel ?? "-")</span>
                                                         </td>
                                                         <td>
                                                             <span class="fw-bold text-success font-monospace fs-8">@sim.CurrentBalance.ToString("N2") ج.م</span>
@@ -472,13 +472,13 @@
 
                                     <a asp-action="Index" asp-route-simId="@sim.Id" asp-route-tab="bySim" 
                                        class="list-group-item list-group-item-action p-2.5 rounded-3 border text-decoration-none sim-list-item-left dense-list-item @(isSelected ? "active-item" : "bg-light")"
-                                       data-search="@sim.PhoneNumber.ToLower() @sim.DevicePort.Device.DeviceName.ToLower() @sim.DevicePort.PortLabel.ToLower()">
+                                       data-search="@((sim.PhoneNumber ?? "").ToLower()) @((sim.DevicePort?.Device?.DeviceName ?? "").ToLower()) @((sim.DevicePort?.PortLabel ?? "").ToLower())">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                             <span class="fw-bold font-monospace text-main fs-6">@sim.PhoneNumber</span>
                                             <span class="badge @opBadge px-2 py-0.5 rounded-pill fs-8">@sim.Operator</span>
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center text-muted fs-8">
-                                            <span>@sim.DevicePort.Device.DeviceName (@sim.DevicePort.PortLabel)</span>
+                                            <span>@(sim.DevicePort?.Device?.DeviceName ?? "-") (@(sim.DevicePort?.PortLabel ?? "-"))</span>
                                             <span class="badge @(assignedSrvCount > 0 ? "bg-primary" : "bg-secondary bg-opacity-10 text-muted") fs-8 rounded-pill">
                                                 @assignedSrvCount خدمات
                                             </span>

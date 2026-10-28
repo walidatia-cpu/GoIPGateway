@@ -19,23 +19,154 @@
 }
 
 <style>
-    .filter-pill.active, .filter-cat-pill.active {
-        background-color: var(--primary-accent) !important;
-        color: #fff !important;
-        border-color: var(--primary-accent) !important;
+    /* Premium Telecom Brand Pills (Soft, Eye-Friendly, Non-glaring) */
+    .pill-telecom {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.2px;
     }
-    .category-section-header {
-        background: rgba(13, 110, 253, 0.04);
+    .pill-telecom .dot-indicator {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .pill-op-vodafone {
+        background-color: rgba(225, 29, 72, 0.08) !important;
+        color: #be123c !important;
+        border: 1px solid rgba(225, 29, 72, 0.2) !important;
+    }
+    .pill-op-vodafone .dot-indicator { background-color: #e11d48; }
+
+    .pill-op-orange {
+        background-color: rgba(249, 115, 22, 0.08) !important;
+        color: #c2410c !important;
+        border: 1px solid rgba(249, 115, 22, 0.2) !important;
+    }
+    .pill-op-orange .dot-indicator { background-color: #ea580c; }
+
+    .pill-op-etisalat {
+        background-color: rgba(22, 163, 74, 0.08) !important;
+        color: #15803d !important;
+        border: 1px solid rgba(22, 163, 74, 0.2) !important;
+    }
+    .pill-op-etisalat .dot-indicator { background-color: #16a34a; }
+
+    .pill-op-we {
+        background-color: rgba(147, 51, 234, 0.08) !important;
+        color: #7e22ce !important;
+        border: 1px solid rgba(147, 51, 234, 0.2) !important;
+    }
+    .pill-op-we .dot-indicator { background-color: #9333ea; }
+
+    .pill-op-general {
+        background-color: rgba(100, 116, 139, 0.08) !important;
+        color: #475569 !important;
+        border: 1px solid rgba(100, 116, 139, 0.2) !important;
+    }
+    .pill-op-general .dot-indicator { background-color: #64748b; }
+
+    /* Category Badges */
+    .badge-cat {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+    .badge-cat-payment {
+        background-color: rgba(37, 99, 235, 0.08);
+        color: #1d4ed8;
+        border: 1px solid rgba(37, 99, 235, 0.18);
+    }
+    .badge-cat-inquiry {
+        background-color: rgba(6, 182, 212, 0.08);
+        color: #0e7490;
+        border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+    .badge-cat-number {
+        background-color: rgba(245, 158, 11, 0.08);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    .badge-cat-other {
+        background-color: rgba(100, 116, 139, 0.08);
+        color: #475569;
+        border: 1px solid rgba(100, 116, 139, 0.2);
+    }
+
+    /* Financial Impact Badges */
+    .badge-impact {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .badge-impact-add {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: #059669;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .badge-impact-deduct {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: #dc2626;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    .badge-impact-neutral {
+        background-color: rgba(100, 116, 139, 0.08);
+        color: #64748b;
+        border: 1px solid rgba(100, 116, 139, 0.15);
+    }
+
+    /* USSD Steps Pill */
+    .badge-steps {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 8px;
+        background-color: rgba(234, 179, 8, 0.1);
+        color: #b45309;
+        border: 1px solid rgba(234, 179, 8, 0.25);
+        font-size: 0.78rem;
+        font-weight: 700;
+        transition: all 0.15s ease;
+    }
+    .badge-steps:hover {
+        background-color: rgba(234, 179, 8, 0.2);
+        color: #92400e;
+        transform: translateY(-1px);
+    }
+    .badge-steps-empty {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 8px;
+        background-color: rgba(100, 116, 139, 0.06);
+        color: #94a3b8;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .service-icon-box {
+        width: 44px;
+        height: 44px;
         border-radius: 12px;
-        padding: 12px 18px;
-        margin-bottom: 12px;
-        border-right: 4px solid var(--primary-accent);
-    }
-    .service-row-hover {
-        transition: background-color 0.15s ease;
-    }
-    .service-row-hover:hover {
-        background-color: rgba(13, 110, 253, 0.03) !important;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.04));
+        color: var(--primary-accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        border: 1px solid rgba(37, 99, 235, 0.15);
     }
 </style>
 
@@ -44,7 +175,7 @@
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة التحكم</a></li>
-            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">إدارة الخدمات</li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">إدارة الخدمات (Services Catalog)</li>
         </ol>
     </nav>
 
@@ -53,69 +184,75 @@
         <div>
             <h3 class="fw-black mb-1 d-flex align-items-center gap-2">
                 <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
-                    <i class="bi bi-grid-fill fs-4"></i>
+                    <i class="bi bi-gear-wide-connected fs-4"></i>
                 </span>
-                <span>إدارة الخدمات (Services Catalog)</span>
+                <span>كتالوج الخدمات وأوامر USSD (Services Catalog)</span>
             </h3>
-            <p class="text-muted small mb-0">كتالوج خدمات المحافظ الذكية والكاش والاستعلام لشبكات مصر الأربعة</p>
+            <p class="text-muted small mb-0">تعريف وتهيئة خدمات المحافظ الذكية، أكواد الـ API، وسلاسل أوامر USSD التفاعلية</p>
         </div>
-        <!-- Add Service Button (Full Screen Page) -->
         <a asp-action="Create" class="btn btn-primary px-4 py-2 fw-bold shadow-sm rounded-3 d-flex align-items-center gap-2">
             <i class="bi bi-plus-circle-fill fs-5"></i>
             <span>إضافة خدمة جديدة</span>
         </a>
     </div>
 
-    <!-- Quick Stats Cards -->
+    <!-- 4 Quick Stats Cards -->
     <div class="row g-3 mb-4">
-        <div class="col-12 col-md-3">
+        <div class="col-6 col-md-3">
             <div class="card-stat p-3">
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-bold">إجمالي الخدمات</div>
+                        <div class="fs-4 fw-black text-main my-1">@totalServices</div>
+                        <div class="text-muted fs-8">خدمة جاهزة للاستخدام</div>
+                    </div>
                     <div class="icon-box bg-primary bg-opacity-10 text-primary">
                         <i class="bi bi-collection"></i>
                     </div>
-                    <div>
-                        <div class="text-muted small fw-bold">إجمالي الخدمات</div>
-                        <div class="fs-4 fw-black text-main">@totalServices</div>
-                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-12 col-md-3">
+
+        <div class="col-6 col-md-3">
             <div class="card-stat p-3">
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-bold">دفع وتحويل كاش</div>
+                        <div class="fs-4 fw-black text-success my-1">@paymentServices.Count</div>
+                        <div class="text-muted fs-8">سداد تجار وسحب</div>
+                    </div>
                     <div class="icon-box bg-success bg-opacity-10 text-success">
                         <i class="bi bi-credit-card-2-front"></i>
                     </div>
-                    <div>
-                        <div class="text-muted small fw-bold">دفع وتحويل كاش</div>
-                        <div class="fs-4 fw-black text-main">@paymentServices.Count</div>
-                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-12 col-md-3">
+
+        <div class="col-6 col-md-3">
             <div class="card-stat p-3">
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small fw-bold">استعلام رصيد</div>
+                        <div class="fs-4 fw-black text-info my-1">@balanceServices.Count</div>
+                        <div class="text-muted fs-8">أرصدة المحافظ اللحظية</div>
+                    </div>
                     <div class="icon-box bg-info bg-opacity-10 text-info">
                         <i class="bi bi-search"></i>
                     </div>
-                    <div>
-                        <div class="text-muted small fw-bold">استعلام رصيد</div>
-                        <div class="fs-4 fw-black text-main">@balanceServices.Count</div>
-                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-12 col-md-3">
+
+        <div class="col-6 col-md-3">
             <div class="card-stat p-3">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="icon-box bg-warning bg-opacity-10 text-warning">
-                        <i class="bi bi-phone"></i>
-                    </div>
+                <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="text-muted small fw-bold">استعلام وتأكيد رقم</div>
-                        <div class="fs-4 fw-black text-main">@numberServices.Count</div>
+                        <div class="fs-4 fw-black text-warning my-1">@numberServices.Count</div>
+                        <div class="text-muted fs-8">اكتشاف أرقام الخطوط</div>
+                    </div>
+                    <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-phone"></i>
                     </div>
                 </div>
             </div>
@@ -123,316 +260,181 @@
     </div>
 
     <!-- Unified Filters Toolbar -->
-    <div class="portal-card p-4 mb-4 shadow-sm">
-        <!-- Live Search & Counter -->
+    <div class="portal-card p-3 mb-4 shadow-sm">
+        <!-- Row 1: Search & Toggle -->
         <div class="row g-3 align-items-center mb-3">
             <div class="col-12 col-md-6">
                 <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" id="serviceSearchInput" class="form-control border-start-0" placeholder="ابحث باسم الخدمة، كود الـ API (مثل VF_PAY)، أو الشبكة..." onkeyup="filterCatalog()" />
+                    <span class="input-group-text bg-transparent border-end-0 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" id="serviceSearchInput" class="form-control border-start-0" 
+                           placeholder="ابحث باسم الخدمة، كود الـ API (مثل VF_PAY)، أو الشبكة..." 
+                           onkeyup="filterCatalog()" />
                 </div>
             </div>
 
-            <div class="col-12 col-md-6 d-flex align-items-center gap-2 flex-wrap justify-content-md-end">
-                <button type="button" class="btn btn-sm btn-outline-primary" id="btnActiveOnly" onclick="toggleActiveOnly(this)">
-                    النشطة فقط
+            <div class="col-12 col-md-6 d-flex align-items-center gap-3 justify-content-md-end flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" id="btnActiveOnly" onclick="toggleActiveOnly(this)">
+                    <i class="bi bi-toggle2-on me-1"></i> النشطة فقط
                 </button>
-                <div class="text-muted small ms-2">
+                <div class="text-muted small">
                     عرض <strong class="text-primary font-monospace" id="visibleCount">@totalServices</strong> من أصل @totalServices خدمة
                 </div>
             </div>
         </div>
 
-        <!-- Network Filters (Egyptian Operators) -->
+        <!-- Row 2: Telecom Networks Filter Pills -->
         <div class="d-flex flex-wrap align-items-center gap-2 pt-2 border-top">
             <span class="text-muted small fw-bold me-2"><i class="bi bi-sim me-1"></i> تصفية بالشبكة:</span>
             <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-op="ALL" onclick="filterByOp(this, 'ALL')">
                 كل الشبكات (@totalServices)
             </button>
-            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 filter-pill" data-op="Vodafone" onclick="filterByOp(this, 'Vodafone')">
-                🔴 فودافون كاش (@vfCount)
+            <button type="button" class="btn btn-sm pill-op-vodafone rounded-pill px-3 filter-pill" data-op="Vodafone" onclick="filterByOp(this, 'Vodafone')">
+                <span class="dot-indicator"></span> فودافون كاش (@vfCount)
             </button>
-            <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 filter-pill text-dark" data-op="Orange" onclick="filterByOp(this, 'Orange')">
-                🟠 أورانج كاش (@orCount)
+            <button type="button" class="btn btn-sm pill-op-orange rounded-pill px-3 filter-pill" data-op="Orange" onclick="filterByOp(this, 'Orange')">
+                <span class="dot-indicator"></span> أورانج كاش (@orCount)
             </button>
-            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 filter-pill" data-op="Etisalat" onclick="filterByOp(this, 'Etisalat')">
-                🟢 اتصالات كاش (@etCount)
+            <button type="button" class="btn btn-sm pill-op-etisalat rounded-pill px-3 filter-pill" data-op="Etisalat" onclick="filterByOp(this, 'Etisalat')">
+                <span class="dot-indicator"></span> اتصالات كاش (@etCount)
             </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="WE" onclick="filterByOp(this, 'WE')">
-                🟣 وي باي WE (@weCount)
+            <button type="button" class="btn btn-sm pill-op-we rounded-pill px-3 filter-pill" data-op="WE" onclick="filterByOp(this, 'WE')">
+                <span class="dot-indicator"></span> وي باي WE (@weCount)
             </button>
         </div>
 
-        <!-- Category Filters -->
+        <!-- Row 3: Category Tabs -->
         <div class="d-flex flex-wrap align-items-center gap-2 pt-2 mt-2 border-top">
             <span class="text-muted small fw-bold me-2"><i class="bi bi-tags me-1"></i> تصفية بالتصنيف:</span>
-            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-3 filter-cat-pill active" data-cat="ALL" onclick="filterByCat(this, 'ALL')">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-cat-tab active" data-cat="ALL" onclick="filterByCat(this, 'ALL')">
                 كل التصنيفات (@totalServices)
             </button>
-            <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-3 filter-cat-pill" data-cat="Payment" onclick="filterByCat(this, 'Payment')">
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 filter-cat-tab" data-cat="Payment" onclick="filterByCat(this, 'Payment')">
                 💳 دفع وتحويل كاش (@paymentServices.Count)
             </button>
-            <button type="button" class="btn btn-xs btn-outline-info rounded-pill px-3 filter-cat-pill" data-cat="Inquiry" onclick="filterByCat(this, 'Inquiry')">
-                🔍 استعلام عن رصيد (@balanceServices.Count)
+            <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 filter-cat-tab" data-cat="Inquiry" onclick="filterByCat(this, 'Inquiry')">
+                🔍 استعلام رصيد (@balanceServices.Count)
             </button>
-            <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-3 filter-cat-pill text-dark" data-cat="NumberInquiry" onclick="filterByCat(this, 'NumberInquiry')">
-                📱 استعلام عن رقم (@numberServices.Count)
+            <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 filter-cat-tab" data-cat="NumberInquiry" onclick="filterByCat(this, 'NumberInquiry')">
+                📱 استعلام رقم (@numberServices.Count)
             </button>
             @if (otherServices.Any())
             {
-                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-3 filter-cat-pill" data-cat="Other" onclick="filterByCat(this, 'Other')">
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-cat-tab" data-cat="Other" onclick="filterByCat(this, 'Other')">
                     ⚙️ خدمات أخرى (@otherServices.Count)
                 </button>
             }
         </div>
     </div>
 
-    @if (!servicesList.Any())
-    {
-        <div class="portal-card p-5 text-center shadow-sm">
-            <div class="p-4 rounded-circle bg-primary bg-opacity-10 text-primary d-inline-block mb-3">
-                <i class="bi bi-collection fs-1"></i>
-            </div>
-            <h4 class="fw-bold mb-2">لا توجد خدمات مضافة حتى الآن</h4>
-            <p class="text-muted small mb-4">اضغط على زر "إضافة خدمة جديدة" للبدء في تعريف أول خدمة وتوليد كودها تلقائياً.</p>
-            <a asp-action="Create" class="btn btn-primary px-4 py-2 fw-bold rounded-3 shadow-sm">
-                <i class="bi bi-plus-lg me-1"></i> إضافة أول خدمة
-            </a>
+    <!-- Unified Master Services Table Card -->
+    <div class="portal-card shadow-sm table-card-container mb-4">
+        <div class="table-responsive table-responsive-custom">
+            <table class="table table-custom align-middle mb-0" id="servicesMasterTable">
+                <thead>
+                    <tr>
+                        <th style="min-width: 220px;">اسم الخدمة</th>
+                        <th style="min-width: 140px;">كود الـ API</th>
+                        <th style="min-width: 130px;">الشبكة</th>
+                        <th style="min-width: 120px;">التصنيف</th>
+                        <th style="min-width: 120px;">التأثير المالي</th>
+                        <th style="min-width: 90px;">الرسوم</th>
+                        <th style="min-width: 110px;">أوامر USSD</th>
+                        <th style="min-width: 80px;">الحالة</th>
+                        <th class="text-center" style="min-width: 140px;">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!servicesList.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-collection fs-1 d-block mb-2 text-muted opacity-50"></i>
+                                لا توجد خدمات مضافة حتى الآن.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var srv in servicesList)
+                        {
+                            @await Html.PartialAsync("_ServiceTableRowPartial", srv)
+                        }
+                    }
+                </tbody>
+            </table>
         </div>
-    }
-    else
-    {
-        <!-- Helper Local Function for Rows -->
-        @functions {
-            string GetOpArabic(GoIPGateway.Domain.Enums.OperatorType? op) => op switch
-            {
-                GoIPGateway.Domain.Enums.OperatorType.Vodafone => "فودافون كاش",
-                GoIPGateway.Domain.Enums.OperatorType.Orange => "أورانج كاش",
-                GoIPGateway.Domain.Enums.OperatorType.Etisalat => "اتصالات كاش",
-                GoIPGateway.Domain.Enums.OperatorType.WE => "وي باي WE",
-                _ => "عامة"
-            };
 
-            string GetOpBadgeClass(GoIPGateway.Domain.Enums.OperatorType? op) => op switch
-            {
-                GoIPGateway.Domain.Enums.OperatorType.Vodafone => "badge-op-vodafone",
-                GoIPGateway.Domain.Enums.OperatorType.Orange => "badge-op-orange",
-                GoIPGateway.Domain.Enums.OperatorType.Etisalat => "badge-op-etisalat",
-                GoIPGateway.Domain.Enums.OperatorType.WE => "badge-op-we",
-                _ => "bg-secondary"
-            };
-
-            string GetCatArabic(GoIPGateway.Domain.Enums.ServiceCategory cat) => cat switch
-            {
-                GoIPGateway.Domain.Enums.ServiceCategory.Payment => "دفع تاجر",
-                GoIPGateway.Domain.Enums.ServiceCategory.Transfer => "تحويل كاش",
-                GoIPGateway.Domain.Enums.ServiceCategory.Inquiry => "استعلام رصيد",
-                GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry => "استعلام رقم",
-                GoIPGateway.Domain.Enums.ServiceCategory.Settlement => "تسوية وسحب",
-                _ => cat.ToString()
-            };
-
-            string GetCatGroupKey(GoIPGateway.Domain.Enums.ServiceCategory cat) => cat switch
-            {
-                GoIPGateway.Domain.Enums.ServiceCategory.Payment or GoIPGateway.Domain.Enums.ServiceCategory.Transfer => "Payment",
-                GoIPGateway.Domain.Enums.ServiceCategory.Inquiry => "Inquiry",
-                GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry => "NumberInquiry",
-                _ => "Other"
-            };
-        }
-
-        <!-- CATEGORY 1: PAYMENT & TRANSFER SERVICES -->
-        @if (paymentServices.Any())
-        {
-            <div class="category-block mb-4" id="cat-block-payment" data-section-cat="Payment">
-                <div class="category-section-header d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="fs-4">💳</span>
-                        <div>
-                            <h5 class="fw-bold mb-0 text-main">خدمات الدفع والتحويل المالي (Merchant Payment & Cash Transfer)</h5>
-                            <small class="text-muted">عمليات سداد التجار وتحويل المحافظ والخصم المالي المباشر</small>
-                        </div>
-                    </div>
-                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-1 font-monospace section-count-badge">
-                        @paymentServices.Count خدمات
-                    </span>
-                </div>
-
-                <div class="portal-card p-0 shadow-sm overflow-hidden mb-3">
-                    <div class="table-responsive">
-                        <table class="table table-custom align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="min-width: 220px;">اسم الخدمة</th>
-                                    <th>كود الـ API</th>
-                                    <th>الشبكة</th>
-                                    <th>التصنيف</th>
-                                    <th>التأثير على الرصيد</th>
-                                    <th>الرسوم الأساسية</th>
-                                    <th>أوامر USSD</th>
-                                    <th>الحالة</th>
-                                    <th class="text-center" style="min-width: 180px;">الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var srv in paymentServices)
-                                {
-                                    @await Html.PartialAsync("_ServiceTableRowPartial", srv)
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        }
-
-        <!-- CATEGORY 2: BALANCE INQUIRY SERVICES -->
-        @if (balanceServices.Any())
-        {
-            <div class="category-block mb-4" id="cat-block-inquiry" data-section-cat="Inquiry">
-                <div class="category-section-header d-flex justify-content-between align-items-center" style="border-right-color: #0dcaf0;">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="fs-4">🔍</span>
-                        <div>
-                            <h5 class="fw-bold mb-0 text-main">خدمات استعلام الرصيد (Balance Inquiry)</h5>
-                            <small class="text-muted">الاستعلام اللحظي عن أرصدة المحافظ والخطوط وتحديثها في النظام</small>
-                        </div>
-                    </div>
-                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-3 py-1 font-monospace section-count-badge">
-                        @balanceServices.Count خدمات
-                    </span>
-                </div>
-
-                <div class="portal-card p-0 shadow-sm overflow-hidden mb-3">
-                    <div class="table-responsive">
-                        <table class="table table-custom align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="min-width: 220px;">اسم الخدمة</th>
-                                    <th>كود الـ API</th>
-                                    <th>الشبكة</th>
-                                    <th>التصنيف</th>
-                                    <th>التأثير على الرصيد</th>
-                                    <th>الرسوم الأساسية</th>
-                                    <th>أوامر USSD</th>
-                                    <th>الحالة</th>
-                                    <th class="text-center" style="min-width: 180px;">الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var srv in balanceServices)
-                                {
-                                    @await Html.PartialAsync("_ServiceTableRowPartial", srv)
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        }
-
-        <!-- CATEGORY 3: NUMBER INQUIRY SERVICES -->
-        @if (numberServices.Any())
-        {
-            <div class="category-block mb-4" id="cat-block-numberinquiry" data-section-cat="NumberInquiry">
-                <div class="category-section-header d-flex justify-content-between align-items-center" style="border-right-color: #ffc107;">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="fs-4">📱</span>
-                        <div>
-                            <h5 class="fw-bold mb-0 text-main">خدمات استعلام وتأكيد الرقم (Number Inquiry & Discovery)</h5>
-                            <small class="text-muted">معرفة أرقام الشرائح المجهولة وتأكيد صحتها عبر شبكات المحمول</small>
-                        </div>
-                    </div>
-                    <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 rounded-pill px-3 py-1 font-monospace section-count-badge">
-                        @numberServices.Count خدمات
-                    </span>
-                </div>
-
-                <div class="portal-card p-0 shadow-sm overflow-hidden mb-3">
-                    <div class="table-responsive">
-                        <table class="table table-custom align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="min-width: 220px;">اسم الخدمة</th>
-                                    <th>كود الـ API</th>
-                                    <th>الشبكة</th>
-                                    <th>التصنيف</th>
-                                    <th>التأثير على الرصيد</th>
-                                    <th>الرسوم الأساسية</th>
-                                    <th>أوامر USSD</th>
-                                    <th>الحالة</th>
-                                    <th class="text-center" style="min-width: 180px;">الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var srv in numberServices)
-                                {
-                                    @await Html.PartialAsync("_ServiceTableRowPartial", srv)
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        }
-
-        <!-- CATEGORY 4: OTHER SERVICES -->
-        @if (otherServices.Any())
-        {
-            <div class="category-block mb-4" id="cat-block-other" data-section-cat="Other">
-                <div class="category-section-header d-flex justify-content-between align-items-center" style="border-right-color: #6c757d;">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="fs-4">⚙️</span>
-                        <div>
-                            <h5 class="fw-bold mb-0 text-main">خدمات وإجراءات إضافية (Other Services)</h5>
-                            <small class="text-muted">عمليات التسوية والإدارة وخدمات أخرى</small>
-                        </div>
-                    </div>
-                    <span class="badge bg-secondary bg-opacity-10 text-main border border-secondary border-opacity-25 rounded-pill px-3 py-1 font-monospace section-count-badge">
-                        @otherServices.Count خدمات
-                    </span>
-                </div>
-
-                <div class="portal-card p-0 shadow-sm overflow-hidden mb-3">
-                    <div class="table-responsive">
-                        <table class="table table-custom align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="min-width: 220px;">اسم الخدمة</th>
-                                    <th>كود الـ API</th>
-                                    <th>الشبكة</th>
-                                    <th>التصنيف</th>
-                                    <th>التأثير على الرصيد</th>
-                                    <th>الرسوم الأساسية</th>
-                                    <th>أوامر USSD</th>
-                                    <th>الحالة</th>
-                                    <th class="text-center" style="min-width: 180px;">الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var srv in otherServices)
-                                {
-                                    @await Html.PartialAsync("_ServiceTableRowPartial", srv)
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        }
-
-        <!-- No Filter Results Placeholder -->
-        <div id="noCatalogMatches" class="portal-card p-5 text-center shadow-sm d-none">
-            <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning d-inline-block mb-2">
-                <i class="bi bi-funnel fs-2"></i>
-            </div>
-            <h5 class="fw-bold text-main mb-1">لا توجد خدمات مطابقة للتصفية</h5>
+        <!-- No search matches alert -->
+        <div id="noCatalogMatches" class="p-5 text-center d-none">
+            <i class="bi bi-search fs-1 text-muted opacity-50 d-block mb-2"></i>
+            <h6 class="fw-bold mb-1 text-main">لم يتم العثور على خدمات مطابقة</h6>
             <p class="text-muted small mb-3">جرب تغيير كلمات البحث أو اختيار شبكة أو تصنيف آخر.</p>
             <button type="button" class="btn btn-sm btn-outline-secondary px-3" onclick="resetCatalogFilters()">
                 إعادة ضبط كل الفلاتر
             </button>
         </div>
-    }
+    </div>
+</div>
+
+<!-- Admin Test Service Modal -->
+<div class="modal fade" id="adminTestServiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-bottom pb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="p-2 rounded-3 bg-success bg-opacity-10 text-success fs-5">
+                        <i class="bi bi-cpu-fill"></i>
+                    </span>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0">تجربة واختبار الخدمة عبر أجهزة GoIP</h5>
+                        <small class="text-muted" id="modalServiceSubtitle"></small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="adminTestForm" onsubmit="submitAdminTestService(event)">
+                    <input type="hidden" id="modalServiceCode" />
+                    <input type="hidden" id="modalServiceCategory" />
+
+                    <!-- Inputs row -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6" id="modalMerchantCodeGroup">
+                            <label class="form-label fw-bold small">كود التاجر (Merchant Code):</label>
+                            <input type="text" id="modalMerchantCode" class="form-control" placeholder="مثال: 123456" />
+                        </div>
+                        <div class="col-md-6" id="modalPhoneGroup">
+                            <label class="form-label fw-bold small">رقم الهاتف المستلم (Phone):</label>
+                            <input type="tel" id="modalPhoneNumber" class="form-control" placeholder="مثال: 01012345678" />
+                        </div>
+                        <div class="col-md-6" id="modalAmountGroup">
+                            <label class="form-label fw-bold small">المبلغ المطلوب (Amount):</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" min="1" id="modalAmount" class="form-control fw-bold text-success" placeholder="مثال: 100" />
+                                <span class="input-group-text fw-bold">ج.م</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">رقم مرجع اختياري (External Ref):</label>
+                            <input type="text" id="modalExternalRef" class="form-control" placeholder="ADMIN-TEST-AUTO" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mb-3">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" id="btnRunAdminTest" class="btn btn-success fw-bold px-4">
+                            <i class="bi bi-play-circle-fill me-1"></i> تشغيل الأمر والـ USSD
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Result container in modal -->
+                <div id="modalTestResult" class="d-none mt-3"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
@@ -449,7 +451,7 @@
         }
 
         function filterByCat(btn, cat) {
-            document.querySelectorAll(".filter-cat-pill").forEach(p => p.classList.remove("active"));
+            document.querySelectorAll(".filter-cat-tab").forEach(p => p.classList.remove("active"));
             btn.classList.add("active");
             currentCat = cat;
             filterCatalog();
@@ -483,7 +485,7 @@
                 p.classList.toggle('active', p.getAttribute('data-op') === 'ALL');
             });
 
-            document.querySelectorAll('.filter-cat-pill').forEach(p => {
+            document.querySelectorAll('.filter-cat-tab').forEach(p => {
                 p.classList.toggle('active', p.getAttribute('data-cat') === 'ALL');
             });
 
@@ -514,29 +516,156 @@
                 }
             });
 
-            // Update visible counter
             const counter = document.getElementById('visibleCount');
             if (counter) counter.innerText = totalVisible;
 
-            // Hide/Show category blocks based on visible child rows
-            let visibleSections = 0;
-            document.querySelectorAll('.category-block').forEach(block => {
-                const visibleChildren = block.querySelectorAll('.service-table-row:not([style*="display: none"])');
-                const badge = block.querySelector('.section-count-badge');
-                if (badge) badge.innerText = `${visibleChildren.length} خدمات`;
-
-                if (visibleChildren.length > 0) {
-                    block.style.display = '';
-                    visibleSections++;
-                } else {
-                    block.style.display = 'none';
-                }
-            });
-
-            // No matches card
             const noMatches = document.getElementById('noCatalogMatches');
             if (noMatches) {
-                noMatches.classList.toggle('d-none', totalVisible > 0);
+                noMatches.classList.toggle('d-none', totalVisible > 0 || rows.length === 0);
+            }
+        }
+
+        function openDeleteServiceModal(id, name, code) {
+            showConfirmModal({
+                title: 'تأكيد حذف الخدمة',
+                message: 'هل أنت متأكد من حذف هذه الخدمة نهائياً من الكتالوج؟',
+                detail: name + ' (' + code + ')',
+                detailLabel: 'الخدمة:',
+                consequence: 'سيتم نقل الخدمة للمحذوفات وتعطيلها في بوابة الـ Gateway فوراً، ولن تتمكن الشركات من استدعائها.',
+                btnText: 'نعم، حذف الخدمة',
+                type: 'danger',
+                onConfirm: function () {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/Admin/Services/Delete/' + id;
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                    if (token) {
+                        const hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = '__RequestVerificationToken';
+                        hidden.value = token.value;
+                        form.appendChild(hidden);
+                    }
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+
+        function openTestServiceModal(serviceCode, serviceName, category, operator) {
+            document.getElementById('modalServiceCode').value = serviceCode;
+            document.getElementById('modalServiceCategory').value = category;
+            document.getElementById('modalServiceSubtitle').innerText = `${serviceName} (${serviceCode}) - شبكة ${operator}`;
+            document.getElementById('modalTestResult').innerHTML = '';
+            document.getElementById('modalTestResult').classList.add('d-none');
+
+            const upper = (serviceCode || '').toUpperCase();
+            const cat = category || '';
+
+            const isPayment = cat === 'Payment' || upper.includes('PAY') || upper.includes('QR');
+            const isTransfer = cat === 'Transfer' || upper.includes('TRANS');
+            const isInquiry = cat === 'Inquiry' || cat === 'NumberInquiry' || upper.includes('INQ');
+
+            document.getElementById('modalMerchantCodeGroup').classList.toggle('d-none', !isPayment);
+            document.getElementById('modalPhoneGroup').classList.toggle('d-none', !isTransfer);
+            document.getElementById('modalAmountGroup').classList.toggle('d-none', isInquiry);
+
+            const modal = new bootstrap.Modal(document.getElementById('adminTestServiceModal'));
+            modal.show();
+        }
+
+        async function submitAdminTestService(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnRunAdminTest');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> جاري إرسال الأمر للجهاز...`;
+
+            const serviceCode = document.getElementById('modalServiceCode').value;
+            const amount = document.getElementById('modalAmount').value;
+            const merchantCode = document.getElementById('modalMerchantCode').value;
+            const phoneNumber = document.getElementById('modalPhoneNumber').value;
+            const externalRef = document.getElementById('modalExternalRef').value || `TEST-${Date.now()}`;
+
+            const payload = {
+                serviceCode: serviceCode,
+                externalRef: externalRef,
+                amount: amount ? parseFloat(amount) : null,
+                merchantCode: merchantCode ? merchantCode.trim() : null,
+                phoneNumber: phoneNumber ? phoneNumber.trim() : null,
+                parameters: {}
+            };
+
+            const resultContainer = document.getElementById('modalTestResult');
+            resultContainer.classList.remove('d-none');
+            resultContainer.innerHTML = `<div class="p-4 text-center text-muted"><span class="spinner-border spinner-border-sm me-2"></span> جاري التواصل مع بوابة GoIP واستلام رد الـ USSD...</div>`;
+
+            try {
+                const response = await fetch('/Admin/Services/TestService', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const json = await response.json();
+                if (json.success) {
+                    const d = json.data;
+                    let logsRows = '';
+                    if (d.logs && d.logs.length > 0) {
+                        logsRows = d.logs.map(l => `
+                            <tr>
+                                <td class="text-center font-monospace">${l.stepOrder}</td>
+                                <td>${l.stepName || ''}</td>
+                                <td><code>${l.command || ''}</code></td>
+                                <td><small class="text-muted">${l.response || ''}</small></td>
+                                <td class="text-center font-monospace">${l.durationMs}ms</td>
+                                <td class="text-center"><span class="badge ${l.isSuccess ? 'bg-success' : 'bg-danger'}">${l.isSuccess ? 'ناجحة' : 'فشل'}</span></td>
+                            </tr>
+                        `).join('');
+                    }
+
+                    resultContainer.innerHTML = `
+                        <div class="p-3 rounded-3 border border-success bg-success bg-opacity-10 mb-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="fw-bold text-success mb-0"><i class="bi bi-check-circle-fill me-1"></i> تمت التجربة بنجاح</h6>
+                                <span class="badge bg-success font-monospace">${d.transactionRef}</span>
+                            </div>
+                            <div class="small text-muted mb-2">
+                                المنفذ: <strong class="text-dark">منفذ #${d.portNumber || 'Auto'} (${d.simPhoneNumber || 'شريحة تلقائية'})</strong> |
+                                الرصيد بعد: <strong class="text-success font-monospace">${d.simBalanceAfter != null ? d.simBalanceAfter.toFixed(2) + ' ج.م' : '--'}</strong>
+                            </div>
+                            <div class="p-2 bg-dark text-info rounded font-monospace small" style="direction: ltr; text-align: left;">
+                                &gt; ${d.rawResponse || d.message}
+                            </div>
+                        </div>
+                        ${logsRows ? `
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered fs-8 bg-white mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th><th>الخطوة</th><th>الأمر</th><th>الرد</th><th>الزمن</th><th>الحالة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${logsRows}</tbody>
+                                </table>
+                            </div>
+                        ` : ''}
+                    `;
+                } else {
+                    resultContainer.innerHTML = `
+                        <div class="alert alert-danger mb-0">
+                            <strong><i class="bi bi-x-circle-fill me-1"></i> فشل الاختبار:</strong> ${json.message || 'حدث خطأ غير متوقع'}
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                resultContainer.innerHTML = `<div class="alert alert-danger mb-0">حدث خطأ في الاتصال: ${err.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
             }
         }
     </script>

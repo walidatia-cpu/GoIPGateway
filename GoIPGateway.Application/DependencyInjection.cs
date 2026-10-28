@@ -34,6 +34,25 @@ public static class DependencyInjection
 
         services.AddScoped<IServiceExecutorFactory, ServiceExecutorFactory>();
 
+        // Register Module Services (Query Services & Command Services)
+        services.AddScoped<Services.Tenants.ITenantQueryService, Services.Tenants.TenantQueryService>();
+        services.AddScoped<Services.Tenants.ITenantCommandService, Services.Tenants.TenantCommandService>();
+
+        services.AddScoped<Services.Devices.IDeviceQueryService, Services.Devices.DeviceQueryService>();
+        services.AddScoped<Services.Devices.IDeviceCommandService, Services.Devices.DeviceCommandService>();
+
+        services.AddScoped<Services.SimCards.ISimCardQueryService, Services.SimCards.SimCardQueryService>();
+        services.AddScoped<Services.SimCards.ISimCardCommandService, Services.SimCards.SimCardCommandService>();
+
+        services.AddScoped<Services.ServiceDefinitions.IServiceDefinitionQueryService, Services.ServiceDefinitions.ServiceDefinitionQueryService>();
+        services.AddScoped<Services.ServiceDefinitions.IServiceDefinitionCommandService, Services.ServiceDefinitions.ServiceDefinitionCommandService>();
+
+        services.AddScoped<Services.Transactions.ITransactionQueryService, Services.Transactions.TransactionQueryService>();
+        services.AddScoped<Services.Transactions.ITransactionCommandService, Services.Transactions.TransactionCommandService>();
+
+        services.AddScoped<Services.Dashboard.IDashboardQueryService, Services.Dashboard.DashboardQueryService>();
+        services.AddScoped<Services.Reports.IReportQueryService, Services.Reports.ReportQueryService>();
+
         return services;
     }
 }

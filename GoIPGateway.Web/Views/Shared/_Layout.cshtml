@@ -330,6 +330,185 @@
             to { opacity: 1; transform: scale(1.05); }
         }
 
+        /* Global Bootstrap opacity class fix */
+        .bg-opacity-15 {
+            --bs-bg-opacity: 0.15 !important;
+        }
+
+        /* ========================================================
+           GLOBAL GRID & TABLE STANDARDIZATION SYSTEM (GOLD STANDARD)
+           ======================================================== */
+        .actions-btn-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-action-icon {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9px;
+            border: 1px solid #cbd5e1;
+            background-color: #ffffff;
+            color: #475569;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            text-decoration: none;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        .btn-action-icon:hover {
+            background-color: rgba(37, 99, 235, 0.08);
+            border-color: #2563eb;
+            color: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(37, 99, 235, 0.15);
+        }
+        .btn-action-icon.btn-action-view {
+            color: #2563eb;
+            border-color: rgba(37, 99, 235, 0.3);
+            background-color: rgba(37, 99, 235, 0.04);
+        }
+        .btn-action-icon.btn-action-view:hover {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            color: #ffffff;
+        }
+        [data-bs-theme="dark"] .btn-action-icon {
+            background-color: #1e293b;
+            border-color: #334155;
+            color: #94a3b8;
+        }
+        [data-bs-theme="dark"] .btn-action-icon:hover {
+            background-color: #334155;
+            color: #60a5fa;
+            border-color: #60a5fa;
+        }
+
+        .filter-pill {
+            transition: all 0.15s ease;
+            font-weight: 600;
+        }
+        .filter-pill.active {
+            background-color: var(--primary-accent) !important;
+            color: #ffffff !important;
+            border-color: var(--primary-accent) !important;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+        }
+
+        .table-card-container {
+            overflow: visible !important;
+        }
+        .table-responsive-custom {
+            overflow-x: auto;
+            overflow-y: visible !important;
+            min-height: 280px;
+            padding-bottom: 90px;
+        }
+
+        .dropdown-menu-actions {
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+            min-width: 210px;
+            padding: 6px;
+            z-index: 1060;
+        }
+        .dropdown-menu-actions .dropdown-item {
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.86rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+        }
+        .dropdown-menu-actions .dropdown-item:hover {
+            background-color: rgba(37, 99, 235, 0.08);
+            color: var(--primary-accent);
+        }
+        .dropdown-menu-actions .dropdown-item.text-danger:hover {
+            background-color: rgba(239, 68, 68, 0.08);
+            color: #dc2626 !important;
+        }
+
+        /* Standard Modern High-Contrast Pill Badges */
+        .pill-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+        .pill-badge .dot-indicator {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .pill-badge-success {
+            background-color: rgba(16, 185, 129, 0.12) !important;
+            color: #059669 !important;
+            border: 1px solid rgba(16, 185, 129, 0.25) !important;
+        }
+        .pill-badge-success .dot-indicator { background-color: #10b981; }
+
+        .pill-badge-danger {
+            background-color: rgba(239, 68, 68, 0.12) !important;
+            color: #dc2626 !important;
+            border: 1px solid rgba(239, 68, 68, 0.25) !important;
+        }
+        .pill-badge-danger .dot-indicator { background-color: #ef4444; }
+
+        .pill-badge-warning {
+            background-color: rgba(245, 158, 11, 0.12) !important;
+            color: #d97706 !important;
+            border: 1px solid rgba(245, 158, 11, 0.25) !important;
+        }
+        .pill-badge-warning .dot-indicator { background-color: #f59e0b; }
+
+        .pill-badge-primary {
+            background-color: rgba(37, 99, 235, 0.12) !important;
+            color: #2563eb !important;
+            border: 1px solid rgba(37, 99, 235, 0.25) !important;
+        }
+        .pill-badge-primary .dot-indicator { background-color: #2563eb; }
+
+        .pill-badge-info {
+            background-color: rgba(6, 182, 212, 0.12) !important;
+            color: #0891b2 !important;
+            border: 1px solid rgba(6, 182, 212, 0.25) !important;
+        }
+        .pill-badge-info .dot-indicator { background-color: #06b6d4; }
+
+        .pill-badge-neutral {
+            background-color: rgba(100, 116, 139, 0.1) !important;
+            color: #64748b !important;
+            border: 1px solid rgba(100, 116, 139, 0.2) !important;
+        }
+        .pill-badge-neutral .dot-indicator { background-color: #64748b; }
+
+        /* Row Avatar / Entity Badge */
+        .row-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.04));
+            color: var(--primary-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border: 1px solid rgba(37, 99, 235, 0.15);
+            flex-shrink: 0;
+        }
+
         /* Telecom Operator Brand Badges */
         .badge-op-vodafone {
             background-color: #e60000 !important;
@@ -377,6 +556,36 @@
             padding: 2px 6px;
             border-radius: 6px;
             font-size: 0.9em;
+        }
+
+        /* Unified System Confirmation Modal Styles */
+        .confirm-icon-wrapper {
+            width: 68px;
+            height: 68px;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.1rem;
+            transition: all 0.25s ease;
+        }
+        .confirm-icon-danger {
+            background: rgba(239, 68, 68, 0.12);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            box-shadow: 0 0 24px rgba(239, 68, 68, 0.16);
+        }
+        .confirm-icon-warning {
+            background: rgba(245, 158, 11, 0.12);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            box-shadow: 0 0 24px rgba(245, 158, 11, 0.16);
+        }
+        .confirm-icon-primary {
+            background: rgba(37, 99, 235, 0.12);
+            color: var(--primary-accent);
+            border: 1px solid rgba(37, 99, 235, 0.25);
+            box-shadow: 0 0 24px rgba(37, 99, 235, 0.16);
         }
     </style>
     @RenderSection("Styles", required: false)
@@ -466,6 +675,15 @@
                     <a asp-area="Admin" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isAdminArea ? "active" : "")">
                         <i class="bi bi-clock-history"></i> <span>سجل العمليات العام</span>
                     </a>
+                    <a asp-area="Admin" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")">
+                        <i class="bi bi-pie-chart-fill"></i> <span>تقرير الإجماليات والتسويات</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Reports" asp-action="Tenants" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Tenants" ? "active" : "")">
+                        <i class="bi bi-graph-up-arrow"></i> <span>أداء وحجم أعمال الشركات</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                        <i class="bi bi-file-earmark-bar-graph"></i> <span>تقرير بوابات GoIP والأجهزة</span>
+                    </a>
                     <div class="border-top my-3" style="border-color: var(--sidebar-border);"></div>
                 }
 
@@ -488,7 +706,13 @@
                         <i class="bi bi-lightning-charge-fill text-warning"></i> <span>تنفيذ عملية فورية</span>
                     </a>
                     <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")">
-                        <i class="bi bi-receipt"></i> <span>تقرير عملياتي</span>
+                        <i class="bi bi-receipt"></i> <span>سجل العمليات</span>
+                    </a>
+                    <a asp-area="Company" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")">
+                        <i class="bi bi-pie-chart-fill"></i> <span>تقرير الإجماليات والتسويات</span>
+                    </a>
+                    <a asp-area="Company" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                        <i class="bi bi-file-earmark-bar-graph"></i> <span>تقرير الأجهزة والعمليات</span>
                     </a>
                     <a asp-area="Company" asp-controller="ApiSettings" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ApiSettings" ? "active" : "")">
                         <i class="bi bi-key"></i> <span>مفاتيح الربط والـ API</span>
@@ -523,13 +747,114 @@
         </main>
     </div>
 
+    <!-- Unified System-Wide Confirmation Modal -->
+    <div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; overflow: hidden; background: var(--card-bg);">
+                <div class="p-4 text-center">
+                    <!-- Dynamic Pulsing Icon -->
+                    <div class="confirm-icon-wrapper mb-3 mx-auto" id="globalConfirmIconWrapper">
+                        <i id="globalConfirmIcon" class="bi bi-shield-x"></i>
+                    </div>
+
+                    <!-- Title & Primary Question -->
+                    <h5 class="fw-black mb-2 text-main fs-5" id="globalConfirmTitle">تأكيد الإجراء</h5>
+                    <p class="text-muted small mb-3 px-2" id="globalConfirmMessage">هل أنت متأكد من تنفيذ هذه العملية؟</p>
+
+                    <!-- Highlight Box (Item Detail) -->
+                    <div class="p-2.5 rounded-3 mb-3 text-start d-none" id="globalConfirmDetailBox" style="background: var(--bg-app); border: 1px solid var(--card-border);">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted fs-8 fw-bold" id="globalConfirmDetailLabel">العنصر:</span>
+                            <span class="fw-bold font-monospace text-primary text-truncate fs-8" id="globalConfirmDetailText"></span>
+                        </div>
+                    </div>
+
+                    <!-- Consequence Warning Box -->
+                    <div class="alert alert-danger border-0 d-flex align-items-start gap-2 text-start p-2.5 mb-4 rounded-3 d-none" id="globalConfirmConsequenceBox">
+                        <i class="bi bi-exclamation-triangle-fill fs-6 flex-shrink-0 text-danger mt-0.5"></i>
+                        <div class="fs-8 text-danger fw-semibold" id="globalConfirmConsequence">
+                            تنبيه: هذا الإجراء حساس وله تأثير مباشر على العمليات.
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex align-items-center gap-2 justify-content-center">
+                        <button type="button" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-bold fs-7 flex-grow-1" data-bs-dismiss="modal">
+                            إلغاء وتراجع
+                        </button>
+                        <button type="button" class="btn btn-danger px-4 py-2 rounded-pill fw-bold fs-7 flex-grow-1 shadow-sm d-flex align-items-center justify-content-center gap-1.5" id="globalConfirmActionBtn">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span id="globalConfirmActionBtnText">نعم، تأكيد</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- jQuery, Bootstrap 5 & SignalR JS -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
 
-    <!-- Theme Switcher & SignalR Scripts -->
+    <!-- Theme Switcher, SignalR & Global Confirmation Scripts -->
     <script>
+        let globalPendingConfirmAction = null;
+
+        function showConfirmModal(options) {
+            const modalEl = document.getElementById('globalConfirmModal');
+            if (!modalEl) return;
+
+            const titleEl = document.getElementById('globalConfirmTitle');
+            const msgEl = document.getElementById('globalConfirmMessage');
+            const detailBox = document.getElementById('globalConfirmDetailBox');
+            const detailText = document.getElementById('globalConfirmDetailText');
+            const detailLabel = document.getElementById('globalConfirmDetailLabel');
+            const consequenceBox = document.getElementById('globalConfirmConsequenceBox');
+            const consequenceEl = document.getElementById('globalConfirmConsequence');
+            const btn = document.getElementById('globalConfirmActionBtn');
+            const btnText = document.getElementById('globalConfirmActionBtnText');
+            const iconWrapper = document.getElementById('globalConfirmIconWrapper');
+            const icon = document.getElementById('globalConfirmIcon');
+
+            titleEl.innerText = options.title || 'تأكيد الإجراء';
+            msgEl.innerText = options.message || 'هل أنت متأكد من تنفيذ هذه العملية؟';
+
+            if (options.detail) {
+                detailBox.classList.remove('d-none');
+                detailText.innerText = options.detail;
+                if (options.detailLabel) detailLabel.innerText = options.detailLabel;
+            } else {
+                detailBox.classList.add('d-none');
+            }
+
+            if (options.consequence) {
+                consequenceBox.classList.remove('d-none');
+                consequenceEl.innerText = options.consequence;
+            } else {
+                consequenceBox.classList.add('d-none');
+            }
+
+            const type = options.type || 'danger';
+            iconWrapper.className = 'confirm-icon-wrapper mb-3 mx-auto confirm-icon-' + type;
+            btn.className = 'btn px-4 py-2 rounded-pill fw-bold fs-7 flex-grow-1 shadow-sm d-flex align-items-center justify-content-center gap-1.5 btn-' + (type === 'danger' ? 'danger' : type === 'warning' ? 'warning text-dark' : 'primary');
+
+            if (type === 'danger') {
+                icon.className = 'bi bi-shield-x';
+            } else if (type === 'warning') {
+                icon.className = 'bi bi-exclamation-triangle-fill';
+            } else {
+                icon.className = 'bi bi-question-circle-fill';
+            }
+
+            btnText.innerText = options.btnText || (type === 'danger' ? 'نعم، تأكيد' : 'تأكيد الإجراء');
+
+            globalPendingConfirmAction = options.onConfirm || null;
+
+            const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            bsModal.show();
+        }
+
         function updateThemeUI(theme) {
             const icon = document.getElementById("themeIcon");
             const label = document.getElementById("themeLabel");
@@ -555,6 +880,43 @@
         document.addEventListener("DOMContentLoaded", function () {
             const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
             updateThemeUI(currentTheme);
+
+            // Wire Global Confirmation Action Button
+            const confirmBtn = document.getElementById('globalConfirmActionBtn');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', function () {
+                    const modalEl = document.getElementById('globalConfirmModal');
+                    const bsModal = bootstrap.Modal.getInstance(modalEl);
+                    if (bsModal) bsModal.hide();
+
+                    if (typeof globalPendingConfirmAction === 'function') {
+                        const act = globalPendingConfirmAction;
+                        globalPendingConfirmAction = null;
+                        act();
+                    }
+                });
+            }
+
+            // Global Interceptor for forms with data-confirm="true"
+            document.addEventListener('submit', function (e) {
+                const form = e.target;
+                if (form.getAttribute('data-confirm') === 'true' && !form.dataset.confirmed) {
+                    e.preventDefault();
+                    showConfirmModal({
+                        title: form.getAttribute('data-confirm-title') || 'تأكيد العملية الحساسة',
+                        message: form.getAttribute('data-confirm-message') || 'هل أنت متأكد من تنفيذ هذا الإجراء؟',
+                        detail: form.getAttribute('data-confirm-detail') || '',
+                        detailLabel: form.getAttribute('data-confirm-detail-label') || 'العنصر المراد:',
+                        consequence: form.getAttribute('data-confirm-consequence') || '',
+                        btnText: form.getAttribute('data-confirm-btn') || 'نعم، تأكيد الإجراء',
+                        type: form.getAttribute('data-confirm-type') || 'danger',
+                        onConfirm: function () {
+                            form.dataset.confirmed = 'true';
+                            form.submit();
+                        }
+                    });
+                }
+            });
 
             // SignalR Connection
             const connection = new signalR.HubConnectionBuilder()

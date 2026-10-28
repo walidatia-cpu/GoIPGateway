@@ -4,7 +4,138 @@
     ViewData["Title"] = $"تعديل خطوة USSD رقم {Model.StepOrder}: {service?.NameAr}";
     var successRules = Model.ParsedSuccessRules;
     var failureRules = Model.ParsedFailureRules;
+
+    var opBadge = service?.Operator switch
+    {
+        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "badge-op-vodafone",
+        GoIPGateway.Domain.Enums.OperatorType.Orange => "badge-op-orange",
+        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "badge-op-etisalat",
+        GoIPGateway.Domain.Enums.OperatorType.WE => "badge-op-we",
+        _ => "bg-secondary text-white"
+    };
+
+    var opArabic = service?.Operator switch
+    {
+        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "فودافون كاش",
+        GoIPGateway.Domain.Enums.OperatorType.Orange => "أورانج كاش",
+        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "اتصالات كاش",
+        GoIPGateway.Domain.Enums.OperatorType.WE => "وي باي WE",
+        _ => "عامة"
+    };
+
+    var customParams = service?.Parameters?.Where(p => p.IsActive).ToList() ?? new();
 }
+
+<style>
+    /* USSD Command Field & Toolbar */
+    .ussd-input-group {
+        border: 2px solid #cbd5e1;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        background: #f8fafc;
+        overflow: hidden;
+    }
+    .ussd-input-group:focus-within {
+        border-color: var(--primary-accent, #3b82f6);
+        background: #ffffff;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+    }
+    .ussd-input-field {
+        direction: ltr !important;
+        text-align: left !important;
+        unicode-bidi: isolate !important;
+        font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace !important;
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        border: none;
+        background: transparent;
+        padding: 12px 16px;
+        width: 100%;
+        color: #0f172a;
+    }
+    .ussd-input-field:focus {
+        outline: none;
+    }
+
+    /* Live Preview Console */
+    .ussd-live-preview {
+        background: #0f172a;
+        color: #38bdf8;
+        border-radius: 10px;
+        padding: 10px 16px;
+        direction: ltr;
+        text-align: left;
+        font-family: 'JetBrains Mono', Consolas, monospace;
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    [data-bs-theme="light"] .ussd-live-preview {
+        background: #1e293b;
+        color: #38bdf8;
+    }
+
+    /* Variable Injection Chips */
+    .var-chip {
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+    }
+    .var-chip:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .var-chip:active {
+        transform: translateY(0);
+    }
+    .var-chip-merchant { background: rgba(168, 85, 247, 0.15); color: #7e22ce; border-color: rgba(168, 85, 247, 0.3); }
+    .var-chip-phone { background: rgba(14, 165, 233, 0.15); color: #0369a1; border-color: rgba(14, 165, 233, 0.3); }
+    .var-chip-amt { background: rgba(16, 185, 129, 0.15); color: #047857; border-color: rgba(16, 185, 129, 0.3); }
+    .var-chip-pwd { background: rgba(245, 158, 11, 0.15); color: #b45309; border-color: rgba(245, 158, 11, 0.3); }
+    .var-chip-custom { background: rgba(99, 102, 241, 0.15); color: #4338ca; border-color: rgba(99, 102, 241, 0.3); }
+
+    /* Condition Rule Rows */
+    .rule-card-row {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        transition: all 0.15s ease;
+    }
+    .rule-card-row:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    .ussd-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 7px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+    .tag-pwd { background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .tag-amt { background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .tag-phone { background: rgba(14, 165, 233, 0.25); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); }
+    .tag-merchant { background: rgba(168, 85, 247, 0.25); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+    .tag-custom { background: rgba(99, 102, 241, 0.25); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); }
+</style>
 
 <div class="container-xl px-0 py-2">
     <!-- Breadcrumb -->
@@ -22,15 +153,22 @@
     <div class="portal-card p-4 mb-4 shadow-sm">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div class="d-flex align-items-center gap-3">
-                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-2" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
+                <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-2" style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;">
                     <i class="bi bi-pencil-square"></i>
                 </div>
                 <div>
-                    <h4 class="fw-black mb-1 text-main">تعديل خطوة USSD رقم @Model.StepOrder</h4>
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                        <h4 class="fw-black mb-0 text-main">تعديل خطوة USSD رقم @Model.StepOrder</h4>
+                        <span class="badge @opBadge px-2.5 py-1 rounded-pill fs-8">
+                            @opArabic
+                        </span>
+                        <code class="font-monospace text-primary fw-bold bg-primary bg-opacity-10 px-2 py-0.5 rounded fs-8 border border-primary border-opacity-25">
+                            @service?.ServiceCode
+                        </code>
+                        <span class="badge bg-light text-muted border font-monospace fs-8">معرف الخطوة: #@Model.Id</span>
+                    </div>
                     <div class="text-muted small">
-                        الخدمة: <strong class="text-primary">@service?.NameAr</strong> 
-                        <span class="badge bg-light text-dark font-monospace border ms-2">@service?.ServiceCode</span>
-                        <span class="ms-2">• معرف الخطوة: #@Model.Id</span>
+                        الخدمة التابعة: <strong class="text-primary">@service?.NameAr</strong>
                     </div>
                 </div>
             </div>
@@ -54,87 +192,171 @@
             <input type="hidden" name="serviceId" value="@service?.Id" />
 
             <div class="row g-4">
-                <!-- 1. Basic Step Info -->
-                <div class="col-md-9">
-                    <label class="form-label fw-bold">عنوان الخطوة <span class="text-danger">*</span></label>
-                    <input type="text" name="StepTitle" class="form-control" value="@Model.StepTitle" required />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-bold">ترتيب الخطوة <span class="text-danger">*</span></label>
-                    <input type="number" name="StepOrder" class="form-control" value="@Model.StepOrder" required />
-                </div>
-
-                <!-- 2. USSD Command Input -->
+                <!-- 1. Step Identity & Ordering -->
                 <div class="col-12">
-                    <label class="form-label fw-bold">
-                        أمر الـ USSD (USSD Command) <span class="text-danger">*</span>
-                    </label>
-                    <input type="text" id="ussdCommandInput" name="UssdCommand" class="form-control font-monospace dir-ltr fs-6 fw-bold" value="@Model.UssdCommand" required />
-                    
-                    <div class="d-flex align-items-center gap-1 mt-2 flex-wrap">
-                        <span class="text-muted small fw-bold me-2">إدراج متغير سريع:</span>
-                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="insertVariable('ussdCommandInput', '{Password}')">+ {Password}</button>
-                        <button type="button" class="btn btn-sm btn-outline-info" onclick="insertVariable('ussdCommandInput', '{Amount}')">+ {Amount}</button>
-                        <button type="button" class="btn btn-sm btn-outline-success" onclick="insertVariable('ussdCommandInput', '{MobileNumber}')">+ {MobileNumber}</button>
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="insertVariable('ussdCommandInput', '{MerchantCode}')">+ {MerchantCode}</button>
+                    <div class="border rounded-4 p-3.5 bg-light bg-opacity-50">
+                        <h6 class="fw-bold text-main mb-3 d-flex align-items-center gap-2">
+                            <span class="p-1.5 rounded-2 bg-primary bg-opacity-10 text-primary fs-7"><i class="bi bi-info-circle-fill"></i></span>
+                            <span>البيانات الأساسية للخطوة</span>
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-9">
+                                <label class="form-label fw-bold small text-main">
+                                    عنوان الخطوة / الوصف الوظيفي <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="StepTitle" class="form-control" value="@Model.StepTitle" placeholder="مثال: أمر دفع كاش للتاجر أو استعلام رصيد المحفظة" required />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold small text-main">
+                                    ترتيب تنفيذ الخطوة <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted fw-bold">#</span>
+                                    <input type="number" name="StepOrder" class="form-control fw-bold" value="@Model.StepOrder" min="1" max="20" required />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 3. Success Conditions Box (Dynamic List of Pairs) -->
+                <!-- 2. USSD Command Builder with Quick Insertion & Live Preview -->
                 <div class="col-12">
-                    <div class="border rounded-3 p-3 bg-white shadow-xs">
-                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                    <div class="border rounded-4 p-3.5 bg-light bg-opacity-50">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold text-main mb-0 d-flex align-items-center gap-2">
+                                <span class="p-1.5 rounded-2 bg-primary bg-opacity-10 text-primary fs-7"><i class="bi bi-terminal-fill"></i></span>
+                                <span>صيغة أمر الـ USSD وقوالب المتغيرات (USSD Command) <span class="text-danger">*</span></span>
+                            </h6>
+                            <span class="text-muted fs-8">صيغة برمجية قابلة للاستبدال</span>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            اكتب كود الـ USSD كما هو، واستخدم الأزرار أدناه لإدراج المتغيرات التي ستقوم البوابة باستبدالها تلقائياً بالقيم المستلمة من طلب العميل:
+                        </p>
+
+                        <!-- Input Field -->
+                        <div class="ussd-input-group mb-2">
+                            <input type="text" 
+                                   id="ussdCommandInput" 
+                                   name="UssdCommand" 
+                                   class="ussd-input-field" 
+                                   value="@Model.UssdCommand" 
+                                   placeholder="مثال: *9*7*{MerchantCode}*{Amount}*{Password}#" 
+                                   oninput="updateLiveUssdPreview()" 
+                                   required />
+                        </div>
+
+                        <!-- Variable Injection Toolbar -->
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-3 pt-1">
+                            <span class="text-muted fs-8 fw-bold me-1">إدراج متغير سريع:</span>
+                            <span class="var-chip var-chip-merchant" onclick="insertVariable('{MerchantCode}')" title="كود التاجر المستلم من الـ API">
+                                <i class="bi bi-shop"></i> + {MerchantCode}
+                            </span>
+                            <span class="var-chip var-chip-phone" onclick="insertVariable('{MobileNumber}')" title="رقم الهاتف المستلم من الـ API">
+                                <i class="bi bi-phone"></i> + {MobileNumber}
+                            </span>
+                            <span class="var-chip var-chip-amt" onclick="insertVariable('{Amount}')" title="مبلغ العملية">
+                                <i class="bi bi-cash"></i> + {Amount}
+                            </span>
+                            <span class="var-chip var-chip-pwd" onclick="insertVariable('{Password}')" title="الرقم السري للمحفظة المشفر">
+                                <i class="bi bi-key-fill"></i> + {Password}
+                            </span>
+
+                            @foreach (var param in customParams)
+                            {
+                                var tokenTag = "{" + param.ParameterKey + "}";
+                                if (tokenTag != "{MerchantCode}" && tokenTag != "{MobileNumber}" && tokenTag != "{Amount}" && tokenTag != "{Password}")
+                                {
+                                    <span class="var-chip var-chip-custom" onclick="insertVariable('@tokenTag')" title="@param.DisplayNameAr">
+                                        <i class="bi bi-braces"></i> + @tokenTag
+                                    </span>
+                                }
+                            }
+                        </div>
+
+                        <!-- Live Visualizer -->
+                        <div>
+                            <div class="text-muted fs-8 fw-bold mb-1.5 d-flex align-items-center gap-1.5">
+                                <i class="bi bi-eye-fill text-primary"></i>
+                                <span>المعاينة الملونة الفورية للأمر:</span>
+                            </div>
+                            <div class="ussd-live-preview" id="liveUssdPreview">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Success Conditions Box -->
+                <div class="col-12">
+                    <div class="border rounded-4 p-3.5 bg-white shadow-xs" style="border-right: 4px solid #10b981 !important;">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3 pb-2 border-bottom">
                             <div>
                                 <h6 class="fw-bold text-success mb-1 d-flex align-items-center gap-2">
                                     <i class="bi bi-check-circle-fill"></i>
                                     <span>شروط النجاح والردود المرجعة للعميل</span>
                                 </h6>
-                                <p class="text-muted small mb-0">أضف كلمات أو عبارات النجاح المتوقعة في رد GoIP والرد البديل الذي يظهر للعميل عند مطابقة كل حالة:</p>
+                                <p class="text-muted small mb-0">إذا رد جهاز الـ GoIP بكلمة النجاح المحددة، ستعتبر البوابة الخطوة ناجحة وتمرر الرد البديل المخصص لعميل الـ API:</p>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-success fw-bold" onclick="addRuleRow('successRulesContainer', 'successPatterns', 'successClientMessages', 'العبارة في رد GoIP (مثل: تم بنجاح)', 'الرد البديل المرجع للعميل')">
+                            <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3" onclick="addRuleRow('successRulesContainer', 'successPatterns', 'successClientMessages', 'العبارة في رد GoIP (مثل: تم بنجاح أو 323)', 'الرد البديل المرجع للعميل (مثل: تم التحويل بنجاح)', 'success')">
                                 <i class="bi bi-plus-lg me-1"></i> إضافة شرط نجاح
                             </button>
                         </div>
 
-                        <div class="row g-2 mb-2 text-muted small fw-bold">
-                            <div class="col-5">الكلمة/العبارة في رد GoIP</div>
-                            <div class="col-6">الرد البديل المرجع للعميل مكان رد الشبكة</div>
-                            <div class="col-1 text-center">إجراء</div>
-                        </div>
-
-                        <div id="successRulesContainer" class="d-flex flex-column gap-2">
+                        <div id="successRulesContainer" class="d-flex flex-column gap-2.5">
                             @if (successRules.Any())
                             {
                                 @foreach (var s in successRules)
                                 {
-                                    <div class="row g-2 align-items-center rule-row">
-                                        <div class="col-5">
-                                            <input type="text" name="successPatterns" class="form-control form-control-sm" value="@s.Pattern" placeholder="العبارة في رد GoIP (مثل: تم بنجاح)" />
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="text" name="successClientMessages" class="form-control form-control-sm" value="@s.ClientMessage" placeholder="الرد البديل المرجع للعميل عند النجاح" />
-                                        </div>
-                                        <div class="col-1 text-center">
-                                            <button type="button" class="btn btn-sm btn-outline-danger p-1 border-0" onclick="removeRuleRow(this)" title="حذف الشرط">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                    <div class="rule-card-row">
+                                        <div class="row g-2 align-items-center">
+                                            <div class="col-12 col-md-5">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-success bg-opacity-10 text-success border-end-0"><i class="bi bi-search"></i></span>
+                                                    <input type="text" name="successPatterns" class="form-control border-start-0" value="@s.Pattern" placeholder="العبارة في رد GoIP (مثل: تم بنجاح أو 323)" />
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-1 text-center d-none d-md-block text-success">
+                                                <i class="bi bi-arrow-left fs-5"></i>
+                                            </div>
+                                            <div class="col-12 col-md-5">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-chat-quote"></i></span>
+                                                    <input type="text" name="successClientMessages" class="form-control border-start-0" value="@s.ClientMessage" placeholder="الرد البديل المرجع للعميل عند النجاح" />
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-1 text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-danger p-1 border-0" onclick="removeRuleRow(this)" title="حذف الشرط">
+                                                    <i class="bi bi-trash3-fill"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 }
                             }
                             else
                             {
-                                <div class="row g-2 align-items-center rule-row">
-                                    <div class="col-5">
-                                        <input type="text" name="successPatterns" class="form-control form-control-sm" placeholder="العبارة في رد GoIP (مثل: تم بنجاح)" />
-                                    </div>
-                                    <div class="col-6">
-                                        <input type="text" name="successClientMessages" class="form-control form-control-sm" placeholder="الرد البديل المرجع للعميل عند النجاح" />
-                                    </div>
-                                    <div class="col-1 text-center">
-                                        <button type="button" class="btn btn-sm btn-outline-danger p-1 border-0" onclick="removeRuleRow(this)" title="حذف الشرط">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                <div class="rule-card-row">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-12 col-md-5">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-success bg-opacity-10 text-success border-end-0"><i class="bi bi-search"></i></span>
+                                                <input type="text" name="successPatterns" class="form-control border-start-0" placeholder="العبارة في رد GoIP (مثل: تم بنجاح أو 323)" />
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-1 text-center d-none d-md-block text-success">
+                                            <i class="bi bi-arrow-left fs-5"></i>
+                                        </div>
+                                        <div class="col-12 col-md-5">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-chat-quote"></i></span>
+                                                <input type="text" name="successClientMessages" class="form-control border-start-0" placeholder="الرد البديل المرجع للعميل عند النجاح" />
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-1 text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger p-1 border-0" onclick="removeRuleRow(this)" title="حذف الشرط">
+                                                <i class="bi bi-trash3-fill"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             }
@@ -142,61 +364,77 @@
                     </div>
                 </div>
 
-                <!-- 4. Failure Conditions Box (Dynamic List of Pairs) -->
+                <!-- 4. Failure Conditions Box -->
                 <div class="col-12">
-                    <div class="border rounded-3 p-3 bg-white shadow-xs">
-                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                    <div class="border rounded-4 p-3.5 bg-white shadow-xs" style="border-right: 4px solid #ef4444 !important;">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3 pb-2 border-bottom">
                             <div>
                                 <h6 class="fw-bold text-danger mb-1 d-flex align-items-center gap-2">
-                                    <i class="bi bi-x-circle-fill"></i>
+                                    <i class="bi bi-shield-x"></i>
                                     <span>شروط الفشل والردود البديلة الآمنة للعميل</span>
                                 </h6>
-                                <p class="text-muted small mb-0">أضف كلمات الفشل في رد GoIP والنص الآمن البديل للعميل لحماية سرية بياناتك وتجنب إرجاع نصوص الشبكة الداخلية:</p>
+                                <p class="text-muted small mb-0">لحماية أمان وسرية بياناتك، حدد عبارات الفشل في رد GoIP والنص الآمن البديل للعميل بدلاً من تسريب نصوص الشبكة:</p>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger fw-bold" onclick="addRuleRow('failureRulesContainer', 'failurePatterns', 'failureClientMessages', 'العبارة في رد GoIP (مثل: غير كاف)', 'الرد البديل الآمن المرجع للعميل')">
+                            <button type="button" class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3" onclick="addRuleRow('failureRulesContainer', 'failurePatterns', 'failureClientMessages', 'العبارة في رد GoIP (مثل: غير كاف أو 9+9)', 'الرد البديل الآمن المرجع للعميل (مثل: رصيد غير كاف)', 'danger')">
                                 <i class="bi bi-plus-lg me-1"></i> إضافة شرط فشل
                             </button>
                         </div>
 
-                        <div class="row g-2 mb-2 text-muted small fw-bold">
-                            <div class="col-5">الكلمة/العبارة في رد GoIP</div>
-                            <div class="col-6">الرد البديل الآمن المرجع للعميل (لحماية بياناتك)</div>
-                            <div class="col-1 text-center">إجراء</div>
-                        </div>
-
-                        <div id="failureRulesContainer" class="d-flex flex-column gap-2">
+                        <div id="failureRulesContainer" class="d-flex flex-column gap-2.5">
                             @if (failureRules.Any())
                             {
                                 @foreach (var f in failureRules)
                                 {
-                                    <div class="row g-2 align-items-center rule-row">
-                                        <div class="col-5">
-                                            <input type="text" name="failurePatterns" class="form-control form-control-sm" value="@f.Pattern" placeholder="العبارة في رد GoIP (مثل: غير كاف)" />
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="text" name="failureClientMessages" class="form-control form-control-sm" value="@f.ClientMessage" placeholder="الرد البديل الآمن المرجع للعميل" />
-                                        </div>
-                                        <div class="col-1 text-center">
-                                            <button type="button" class="btn btn-sm btn-outline-danger p-1 border-0" onclick="removeRuleRow(this)" title="حذف الشرط">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                    <div class="rule-card-row">
+                                        <div class="row g-2 align-items-center">
+                                            <div class="col-12 col-md-5">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-danger bg-opacity-10 text-danger border-end-0"><i class="bi bi-search"></i></span>
+                                                    <input type="text" name="failurePatterns" class="form-control border-start-0" value="@f.Pattern" placeholder="العبارة في رد GoIP (مثل: غير كاف أو 9+9)" />
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-1 text-center d-none d-md-block text-danger">
+                                                <i class="bi bi-arrow-left fs-5"></i>
+                                            </div>
+                                            <div class="col-12 col-md-5">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-shield-check"></i></span>
+                                                    <input type="text" name="failureClientMessages" class="form-control border-start-0" value="@f.ClientMessage" placeholder="الرد البديل الآمن المرجع للعميل" />
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-1 text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-danger p-1 border-0" onclick="removeRuleRow(this)" title="حذف الشرط">
+                                                    <i class="bi bi-trash3-fill"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 }
                             }
                             else
                             {
-                                <div class="row g-2 align-items-center rule-row">
-                                    <div class="col-5">
-                                        <input type="text" name="failurePatterns" class="form-control form-control-sm" placeholder="العبارة في رد GoIP (مثل: غير كاف)" />
-                                    </div>
-                                    <div class="col-6">
-                                        <input type="text" name="failureClientMessages" class="form-control form-control-sm" placeholder="الرد البديل الآمن المرجع للعميل" />
-                                    </div>
-                                    <div class="col-1 text-center">
-                                        <button type="button" class="btn btn-sm btn-outline-danger p-1 border-0" onclick="removeRuleRow(this)" title="حذف الشرط">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                <div class="rule-card-row">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-12 col-md-5">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-danger bg-opacity-10 text-danger border-end-0"><i class="bi bi-search"></i></span>
+                                                <input type="text" name="failurePatterns" class="form-control border-start-0" placeholder="العبارة في رد GoIP (مثل: غير كاف أو 9+9)" />
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-1 text-center d-none d-md-block text-danger">
+                                            <i class="bi bi-arrow-left fs-5"></i>
+                                        </div>
+                                        <div class="col-12 col-md-5">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-shield-check"></i></span>
+                                                <input type="text" name="failureClientMessages" class="form-control border-start-0" placeholder="الرد البديل الآمن المرجع للعميل" />
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-1 text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger p-1 border-0" onclick="removeRuleRow(this)" title="حذف الشرط">
+                                                <i class="bi bi-trash3-fill"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             }
@@ -204,26 +442,42 @@
                     </div>
                 </div>
 
-                <!-- 5. Execution Settings -->
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">مهلة الانتظار (بالثواني)</label>
-                    <input type="number" name="TimeoutSeconds" class="form-control" value="@Model.TimeoutSeconds" />
-                    <small class="text-muted">الحد الأقصى لانتظار استجابة جهاز GoIP</small>
+                <!-- 5. Execution Timing & Timeout Settings -->
+                <div class="col-12">
+                    <div class="border rounded-4 p-3.5 bg-light bg-opacity-50">
+                        <h6 class="fw-bold text-main mb-3 d-flex align-items-center gap-2">
+                            <span class="p-1.5 rounded-2 bg-primary bg-opacity-10 text-primary fs-7"><i class="bi bi-stopwatch-fill"></i></span>
+                            <span>إعدادات التوقيت والمهل الزمنية</span>
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-main">مهلة الانتظار (Timeout)</label>
+                                <div class="input-group">
+                                    <input type="number" name="TimeoutSeconds" class="form-control" value="@Model.TimeoutSeconds" min="5" max="300" />
+                                    <span class="input-group-text bg-light text-muted small">ثواني</span>
+                                </div>
+                                <div class="text-muted fs-8 mt-1">الحد الأقصى لانتظار استجابة جهاز الـ GoIP قبل اعتبار الخطوة معلقة أو فاشلة.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-main">فترة التأخير بعد التنفيذ (Delay)</label>
+                                <div class="input-group">
+                                    <input type="number" name="DelayAfterMs" class="form-control" value="@Model.DelayAfterMs" min="0" max="10000" step="100" />
+                                    <span class="input-group-text bg-light text-muted small">مللي ثانية</span>
+                                </div>
+                                <div class="text-muted fs-8 mt-1">فترة راحة واستقرار للشبكة قبل الانتقال لإرسال الخطوة التالية.</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">تأخير بعد التنفيذ (مللي ثانية)</label>
-                    <input type="number" name="DelayAfterMs" class="form-control" value="@Model.DelayAfterMs" />
-                    <small class="text-muted">فترة انتظار قبل الانتقال للخطوة التالية</small>
-                </div>
-
-                <!-- 6. Actions Footer -->
-                <div class="col-12 text-end pt-3 border-top d-flex justify-content-between align-items-center">
-                    <a asp-action="ConfigureSteps" asp-route-id="@service?.Id" class="btn btn-outline-secondary px-4 fw-bold">
-                        إلغاء ورجوع
+                <!-- 6. Form Footer Actions -->
+                <div class="col-12 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <a asp-action="ConfigureSteps" asp-route-id="@service?.Id" class="btn btn-outline-secondary px-4 py-2 fw-bold rounded-3">
+                        <i class="bi bi-x-lg me-1"></i> إلغاء ورجوع
                     </a>
-                    <button type="submit" class="btn btn-primary fw-bold px-5 py-2 rounded-3 shadow">
-                        <i class="bi bi-check-lg me-1"></i> حفظ تعديلات الخطوة
+                    <button type="submit" class="btn btn-primary fw-black px-5 py-2.5 rounded-3 shadow">
+                        <i class="bi bi-check2-circle me-1"></i> حفظ تعديلات الخطوة
                     </button>
                 </div>
             </div>
@@ -233,8 +487,8 @@
 
 @section Scripts {
     <script>
-        function insertVariable(inputId, varText) {
-            const input = document.getElementById(inputId);
+        function insertVariable(varText) {
+            const input = document.getElementById('ussdCommandInput');
             if (!input) return;
 
             const startPos = input.selectionStart || 0;
@@ -245,39 +499,85 @@
             input.focus();
             input.selectionStart = startPos + varText.length;
             input.selectionEnd = startPos + varText.length;
+            updateLiveUssdPreview();
         }
 
-        function addRuleRow(containerId, patName, msgName, patPlaceholder, msgPlaceholder) {
+        function updateLiveUssdPreview() {
+            const input = document.getElementById('ussdCommandInput');
+            const preview = document.getElementById('liveUssdPreview');
+            if (!input || !preview) return;
+
+            let val = input.value || '';
+            if (!val.trim()) {
+                preview.innerHTML = '<span class="text-muted fst-italic">اكتب أمر الـ USSD أعلاه لرؤية المعاينة الملونة...</span>';
+                return;
+            }
+
+            // HTML escape
+            let escaped = val.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            // Replace known variable tokens with badges
+            escaped = escaped.replace(/\{Password\}/g, '<span class="ussd-tag tag-pwd"><i class="bi bi-key-fill"></i> {Password}</span>');
+            escaped = escaped.replace(/\{Amount\}/g, '<span class="ussd-tag tag-amt"><i class="bi bi-cash"></i> {Amount}</span>');
+            escaped = escaped.replace(/\{MobileNumber\}/g, '<span class="ussd-tag tag-phone"><i class="bi bi-phone"></i> {MobileNumber}</span>');
+            escaped = escaped.replace(/\{PhoneNumber\}/g, '<span class="ussd-tag tag-phone"><i class="bi bi-phone"></i> {PhoneNumber}</span>');
+            escaped = escaped.replace(/\{MerchantCode\}/g, '<span class="ussd-tag tag-merchant\"><i class="bi bi-shop"></i> {MerchantCode}</span>');
+            escaped = escaped.replace(/\{([A-Za-z0-9_]+)\}/g, '<span class="ussd-tag tag-custom"><i class="bi bi-braces"></i> {$1}</span>');
+
+            preview.innerHTML = escaped;
+        }
+
+        function addRuleRow(containerId, patName, msgName, patPlaceholder, msgPlaceholder, theme) {
             const container = document.getElementById(containerId);
             if (!container) return;
 
-            const row = document.createElement('div');
-            row.className = 'row g-2 align-items-center rule-row';
-            row.innerHTML = `
-                <div class="col-5">
-                    <input type="text" name="${patName}" class="form-control form-control-sm" placeholder="${patPlaceholder}" />
-                </div>
-                <div class="col-6">
-                    <input type="text" name="${msgName}" class="form-control form-control-sm" placeholder="${msgPlaceholder}" />
-                </div>
-                <div class="col-1 text-center">
-                    <button type="button" class="btn btn-sm btn-outline-danger p-1 border-0" onclick="removeRuleRow(this)" title="حذف الشرط">
-                        <i class="bi bi-trash"></i>
-                    </button>
+            const iconClass = (theme === 'success') ? 'bi-check-circle' : 'bi-search';
+            const bgClass = (theme === 'success') ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger';
+            const arrowClass = (theme === 'success') ? 'text-success' : 'text-danger';
+
+            const card = document.createElement('div');
+            card.className = 'rule-card-row';
+            card.innerHTML = `
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text ${bgClass} border-end-0"><i class="bi ${iconClass}"></i></span>
+                            <input type="text" name="${patName}" class="form-control border-start-0" placeholder="${patPlaceholder}" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-1 text-center d-none d-md-block ${arrowClass}">
+                        <i class="bi bi-arrow-left fs-5"></i>
+                    </div>
+                    <div class="col-12 col-md-5">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-chat-quote"></i></span>
+                            <input type="text" name="${msgName}" class="form-control border-start-0" placeholder="${msgPlaceholder}" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-1 text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger p-1 border-0" onclick="removeRuleRow(this)" title="حذف الشرط">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+                    </div>
                 </div>
             `;
-            container.appendChild(row);
+            container.appendChild(card);
         }
 
         function removeRuleRow(btn) {
-            const row = btn.closest('.rule-row');
+            const row = btn.closest('.rule-card-row');
             if (!row) return;
             const container = row.parentElement;
-            if (container && container.querySelectorAll('.rule-row').length > 1) {
+            if (container && container.querySelectorAll('.rule-card-row').length > 1) {
                 row.remove();
             } else {
                 row.querySelectorAll('input').forEach(input => input.value = '');
             }
         }
+
+        // Initialize preview on load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLiveUssdPreview();
+        });
     </script>
 }

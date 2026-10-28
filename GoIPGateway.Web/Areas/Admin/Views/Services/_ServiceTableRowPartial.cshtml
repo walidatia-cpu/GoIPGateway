@@ -13,13 +13,13 @@
         _ => "عامة"
     };
 
-    var opBadgeClass = srv.Operator switch
+    var opPillClass = srv.Operator switch
     {
-        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "badge-op-vodafone",
-        GoIPGateway.Domain.Enums.OperatorType.Orange => "badge-op-orange",
-        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "badge-op-etisalat",
-        GoIPGateway.Domain.Enums.OperatorType.WE => "badge-op-we",
-        _ => "bg-secondary"
+        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "pill-op-vodafone",
+        GoIPGateway.Domain.Enums.OperatorType.Orange => "pill-op-orange",
+        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "pill-op-etisalat",
+        GoIPGateway.Domain.Enums.OperatorType.WE => "pill-op-we",
+        _ => "pill-op-general"
     };
 
     var catArabic = srv.Category switch
@@ -43,18 +43,18 @@
     var searchKeywords = $"{srv.NameAr} {srv.NameEn} {srv.ServiceCode} {opArabic} {catArabic} {opKey} {srv.Category}".ToLower();
 }
 
-<tr class="service-table-row service-row-hover" 
+<tr class="service-table-row" 
     data-op="@opKey" 
     data-cat="@catGroupKey" 
     data-active="@(srv.IsActive ? "true" : "false")"
     data-search="@searchKeywords">
     <td>
         <div class="d-flex align-items-center gap-2.5">
-            <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary fs-5" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+            <div class="service-icon-box">
                 <i class="bi @(string.IsNullOrEmpty(srv.IconClass) ? "bi-lightning-charge" : srv.IconClass)"></i>
             </div>
             <div>
-                <a asp-action="Details" asp-route-id="@srv.Id" class="fw-bold text-main fs-6 text-decoration-none d-block">
+                <a asp-action="Details" asp-route-id="@srv.Id" class="fw-bold text-main fs-6 text-decoration-none d-block hover-primary">
                     @srv.NameAr
                 </a>
                 @if (!string.IsNullOrEmpty(srv.NameEn))
@@ -65,36 +65,37 @@
         </div>
     </td>
     <td>
-        <span class="badge bg-secondary bg-opacity-10 text-primary font-monospace fs-7 px-2.5 py-1 border border-secondary border-opacity-25">
-            @srv.ServiceCode
+        <span class="service-code-chip" title="كود الخدمة في الـ API">
+            <code>@srv.ServiceCode</code>
         </span>
     </td>
     <td>
-        <span class="badge @opBadgeClass px-2.5 py-1 rounded-pill">
-            @opArabic
+        <span class="pill-telecom @opPillClass">
+            <span class="dot-indicator"></span>
+            <span>@opArabic</span>
         </span>
     </td>
     <td>
         @switch (catGroupKey)
         {
             case "Payment":
-                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1">
-                    @catArabic
+                <span class="badge-cat badge-cat-payment">
+                    <i class="bi bi-credit-card-2-front me-1"></i> @catArabic
                 </span>
                 break;
             case "Inquiry":
-                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2.5 py-1">
-                    @catArabic
+                <span class="badge-cat badge-cat-inquiry">
+                    <i class="bi bi-search me-1"></i> @catArabic
                 </span>
                 break;
             case "NumberInquiry":
-                <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 px-2.5 py-1">
-                    @catArabic
+                <span class="badge-cat badge-cat-number">
+                    <i class="bi bi-phone me-1"></i> @catArabic
                 </span>
                 break;
             default:
-                <span class="badge bg-secondary bg-opacity-10 text-main px-2.5 py-1">
-                    @catArabic
+                <span class="badge-cat badge-cat-other">
+                    <i class="bi bi-gear me-1"></i> @catArabic
                 </span>
                 break;
         }
@@ -103,35 +104,35 @@
         @switch (srv.BalanceActionType)
         {
             case GoIPGateway.Domain.Enums.BalanceActionType.Increment:
-                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
-                    <i class="bi bi-plus-circle me-1"></i> إضافة (+)
+                <span class="badge-impact badge-impact-add">
+                    <i class="bi bi-plus-circle-fill me-1"></i> إضافة (+)
                 </span>
                 break;
             case GoIPGateway.Domain.Enums.BalanceActionType.Decrement:
-                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">
-                    <i class="bi bi-dash-circle me-1"></i> خصم (-)
+                <span class="badge-impact badge-impact-deduct">
+                    <i class="bi bi-dash-circle-fill me-1"></i> خصم (-)
                 </span>
                 break;
             default:
-                <span class="badge bg-secondary bg-opacity-10 text-muted px-2 py-1">
+                <span class="badge-impact badge-impact-neutral">
                     <i class="bi bi-dash me-1"></i> بدون تأثير
                 </span>
                 break;
         }
     </td>
     <td>
-        <strong class="text-primary font-monospace fs-6">@srv.BaseCost.ToString("N2")</strong> <small class="text-muted">ج.م</small>
+        <span class="font-monospace fw-bold text-main">@srv.BaseCost.ToString("N2")</span> <small class="text-muted fs-8">ج.م</small>
     </td>
     <td>
         @if (stepCount > 0)
         {
-            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2.5 py-1">
-                <i class="bi bi-check2 me-1"></i> @stepCount خطوة
-            </span>
+            <a asp-action="ConfigureSteps" asp-route-id="@srv.Id" class="badge-steps text-decoration-none" title="تعديل خطوات USSD">
+                <i class="bi bi-sliders me-1"></i> @stepCount خطوة
+            </a>
         }
         else
         {
-            <span class="badge bg-secondary bg-opacity-10 text-muted px-2 py-1">
+            <span class="badge-steps-empty">
                 0 خطوة
             </span>
         }
@@ -139,58 +140,46 @@
     <td>
         <form asp-action="ToggleStatus" asp-route-id="@srv.Id" method="post" class="d-inline">
             @Html.AntiForgeryToken()
-            <div class="form-check form-switch m-0">
-                <input class="form-check-input cursor-pointer" type="checkbox" role="switch" @(srv.IsActive ? "checked" : "") onchange="this.form.submit()" title="تبديل التفعيل">
+            <div class="form-check form-switch m-0 d-inline-block">
+                <input class="form-check-input cursor-pointer" type="checkbox" role="switch" @(srv.IsActive ? "checked" : "") onchange="this.form.submit()" title="تبديل التفعيل اللحظي">
             </div>
         </form>
     </td>
-    <td>
-        <div class="d-flex align-items-center justify-content-center gap-1.5">
-            <!-- View Details -->
-            <a asp-action="Details" asp-route-id="@srv.Id" class="btn btn-sm btn-outline-info rounded-2 px-2 py-1" title="عرض التفاصيل">
+    <td class="text-center">
+        <div class="actions-btn-group justify-content-center">
+            <!-- Action 1: View Details -->
+            <a asp-action="Details" asp-route-id="@srv.Id" class="btn-action-icon btn-action-view" title="عرض التفاصيل">
                 <i class="bi bi-eye"></i>
             </a>
 
-            <!-- Configure Steps -->
-            <a asp-action="ConfigureSteps" asp-route-id="@srv.Id" class="btn btn-sm btn-primary fw-bold px-2.5 py-1 rounded-2 d-flex align-items-center gap-1 shadow-sm" title="تهيئة أوامر USSD">
+            <!-- Action 2: Configure USSD Steps -->
+            <a asp-action="ConfigureSteps" asp-route-id="@srv.Id" class="btn-action-icon" style="color: #b45309;" title="تهيئة خطوات USSD (@stepCount خطوة)">
                 <i class="bi bi-sliders"></i>
-                <span class="fs-8">أوامر USSD</span>
             </a>
 
-            <!-- Edit Service Details -->
-            <a asp-action="Edit" asp-route-id="@srv.Id" class="btn btn-sm btn-outline-secondary rounded-2 px-2 py-1" title="تعديل بيانات الخدمة">
-                <i class="bi bi-pencil"></i>
-            </a>
-
-            <!-- Delete Service Modal Trigger -->
-            <button type="button" class="btn btn-sm btn-outline-danger rounded-2 px-2 py-1" data-bs-toggle="modal" data-bs-target="#deleteServiceModal-@srv.Id" title="حذف الخدمة">
-                <i class="bi bi-trash"></i>
+            <!-- Action 3: Test Service Directly -->
+            <button type="button" class="btn-action-icon" style="color: #059669;" title="تجربة واختبار الخدمة مباشرة على GoIP" onclick="openTestServiceModal('@srv.ServiceCode', '@srv.NameAr', '@srv.Category', '@opArabic')">
+                <i class="bi bi-play-circle-fill"></i>
             </button>
-        </div>
 
-        <!-- Delete Confirmation Modal -->
-        <div class="modal fade" id="deleteServiceModal-@srv.Id" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content p-3 shadow-lg">
-                    <div class="modal-header border-0 pb-0">
-                        <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            <span>تأكيد حذف الخدمة</span>
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body py-3">
-                        <p class="mb-1">هل أنت متأكد من حذف الخدمة: <strong>@srv.NameAr</strong> (<code>@srv.ServiceCode</code>)؟</p>
-                        <small class="text-muted">سيتم نقل الخدمة للمحذوفات وتعطيلها في الـ Gateway.</small>
-                    </div>
-                    <div class="modal-footer border-0">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-                        <form asp-action="Delete" asp-route-id="@srv.Id" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-danger fw-bold px-4">نعم، حذف الخدمة</button>
-                        </form>
-                    </div>
-                </div>
+            <!-- Action 4: Dropdown for more actions -->
+            <div class="dropdown">
+                <button class="btn-action-icon" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" title="خيارات إضافية">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-actions">
+                    <li>
+                        <a class="dropdown-item" asp-action="Edit" asp-route-id="@srv.Id">
+                            <i class="bi bi-pencil-square text-warning"></i>تعديل بيانات الخدمة
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="openDeleteServiceModal(@srv.Id, '@srv.NameAr', '@srv.ServiceCode')">
+                            <i class="bi bi-trash"></i>حذف الخدمة
+                        </a>
+                    </li>
+                </ul>
             </div>
         </div>
     </td>

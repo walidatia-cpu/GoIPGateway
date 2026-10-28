@@ -1,4 +1,5 @@
 using GoIPGateway.Application.Common.Interfaces;
+using GoIPGateway.Application.Common.Interfaces.Repositories;
 using GoIPGateway.Application.Factories;
 using GoIPGateway.Infrastructure.BackgroundJobs;
 using GoIPGateway.Infrastructure.Data;
@@ -25,6 +26,15 @@ public static class DependencyInjection
             options.UseSqlServer(connectionString, b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
 
         services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
+
+        // 1.1 Repositories & Unit of Work
+        services.AddScoped<IUnitOfWork, GoIPGateway.Infrastructure.Persistence.Repositories.UnitOfWork>();
+        services.AddScoped<GoIPGateway.Application.Common.Interfaces.Repositories.ITenantRepository, GoIPGateway.Infrastructure.Persistence.Repositories.TenantRepository>();
+        services.AddScoped<GoIPGateway.Application.Common.Interfaces.Repositories.IDeviceRepository, GoIPGateway.Infrastructure.Persistence.Repositories.DeviceRepository>();
+        services.AddScoped<GoIPGateway.Application.Common.Interfaces.Repositories.ISimCardRepository, GoIPGateway.Infrastructure.Persistence.Repositories.SimCardRepository>();
+        services.AddScoped<GoIPGateway.Application.Common.Interfaces.Repositories.IServiceDefinitionRepository, GoIPGateway.Infrastructure.Persistence.Repositories.ServiceDefinitionRepository>();
+        services.AddScoped<GoIPGateway.Application.Common.Interfaces.Repositories.ITransactionRepository, GoIPGateway.Infrastructure.Persistence.Repositories.TransactionRepository>();
+        services.AddScoped(typeof(GoIPGateway.Application.Common.Interfaces.Repositories.IRepository<,>), typeof(GoIPGateway.Infrastructure.Persistence.Repositories.GenericRepository<,>));
 
         // 2. Identity
         services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
@@ -64,6 +74,7 @@ public static class DependencyInjection
         services.AddScoped<IServiceExecutor, BalanceInquiryExecutor>();
         services.AddScoped<IServiceExecutor, SimNumberInquiryExecutor>();
         services.AddScoped<IServiceExecutor, QrPaymentExecutor>();
+        services.AddScoped<IServiceExecutor, PaymentExecutor>();
 
         // 7. Background Hosted Workers
         services.AddHostedService<DeviceHealthCheckWorker>();

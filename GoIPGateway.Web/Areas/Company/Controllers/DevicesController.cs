@@ -1,9 +1,12 @@
 using GoIPGateway.Application.Common.Interfaces;
+using GoIPGateway.Application.Features.Devices.Commands;
+using GoIPGateway.Application.Features.Devices.Queries;
+using GoIPGateway.Application.Features.Tenants.Queries;
 using GoIPGateway.Domain.Entities;
 using GoIPGateway.Domain.Enums;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
@@ -11,47 +14,43 @@ namespace GoIPGateway.Web.Areas.Company.Controllers;
 [Authorize(Roles = "TenantAdmin,TenantOperator")]
 public class DevicesController : Controller
 {
-    private readonly IAppDbContext _context;
+    private readonly IMediator _mediator;
     private readonly ICurrentUserService _currentUser;
     private readonly ITenantProvider _tenantProvider;
 
-    public DevicesController(IAppDbContext context, ICurrentUserService currentUser, ITenantProvider tenantProvider)
+    public DevicesController(IMediator mediator, ICurrentUserService currentUser, ITenantProvider tenantProvider)
     {
-        _context = context;
+        _mediator = mediator;
         _currentUser = currentUser;
         _tenantProvider = tenantProvider;
     }
 
-    private async Task<int?> ResolveTenantIdAsync()
+    private async Task<int?> ResolveTenantIdAsync(CancellationToken cancellationToken)
     {
         var tenantId = _tenantProvider.GetCurrentTenantId() ?? _currentUser.TenantId;
         if (tenantId.HasValue) return tenantId.Value;
 
-        var userId = _currentUser.UserId;
-        if (!string.IsNullOrEmpty(userId))
+        var tenantsResult = await _mediator.Send(new GetTenantsListQuery(), cancellationToken);
+        if (tenantsResult.Succeeded && tenantsResult.Data != null)
         {
-            var tu = await _context.TenantUsers.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-            if (tu != null) return tu.TenantId;
+            var firstActive = tenantsResult.Data.FirstOrDefault(t => t.IsActive && !t.IsDelete);
+            return firstActive?.Id;
         }
 
-        var defaultTenant = await _context.Tenants.FirstOrDefaultAsync(t => t.IsActive && !t.IsDelete);
-        return defaultTenant?.Id;
+        return null;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
-        var tenantId = await ResolveTenantIdAsync();
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
         if (!tenantId.HasValue) return Forbid();
 
-        var tenant = await _context.Tenants.FindAsync(tenantId.Value);
-        if (tenant == null) return NotFound();
+        var tenantResult = await _mediator.Send(new GetTenantByIdQuery(tenantId.Value), cancellationToken);
+        if (!tenantResult.Succeeded || tenantResult.Data == null) return NotFound();
 
-        var tenantDevices = await _context.TenantDevices
-            .Include(td => td.Device)
-                .ThenInclude(d => d.Ports)
-                    .ThenInclude(p => p.SimCard)
-            .Where(td => td.TenantId == tenantId.Value && td.IsActive && !td.Device.IsDelete)
-            .ToListAsync();
+        var tenant = tenantResult.Data;
+        var assignmentsResult = await _mediator.Send(new GetTenantDeviceAssignmentsQuery(tenantId.Value), cancellationToken);
+        var tenantDevices = assignmentsResult.Succeeded ? assignmentsResult.Data ?? new List<TenantDevice>() : new List<TenantDevice>();
 
         ViewBag.Tenant = tenant;
         ViewBag.CurrentCount = tenantDevices.Count;
@@ -62,16 +61,17 @@ public class DevicesController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
-        var tenantId = await ResolveTenantIdAsync();
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
         if (!tenantId.HasValue) return Forbid();
 
-        var tenant = await _context.Tenants.FindAsync(tenantId.Value);
-        if (tenant == null) return NotFound();
+        var tenantResult = await _mediator.Send(new GetTenantByIdQuery(tenantId.Value), cancellationToken);
+        if (!tenantResult.Succeeded || tenantResult.Data == null) return NotFound();
 
-        var currentCount = await _context.TenantDevices
-            .CountAsync(td => td.TenantId == tenantId.Value && td.IsActive && !td.Device.IsDelete);
+        var tenant = tenantResult.Data;
+        var assignmentsResult = await _mediator.Send(new GetTenantDeviceAssignmentsQuery(tenantId.Value), cancellationToken);
+        var currentCount = assignmentsResult.Succeeded ? assignmentsResult.Data?.Count ?? 0 : 0;
 
         if (currentCount >= tenant.MaxDevices)
         {
@@ -97,16 +97,17 @@ public class DevicesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Device device)
+    public async Task<IActionResult> Create(Device device, CancellationToken cancellationToken)
     {
-        var tenantId = await ResolveTenantIdAsync();
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
         if (!tenantId.HasValue) return Forbid();
 
-        var tenant = await _context.Tenants.FindAsync(tenantId.Value);
-        if (tenant == null) return NotFound();
+        var tenantResult = await _mediator.Send(new GetTenantByIdQuery(tenantId.Value), cancellationToken);
+        if (!tenantResult.Succeeded || tenantResult.Data == null) return NotFound();
 
-        var currentCount = await _context.TenantDevices
-            .CountAsync(td => td.TenantId == tenantId.Value && td.IsActive && !td.Device.IsDelete);
+        var tenant = tenantResult.Data;
+        var assignmentsResult = await _mediator.Send(new GetTenantDeviceAssignmentsQuery(tenantId.Value), cancellationToken);
+        var currentCount = assignmentsResult.Succeeded ? assignmentsResult.Data?.Count ?? 0 : 0;
 
         if (currentCount >= tenant.MaxDevices)
         {
@@ -133,60 +134,43 @@ public class DevicesController : Controller
             _ => 128
         };
 
-        device.TotalPorts = portCount;
-        device.ActivePorts = 0;
-        device.IsActive = true;
-        device.CreatedDate = DateTime.UtcNow;
+        var registerCommand = new RegisterDeviceCommand(
+            device.DeviceName,
+            device.DeviceType,
+            device.IpAddress,
+            device.Port,
+            device.Username,
+            device.Password,
+            device.Location,
+            device.Notes);
 
-        _context.Devices.Add(device);
-        await _context.SaveChangesAsync();
-
-        // 1. Create Ports
-        var ports = new List<DevicePort>();
-        for (int i = 1; i <= portCount; i++)
+        var registerResult = await _mediator.Send(registerCommand, cancellationToken);
+        if (!registerResult.IsSuccess)
         {
-            ports.Add(new DevicePort
-            {
-                DeviceId = device.Id,
-                PortNumber = i,
-                PortLabel = $"L{i:D3}",
-                Status = PortStatus.Empty,
-                IsActive = true
-            });
+            ModelState.AddModelError(string.Empty, registerResult.Error?.Message ?? "فشلت عملية تسجيل الجهاز.");
+            ViewBag.Tenant = tenant;
+            ViewBag.CurrentCount = currentCount;
+            ViewBag.MaxDevices = tenant.MaxDevices;
+            return View(device);
         }
-        _context.DevicePorts.AddRange(ports);
 
-        // 2. Map Device to Tenant
-        var td = new TenantDevice
-        {
-            TenantId = tenantId.Value,
-            DeviceId = device.Id,
-            PortRangeStart = 1,
-            PortRangeEnd = portCount,
-            IsActive = true,
-            AssignedDate = DateTime.UtcNow
-        };
-        _context.TenantDevices.Add(td);
-
-        await _context.SaveChangesAsync();
+        var deviceId = registerResult.Value;
+        var assignCommand = new AssignDeviceToTenantCommand(deviceId, tenantId.Value, 1, portCount);
+        await _mediator.Send(assignCommand, cancellationToken);
 
         TempData["Success"] = $"تمت إضافة جهاز '{device.DeviceName}' وتوليد {portCount} منفذ بنجاح.";
         return RedirectToAction(nameof(Index));
     }
 
     [HttpGet]
-    public async Task<IActionResult> Details(int id)
+    public async Task<IActionResult> Details(int id, CancellationToken cancellationToken)
     {
-        var tenantId = await ResolveTenantIdAsync();
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
         if (!tenantId.HasValue) return Forbid();
 
-        var td = await _context.TenantDevices
-            .Include(t => t.Device)
-                .ThenInclude(d => d.Ports.OrderBy(p => p.PortNumber))
-                    .ThenInclude(p => p.SimCard)
-            .FirstOrDefaultAsync(t => t.DeviceId == id && t.TenantId == tenantId.Value && !t.Device.IsDelete);
+        var deviceResult = await _mediator.Send(new GetDeviceByIdQuery(id), cancellationToken);
+        if (!deviceResult.Succeeded || deviceResult.Data == null) return NotFound();
 
-        if (td == null) return NotFound();
-        return View(td.Device);
+        return View(deviceResult.Data);
     }
 }

@@ -1,0 +1,419 @@
+@model GoIPGateway.Application.DTOs.Reports.ExecutiveSummaryDto
+@using GoIPGateway.Domain.Enums
+@{
+    ViewData["Title"] = "تقرير الإجماليات والتسويات المالية للشركة";
+    var filter = Model.Filter;
+}
+
+<div class="container-fluid py-2">
+    <!-- Header with Action Buttons -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1.5 rounded-pill fw-bold fs-7">
+                    <i class="bi bi-graph-up me-1"></i> المحاسبة والتسويات المالية
+                </span>
+                <span class="text-muted fs-8">حساب التاجر والشركة</span>
+            </div>
+            <h2 class="fw-black mb-1 text-main fs-3">تقرير الإجماليات والتسويات المالية (Executive Summary)</h2>
+            <p class="text-muted small mb-0">كشف إجمالي لمبالغ الدفع والتحويلات، سيولة محافظ الكاش على أجهزتك، وصافي التسويات المستقرة</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" onclick="window.print()" class="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 py-2 rounded-3 fw-bold">
+                <i class="bi bi-printer"></i> <span>طباعة التقرير</span>
+            </button>
+            <a asp-action="ExportSummaryCsv"
+               asp-route-operator="@filter.Operator"
+               asp-route-datePreset="@filter.DatePreset"
+               asp-route-fromDate="@filter.FromDate?.ToString("yyyy-MM-ddTHH:mm:ss")"
+               asp-route-toDate="@filter.ToDate?.ToString("yyyy-MM-ddTHH:mm:ss")"
+               class="btn btn-success d-flex align-items-center gap-2 px-3 py-2 rounded-3 fw-bold shadow-sm">
+                <i class="bi bi-file-earmark-spreadsheet"></i> <span>تصدير Excel (CSV)</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs Between Reports -->
+    <ul class="nav nav-pills gap-2 mb-4 p-1.5 rounded-4 border" style="background: var(--card-bg); border-color: var(--card-border) !important; width: fit-content;">
+        <li class="nav-item">
+            <a class="nav-link active rounded-3 px-3 py-2 fw-bold d-flex align-items-center gap-2" asp-action="Summary">
+                <i class="bi bi-graph-up-arrow"></i> <span>تقرير الإجماليات والتسويات</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-muted rounded-3 px-3 py-2 fw-bold d-flex align-items-center gap-2" asp-action="Index">
+                <i class="bi bi-cpu"></i> <span>التقرير التفصيلي للعمليات وبوابات GoIP</span>
+            </a>
+        </li>
+    </ul>
+
+    <!-- Filter Card ("فلاتر محترمه") -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: var(--card-bg); border: 1px solid var(--card-border) !important;">
+        <div class="card-body p-4">
+            <form method="get" asp-action="Summary" id="companySummaryFilterForm">
+                <!-- Date Presets Bar -->
+                <div class="d-flex flex-wrap align-items-center gap-2 pb-3 mb-3 border-bottom border-secondary border-opacity-10">
+                    <span class="text-muted fs-8 fw-bold me-1"><i class="bi bi-calendar3 me-1"></i> الفترة المحاسبية:</span>
+                    <button type="submit" name="datePreset" value="today" class="btn btn-sm @(filter.DatePreset == "today" ? "btn-primary fw-bold" : "btn-outline-secondary") rounded-pill px-3">اليوم</button>
+                    <button type="submit" name="datePreset" value="yesterday" class="btn btn-sm @(filter.DatePreset == "yesterday" ? "btn-primary fw-bold" : "btn-outline-secondary") rounded-pill px-3">أمس</button>
+                    <button type="submit" name="datePreset" value="last7days" class="btn btn-sm @(filter.DatePreset == "last7days" ? "btn-primary fw-bold" : "btn-outline-secondary") rounded-pill px-3">آخر 7 أيام</button>
+                    <button type="submit" name="datePreset" value="thismonth" class="btn btn-sm @(filter.DatePreset == "thismonth" || string.IsNullOrEmpty(filter.DatePreset) ? "btn-primary fw-bold" : "btn-outline-secondary") rounded-pill px-3">هذا الشهر</button>
+                    <button type="submit" name="datePreset" value="lastmonth" class="btn btn-sm @(filter.DatePreset == "lastmonth" ? "btn-primary fw-bold" : "btn-outline-secondary") rounded-pill px-3">الشهر الماضي</button>
+                    <button type="submit" name="datePreset" value="thisyear" class="btn btn-sm @(filter.DatePreset == "thisyear" ? "btn-primary fw-bold" : "btn-outline-secondary") rounded-pill px-3">هذا العام</button>
+                    <button type="button" onclick="toggleCustomDates()" class="btn btn-sm @(filter.DatePreset == "custom" ? "btn-primary fw-bold" : "btn-outline-secondary") rounded-pill px-3">تاريخ مخصص...</button>
+                </div>
+
+                <!-- Custom Dates Row -->
+                <div id="customDatesRow" class="row g-3 mb-3 @(filter.DatePreset == "custom" ? "" : "d-none")">
+                    <input type="hidden" name="datePreset" id="datePresetInput" value="@filter.DatePreset" />
+                    <div class="col-md-6">
+                        <label class="form-label fs-8 fw-bold text-muted">من تاريخ</label>
+                        <input type="datetime-local" name="fromDate" value="@filter.FromDate?.ToString("yyyy-MM-ddTHH:mm")" class="form-control rounded-3" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fs-8 fw-bold text-muted">إلى تاريخ</label>
+                        <input type="datetime-local" name="toDate" value="@filter.ToDate?.ToString("yyyy-MM-ddTHH:mm")" class="form-control rounded-3" />
+                    </div>
+                </div>
+
+                <!-- Grid Filters -->
+                <div class="row g-3">
+                    <!-- Operator Filter -->
+                    <div class="col-md-8 col-sm-12">
+                        <label class="form-label fs-8 fw-bold text-muted">🌐 شبكة ومحفظة الاتصال</label>
+                        <select name="operator" class="form-select rounded-3">
+                            <option value="">-- كافة الشبكات والمحافظ --</option>
+                            <option value="@OperatorType.Vodafone" selected="@(filter.Operator == OperatorType.Vodafone)">فودافون كاش</option>
+                            <option value="@OperatorType.Orange" selected="@(filter.Operator == OperatorType.Orange)">أورانج كاش</option>
+                            <option value="@OperatorType.Etisalat" selected="@(filter.Operator == OperatorType.Etisalat)">اتصالات كاش</option>
+                            <option value="@OperatorType.WE" selected="@(filter.Operator == OperatorType.WE)">وي باي (WE)</option>
+                        </select>
+                    </div>
+
+                    <!-- Submit & Reset Buttons -->
+                    <div class="col-md-4 col-sm-12 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1 d-flex align-items-center justify-content-center gap-2 rounded-3 py-2 fw-bold shadow-sm">
+                            <i class="bi bi-funnel-fill"></i> <span>تطبيق التقرير</span>
+                        </button>
+                        <a asp-action="Summary" class="btn btn-outline-secondary d-flex align-items-center justify-content-center rounded-3 py-2 px-3 fw-bold" title="إعادة تعيين الفلاتر">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Row 1: Primary Financial Aggregates -->
+    <div class="row g-3 mb-4">
+        <!-- Gross Financial Volume -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100" style="background: var(--card-bg); border-right: 4px solid #2563eb !important;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fs-8 fw-bold">حجم المبالغ المنفذة (Gross Volume)</span>
+                    <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 text-primary fs-5">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+                <div class="fs-3 fw-black text-main">@Model.TotalGrossVolume.ToString("N2") <small class="fs-7 text-muted">ج.م</small></div>
+                <div class="text-muted fs-8 mt-2">
+                    <span class="text-success fw-bold">@Model.TotalSuccessfulVolume.ToString("N2") ج.م ناجحة</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Charges / Fees -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100" style="background: var(--card-bg); border-right: 4px solid #16a34a !important;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fs-8 fw-bold">تكلفة ورسوم الخدمات المستحقة</span>
+                    <div class="p-2.5 rounded-3 bg-success bg-opacity-10 text-success fs-5">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                </div>
+                <div class="fs-3 fw-black text-main">@Model.TotalPlatformFees.ToString("N2") <small class="fs-7 text-muted">ج.م</small></div>
+                <div class="text-muted fs-8 mt-2">
+                    <span>صافي المبالغ المستقرة: <strong>@Model.NetSettledVolume.ToString("N2")</strong> ج.م</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wallets Liquidity in Company GoIPs -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100" style="background: var(--card-bg); border-right: 4px solid #f59e0b !important;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fs-8 fw-bold">سيولة المحافظ المتاحة (Wallets Cash)</span>
+                    <div class="p-2.5 rounded-3 bg-warning bg-opacity-10 text-warning fs-5">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                </div>
+                <div class="fs-3 fw-black text-main">@Model.TotalWalletsLiquidity.ToString("N2") <small class="fs-7 text-muted">ج.م</small></div>
+                <div class="text-muted fs-8 mt-2">
+                    <span>موزعة على <strong>@Model.ActiveSims</strong> شريحة نشطة ببواباتك</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Operations Throughput & Success Rate -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100" style="background: var(--card-bg); border-right: 4px solid #8b5cf6 !important;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fs-8 fw-bold">إجمالي العمليات ومعدل النجاح</span>
+                    <div class="p-2.5 rounded-3 bg-purple bg-opacity-10 text-purple fs-5" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                        <i class="bi bi-speedometer2"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <div class="fs-3 fw-black text-main">@Model.TotalOperationsCount.ToString("N0")</div>
+                    <span class="badge @(Model.SuccessRate >= 90 ? "bg-success" : (Model.SuccessRate >= 75 ? "bg-warning" : "bg-danger")) text-white fs-8 fw-bold rounded-pill">
+                        @Model.SuccessRate% نجاح
+                    </span>
+                </div>
+                <div class="text-muted fs-8 mt-2">
+                    <span>متوسط المعاملة: <strong>@Model.AverageTransactionSize.ToString("N2")</strong> ج.م</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Status Breakdown & Fleet Health -->
+    <div class="row g-4 mb-4">
+        <!-- Operations Status Breakdown -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="background: var(--card-bg); border: 1px solid var(--card-border) !important;">
+                <div class="card-header bg-transparent py-3 px-4 border-bottom" style="border-color: var(--card-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-pie-chart text-primary"></i>
+                        <h6 class="fw-bold mb-0 text-main">مؤشرات إنجاز العمليات</h6>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background: var(--bg-app); border: 1px solid var(--card-border); border-right: 4px solid #16a34a !important;">
+                                <div class="text-muted fs-8 fw-bold">العمليات الناجحة (Completed)</div>
+                                <div class="fs-4 fw-black text-success">@Model.CompletedCount.ToString("N0")</div>
+                                <div class="fs-8 text-muted mt-1">@Model.SuccessRate% من الإجمالي</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background: var(--bg-app); border: 1px solid var(--card-border); border-right: 4px solid #dc2626 !important;">
+                                <div class="text-muted fs-8 fw-bold">العمليات الفاشلة (Failed)</div>
+                                <div class="fs-4 fw-black text-danger">@Model.FailedCount.ToString("N0")</div>
+                                <div class="fs-8 text-muted mt-1">@Model.FailureRate% من الإجمالي</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background: var(--bg-app); border: 1px solid var(--card-border); border-right: 4px solid #f59e0b !important;">
+                                <div class="text-muted fs-8 fw-bold">قيد المعالجة (Processing)</div>
+                                <div class="fs-4 fw-black text-warning">@Model.ProcessingCount.ToString("N0")</div>
+                                <div class="fs-8 text-muted mt-1">عمليات جارية الآن</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background: var(--bg-app); border: 1px solid var(--card-border); border-right: 4px solid #6b7280 !important;">
+                                <div class="text-muted fs-8 fw-bold">معلقة / في الانتظار (Pending)</div>
+                                <div class="fs-4 fw-black text-secondary">@Model.PendingCount.ToString("N0")</div>
+                                <div class="fs-8 text-muted mt-1">في طابور البوابة</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hardware Fleet & Network Health -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="background: var(--card-bg); border: 1px solid var(--card-border) !important;">
+                <div class="card-header bg-transparent py-3 px-4 border-bottom" style="border-color: var(--card-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-router-fill text-primary"></i>
+                        <h6 class="fw-bold mb-0 text-main">حالة أجهزة GoIP والشرائح المخصصة لك</h6>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background: var(--bg-app); border: 1px solid var(--card-border);">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-muted fs-8 fw-bold">أجهزة GoIP المتصلة</span>
+                                    <span class="badge-live-pulse"></span>
+                                </div>
+                                <div class="fs-4 fw-black text-main">@Model.OnlineDevices / @Model.TotalDevices</div>
+                                <div class="fs-8 text-muted mt-1">@(Model.OfflineDevices > 0 ? $"{Model.OfflineDevices} أجهزة غير متصلة" : "جميع أجهزتك متصلة وتعمل")</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background: var(--bg-app); border: 1px solid var(--card-border);">
+                                <div class="text-muted fs-8 fw-bold">المنافذ والمسارات المتاحة</div>
+                                <div class="fs-4 fw-black text-main">@Model.ActiveSims / @Model.TotalPorts</div>
+                                <div class="fs-8 text-muted mt-1">منفذ مركب عليه شرائح نشطة</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background: var(--bg-app); border: 1px solid var(--card-border);">
+                                <div class="text-muted fs-8 fw-bold">الشرائح المحظورة / المتعثرة</div>
+                                <div class="fs-4 fw-black @(Model.BlockedSims > 0 ? "text-danger" : "text-success")">@Model.BlockedSims</div>
+                                <div class="fs-8 text-muted mt-1">شرائح تحتاج لتدخل أو فك حظر</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 rounded-3" style="background: var(--bg-app); border: 1px solid var(--card-border);">
+                                <div class="text-muted fs-8 fw-bold">رصيد حسابك المالي الحالي</div>
+                                <div class="fs-4 fw-black text-main font-monospace">@Model.TotalAccountsBalance.ToString("N2") <small class="fs-8">ج.م</small></div>
+                                <div class="fs-8 text-muted mt-1">الرصيد المتاح للتشغيل</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Carrier & Wallet Distribution (شبكات الدفع) -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: var(--card-bg); border: 1px solid var(--card-border) !important;">
+        <div class="card-header bg-transparent py-3 px-4 border-bottom" style="border-color: var(--card-border) !important;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-broadcast text-primary fs-5"></i>
+                <h5 class="fw-bold mb-0 text-main">إجماليات وتوزيع شبكات ومحافظ المحمول (Telecom Wallets Distribution)</h5>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                @foreach (var op in Model.OperatorAggregates)
+                {
+                    <div class="col-xl-3 col-sm-6">
+                        <div class="p-3.5 rounded-3 h-100" style="background: var(--bg-app); border: 1px solid var(--card-border); border-right: 4px solid @op.ColorHex !important;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-main fs-6">@op.NameAr</span>
+                                <span class="badge bg-secondary bg-opacity-10 text-main fs-8">@op.SimCount شرايح</span>
+                            </div>
+                            <div class="fs-4 fw-black text-main font-monospace mb-1">
+                                @op.TotalVolume.ToString("N2") <small class="fs-8 text-muted">ج.م</small>
+                            </div>
+                            <div class="text-muted fs-8 mb-2">
+                                السيولة الحالية: <strong class="text-main font-monospace">@op.CurrentLiquidity.ToString("N2")</strong> ج.م
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between fs-8 text-muted mb-1">
+                                <span>العمليات: <strong>@op.TotalOperations</strong></span>
+                                <span class="@(op.SuccessRate >= 80 ? "text-success fw-bold" : "text-danger fw-bold")">@op.SuccessRate% نجاح</span>
+                            </div>
+                            <div class="progress" style="height: 5px;">
+                                <div class="progress-bar" style="width: @op.SharePercentage%; background-color: @op.ColorHex;"></div>
+                            </div>
+                            <div class="text-end text-muted fs-9 mt-1">حصة @op.SharePercentage% من حجم معاملاتك</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Daily Cumulative Volume Trends & Top Failure Reasons -->
+    <div class="row g-4 mb-4">
+        <!-- Daily Cumulative Trends -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="background: var(--card-bg); border: 1px solid var(--card-border) !important;">
+                <div class="card-header bg-transparent py-3 px-4 border-bottom" style="border-color: var(--card-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-calendar-week-fill text-primary"></i>
+                        <h6 class="fw-bold mb-0 text-main">التوزيع التراكمي لليوميات (Daily Financial Trends)</h6>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    @if (!Model.DailyTrends.Any())
+                    {
+                        <div class="p-4 text-center text-muted">لا توجد عمليات مسجلة في هذه الفترة.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-custom align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>التاريخ</th>
+                                        <th>العمليات</th>
+                                        <th>حجم المبالغ (ج.م)</th>
+                                        <th>تكلفة الخدمات</th>
+                                        <th>نسبة النجاح</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var d in Model.DailyTrends.Take(10))
+                                    {
+                                        <tr>
+                                            <td class="fw-bold font-monospace text-main">@d.DateDisplay</td>
+                                            <td>
+                                                <span class="fw-bold">@d.TotalOperations</span>
+                                                <small class="text-muted">(@d.SuccessfulOperations ناجحة)</small>
+                                            </td>
+                                            <td class="fw-black text-primary font-monospace">@d.TotalVolume.ToString("N2")</td>
+                                            <td class="font-monospace text-muted">@d.TotalFees.ToString("N2")</td>
+                                            <td>
+                                                <span class="badge @(d.SuccessRate >= 85 ? "bg-success" : "bg-warning") text-white fs-8">@d.SuccessRate%</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Failure Reasons Analysis -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="background: var(--card-bg); border: 1px solid var(--card-border) !important;">
+                <div class="card-header bg-transparent py-3 px-4 border-bottom" style="border-color: var(--card-border) !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-octagon-fill text-danger"></i>
+                        <h6 class="fw-bold mb-0 text-main">تحليل أسباب العمليات المتعثرة والفاشلة</h6>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    @if (!Model.FailureReasons.Any())
+                    {
+                        <div class="p-4 text-center text-success">
+                            <i class="bi bi-shield-check fs-1 d-block mb-2"></i>
+                            ممتاز! لا توجد عمليات فاشلة في الفترة المحددة.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var fr in Model.FailureReasons)
+                            {
+                                <div class="p-3 rounded-3" style="background: var(--bg-app); border: 1px solid var(--card-border);">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-main fs-8 text-truncate" style="max-width: 250px;">@fr.Reason</span>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger fs-8 fw-bold">@fr.Count عملية</span>
+                                    </div>
+                                    <div class="progress" style="height: 5px;">
+                                        <div class="progress-bar bg-danger" style="width: @fr.Percentage%;"></div>
+                                    </div>
+                                    <div class="text-end text-muted fs-9 mt-1">@fr.Percentage% من إجمالي الفشل</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleCustomDates() {
+            const row = document.getElementById('customDatesRow');
+            const presetInput = document.getElementById('datePresetInput');
+            if (row.classList.contains('d-none')) {
+                row.classList.remove('d-none');
+                presetInput.value = 'custom';
+            } else {
+                row.classList.add('d-none');
+            }
+        }
+    </script>
+}
