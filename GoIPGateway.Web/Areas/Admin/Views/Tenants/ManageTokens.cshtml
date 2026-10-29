@@ -136,23 +136,6 @@
         </div>
     </div>
 
-    <!-- Alert Messages -->
-    @if (TempData["Success"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
-            <i class="bi bi-check-circle-fill me-2 fs-6"></i>
-            @TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2 fs-6"></i>
-            @TempData["Error"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
 
     <!-- Quick Stats Cards Row -->
     <div class="row g-3 mb-4">
@@ -369,20 +352,20 @@
                                     }
                                 </td>
 
-                                <!-- 6. الإجراءات (عرض التفاصيل هو الإجراء الأساسي) -->
+                                <!-- 6. الإجراءات الموحدة -->
                                 <td class="text-center">
-                                    <div class="d-flex align-items-center justify-content-center gap-1.5">
-                                        <!-- عرض التفاصيل الكاملة (شاشة العرض المنفصلة) -->
+                                    <div class="actions-pill-group justify-content-center">
+                                        <!-- عرض التفاصيل الكاملة -->
                                         <a asp-action="TokenDetails" asp-route-id="@key.Id" asp-route-tenantId="@Model.Id" 
-                                           class="btn btn-xs btn-outline-primary fw-bold px-2.5 py-1 rounded-2 d-inline-flex align-items-center gap-1" 
-                                           title="عرض باقي البيانات والمفتاح السري وتفاصيل الربط">
+                                           class="action-pill-btn action-pill-primary" 
+                                           title="عرض المفتاح السري وبيانات الربط">
                                             <i class="bi bi-eye-fill"></i>
                                             <span>عرض</span>
                                         </a>
 
                                         @if (key.IsActive)
                                         {
-                                            <!-- تعطيل مؤقت -->
+                                            <!-- زر سريع للتعطيل -->
                                             <form asp-action="RevokeToken" method="post" class="d-inline"
                                                   data-confirm="true"
                                                   data-confirm-title="تعطيل مفتاح الـ API"
@@ -395,14 +378,14 @@
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@key.Id" />
                                                 <input type="hidden" name="tenantId" value="@Model.Id" />
-                                                <button type="submit" class="btn btn-xs btn-outline-warning text-dark p-1 rounded-2" title="تعطيل التوكن مؤقتاً">
-                                                    <i class="bi bi-pause-circle"></i>
+                                                <button type="submit" class="action-pill-btn action-pill-warning" title="تعطيل التوكن مؤقتاً">
+                                                    <i class="bi bi-pause-fill"></i>
                                                 </button>
                                             </form>
                                         }
                                         else
                                         {
-                                            <!-- إعادة تفعيل -->
+                                            <!-- زر سريع للتفعيل -->
                                             <form asp-action="ActivateToken" method="post" class="d-inline"
                                                   data-confirm="true"
                                                   data-confirm-title="تفعيل مفتاح الـ API"
@@ -415,29 +398,44 @@
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@key.Id" />
                                                 <input type="hidden" name="tenantId" value="@Model.Id" />
-                                                <button type="submit" class="btn btn-xs btn-outline-success p-1 rounded-2" title="إعادة تفعيل التوكن">
-                                                    <i class="bi bi-play-circle"></i>
+                                                <button type="submit" class="action-pill-btn action-pill-success" title="إعادة تفعيل التوكن">
+                                                    <i class="bi bi-play-fill"></i>
                                                 </button>
                                             </form>
                                         }
 
-                                        <!-- حذف نهائي -->
-                                        <form asp-action="DeleteToken" method="post" class="d-inline"
-                                              data-confirm="true"
-                                              data-confirm-title="حذف مفتاح الـ API نهائياً"
-                                              data-confirm-message="هل أنت متأكد من حذف هذا المفتاح نهائياً؟"
-                                              data-confirm-detail="@key.KeyName"
-                                              data-confirm-detail-label="المفتاح:"
-                                              data-confirm-consequence="سيتم حذف المفتاح نهائياً ورفض أي طلبات قادمة باستخدامه فوراً."
-                                              data-confirm-btn="نعم، حذف المفتاح"
-                                              data-confirm-type="danger">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@key.Id" />
-                                            <input type="hidden" name="tenantId" value="@Model.Id" />
-                                            <button type="submit" class="btn btn-xs btn-outline-danger p-1 rounded-2" title="حذف التوكن نهائياً">
-                                                <i class="bi bi-trash3-fill"></i>
+                                        <!-- خيارات إضافية -->
+                                        <div class="dropdown d-inline-block">
+                                            <button class="action-pill-btn action-pill-more dropdown-toggle-no-caret" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" title="المزيد">
+                                                <i class="bi bi-three-dots"></i>
                                             </button>
-                                        </form>
+                                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-actions shadow-lg border-0 rounded-3 p-2">
+                                                <li>
+                                                    <a class="dropdown-item py-2 rounded-2 fw-semibold" asp-action="TokenDetails" asp-route-id="@key.Id" asp-route-tenantId="@Model.Id">
+                                                        <i class="bi bi-eye text-primary me-2 fs-6"></i>الملف الكامل والمفتاح السري
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider my-1"></li>
+                                                <li>
+                                                    <form asp-action="DeleteToken" method="post" class="d-inline"
+                                                          data-confirm="true"
+                                                          data-confirm-title="حذف مفتاح الـ API نهائياً"
+                                                          data-confirm-message="هل أنت متأكد من حذف هذا المفتاح نهائياً؟"
+                                                          data-confirm-detail="@key.KeyName"
+                                                          data-confirm-detail-label="المفتاح:"
+                                                          data-confirm-consequence="سيتم حذف المفتاح نهائياً ورفض أي طلبات قادمة باستخدامه فوراً."
+                                                          data-confirm-btn="نعم، حذف المفتاح"
+                                                          data-confirm-type="danger">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@key.Id" />
+                                                        <input type="hidden" name="tenantId" value="@Model.Id" />
+                                                        <button type="submit" class="dropdown-item py-2 rounded-2 fw-semibold text-danger">
+                                                            <i class="bi bi-trash3 text-danger me-2 fs-6"></i>حذف المفتاح نهائياً
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>

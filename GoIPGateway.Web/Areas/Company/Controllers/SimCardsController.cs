@@ -1,8 +1,11 @@
 using GoIPGateway.Application.Common.Interfaces;
+using GoIPGateway.Application.DTOs;
 using GoIPGateway.Application.Features.Devices.Queries;
 using GoIPGateway.Application.Features.SimCards.Commands;
 using GoIPGateway.Application.Features.SimCards.Queries;
 using GoIPGateway.Application.Features.Tenants.Queries;
+using GoIPGateway.Application.Features.Transactions.Commands;
+using GoIPGateway.Application.Features.Transactions.Queries;
 using GoIPGateway.Domain.Entities;
 using GoIPGateway.Domain.Enums;
 using MediatR;
@@ -12,7 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
 [Area("Company")]
-[Authorize(Roles = "TenantAdmin,TenantOperator")]
+[Authorize(Roles = "TenantAdmin,TenantOperator,SuperAdmin")]
 public class SimCardsController : Controller
 {
     private readonly IMediator _mediator;
@@ -51,6 +54,14 @@ public class SimCardsController : Controller
 
         ViewBag.TotalBalance = sims.Where(s => s.IsActive).Sum(s => s.CurrentBalance);
         ViewBag.ActiveCount = sims.Count(s => s.IsActive);
+        ViewBag.CurrentTenantId = tenantId.Value;
+
+        var devices = sims
+            .Where(s => s.DevicePort?.Device != null)
+            .Select(s => s.DevicePort!.Device!)
+            .DistinctBy(d => d.Id)
+            .ToList();
+        ViewBag.Devices = devices;
 
         return View(sims);
     }
@@ -231,4 +242,73 @@ public class SimCardsController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost]
+    public async Task<IActionResult> BulkExecute([FromBody] BulkSimActionRequest request, [FromServices] IServiceScopeFactory scopeFactory, CancellationToken cancellationToken)
+    {
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
+        if (!tenantId.HasValue) return Forbid();
+
+        if (request == null || request.SimIds == null || !request.SimIds.Any())
+        {
+            return Json(new { success = false, message = "يرجى تحديد شريحة واحدة على الأقل لتنفيذ الإجراء الجماعي." });
+        }
+
+        var validSimIds = request.SimIds.Distinct().ToList();
+        var actionCode = (request.ActionCode ?? "").Trim().ToUpperInvariant();
+
+        if (actionCode != "BAL_INQ" && actionCode != "NUM_INQ")
+        {
+            return Json(new { success = false, message = "نوع الإجراء غير صالح (يجب أن يكون استعلام رصيد BAL_INQ أو استعلام رقم NUM_INQ)." });
+        }
+
+        var effectiveTenantId = tenantId.Value;
+
+        // Launch background task to process requests and broadcast SignalR updates
+        _ = Task.Run(async () =>
+        {
+            using var scope = scopeFactory.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
+            tenantProvider.SetCurrentTenantId(effectiveTenantId);
+
+            foreach (var simId in validSimIds)
+            {
+                try
+                {
+                    var command = new ExecuteServiceCommand(
+                        ServiceCode: actionCode,
+                        ExternalRef: $"BULK-{DateTime.UtcNow:HHmmss}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}",
+                        SimCardId: simId,
+                        Operator: null,
+                        Parameters: new Dictionary<string, string>(),
+                        CallbackUrl: null,
+                        Source: RequestSource.Dashboard
+                    );
+
+                    await mediator.Send(command);
+                    await Task.Delay(350); // slight delay between commands to avoid port collision
+                }
+                catch
+                {
+                    // logged by command handler
+                }
+            }
+        });
+
+        var actionName = actionCode == "BAL_INQ" ? "استعلام الرصيد" : "استعلام رقم الشريحة";
+        return Json(new
+        {
+            success = true,
+            count = validSimIds.Count,
+            action = actionCode,
+            message = $"تم إطلاق طلبات {actionName} لعدد {validSimIds.Count} شريحة بنجاح. تتابع العمليات وحالاتها لحظياً في الجدول أدناه عبر SignalR."
+        });
+    }
+}
+
+public class BulkSimActionRequest
+{
+    public List<int> SimIds { get; set; } = new();
+    public string ActionCode { get; set; } = string.Empty;
 }

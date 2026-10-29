@@ -38,11 +38,13 @@
                     }
                     else
                     {
-                        <select asp-for="DevicePortId" class="form-select fs-6 py-2" required>
+                        <select asp-for="DevicePortId" class="form-select fs-6 py-2 searchable-select" 
+                                data-placeholder="-- اضغط لاختيار البورت الفارغ المناسب --" 
+                                data-search-placeholder="ابحث برقم المنفذ (مثل 1A أو 1.01 أو 32) أو الجهاز..." required>
                             <option value="">-- اضغط لاختيار البورت الفارغ المناسب --</option>
                             @foreach (var port in availablePorts)
                             {
-                                <option value="@port.Id">
+                                <option value="@port.Id" data-badge="@port.PortLabel" data-badge-class="bg-info bg-opacity-10 text-info border" data-search="@port.PortLabel @(port.Device?.DeviceName) @port.PortNumber">
                                     [@port.PortLabel] - @(port.Device?.DeviceName ?? "Device") (بورت رقم @port.PortNumber)
                                 </option>
                             }

@@ -36,10 +36,10 @@ public class GatewayController : ControllerBase
     public async Task<IActionResult> GetServices(CancellationToken cancellationToken)
     {
         var tenantId = _tenantProvider.GetCurrentTenantId() ?? _currentUser.TenantId;
-        if (!tenantId.HasValue && !_currentUser.IsSuperAdmin)
+        if (!tenantId.HasValue)
             return Unauthorized();
 
-        var query = new GetSubscribedServicesQuery(tenantId ?? 1);
+        var query = new GetSubscribedServicesQuery(tenantId.Value);
         var result = await _mediator.Send(query, cancellationToken);
         if (!result.Succeeded || result.Data == null)
             return BadRequest(new { success = false, message = result.Error?.Message ?? "تعذر جلب الخدمات" });

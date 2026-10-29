@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
 [Area("Company")]
-[Authorize(Roles = "TenantAdmin,TenantOperator")]
+[Authorize(Roles = "TenantAdmin,TenantOperator,SuperAdmin")]
 public class RoutingController : Controller
 {
     private readonly IMediator _mediator;
@@ -68,8 +68,15 @@ public class RoutingController : Controller
                 .ToList();
         }
 
+        var devices = sims
+            .Where(s => s.DevicePort?.Device != null)
+            .Select(s => s.DevicePort!.Device!)
+            .DistinctBy(d => d.Id)
+            .ToList();
+
         ViewBag.TenantServices = tenantServices;
         ViewBag.CompanySims = sims;
+        ViewBag.Devices = devices;
         ViewBag.ActiveServiceId = activeServiceId;
         ViewBag.ActiveTenantService = activeTenantService;
         ViewBag.AssignedSimIdsForService = assignedSimIdsForService;
@@ -119,4 +126,86 @@ public class RoutingController : Controller
 
         return RedirectToAction(nameof(Index), new { simId = simId, tab = "bySim" });
     }
+
+    [HttpPost]
+    public async Task<IActionResult> ToggleServiceSimAjax([FromBody] ToggleServiceSimRequest req, CancellationToken cancellationToken)
+    {
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
+        if (!tenantId.HasValue) return Json(new { success = false, message = "غير مصرح" });
+
+        var servicesResult = await _mediator.Send(new GetTenantServicesQuery(tenantId.Value), cancellationToken);
+        var tenantService = servicesResult.Data?.FirstOrDefault(ts => ts.ServiceDefinitionId == req.ServiceId);
+        if (tenantService == null) return Json(new { success = false, message = "الخدمة غير موجودة لحساب شركتك." });
+
+        var simIds = tenantService.AssignedSimCardIds.ToList();
+        if (req.Assign && !simIds.Contains(req.SimId))
+        {
+            simIds.Add(req.SimId);
+        }
+        else if (!req.Assign && simIds.Contains(req.SimId))
+        {
+            simIds.Remove(req.SimId);
+        }
+
+        var result = await _mediator.Send(new UpdateRoutingByServiceCommand(tenantId.Value, req.ServiceId, simIds.ToArray()), cancellationToken);
+        return Json(new { success = result.Succeeded, count = simIds.Count, message = result.Succeeded ? "تم الحفظ تلقائياً" : result.Error?.Message });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SetServiceSimsAjax([FromBody] SetServiceSimsRequest req, CancellationToken cancellationToken)
+    {
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
+        if (!tenantId.HasValue) return Json(new { success = false, message = "غير مصرح" });
+
+        var result = await _mediator.Send(new UpdateRoutingByServiceCommand(tenantId.Value, req.ServiceId, req.SimIds), cancellationToken);
+        return Json(new { success = result.Succeeded, count = req.SimIds?.Length ?? 0, message = result.Succeeded ? "تم تحديث تعيين الشرائح بنجاح" : result.Error?.Message });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ToggleSimServiceAjax([FromBody] ToggleSimServiceRequest req, CancellationToken cancellationToken)
+    {
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
+        if (!tenantId.HasValue) return Json(new { success = false, message = "غير مصرح" });
+
+        var servicesResult = await _mediator.Send(new GetTenantServicesQuery(tenantId.Value), cancellationToken);
+        var tenantServices = servicesResult.Data ?? new List<TenantService>();
+
+        var allowedServiceIds = tenantServices
+            .Where(ts => ts.AssignedSimCardIds.Contains(req.SimId))
+            .Select(ts => ts.ServiceDefinitionId)
+            .ToList();
+
+        if (req.Assign && !allowedServiceIds.Contains(req.ServiceId))
+        {
+            allowedServiceIds.Add(req.ServiceId);
+        }
+        else if (!req.Assign && allowedServiceIds.Contains(req.ServiceId))
+        {
+            allowedServiceIds.Remove(req.ServiceId);
+        }
+
+        var result = await _mediator.Send(new UpdateRoutingBySimCommand(tenantId.Value, req.SimId, allowedServiceIds.ToArray()), cancellationToken);
+        return Json(new { success = result.Succeeded, count = allowedServiceIds.Count, message = result.Succeeded ? "تم الحفظ تلقائياً" : result.Error?.Message });
+    }
 }
+
+public class ToggleServiceSimRequest
+{
+    public int ServiceId { get; set; }
+    public int SimId { get; set; }
+    public bool Assign { get; set; }
+}
+
+public class SetServiceSimsRequest
+{
+    public int ServiceId { get; set; }
+    public int[] SimIds { get; set; } = Array.Empty<int>();
+}
+
+public class ToggleSimServiceRequest
+{
+    public int SimId { get; set; }
+    public int ServiceId { get; set; }
+    public bool Assign { get; set; }
+}
+

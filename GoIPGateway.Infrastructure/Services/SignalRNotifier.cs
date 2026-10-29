@@ -26,6 +26,12 @@ public class SignalRNotifier : ISignalRNotifier
                 transaction.TransactionRef,
                 transaction.ExternalRef,
                 transaction.TenantId,
+                transaction.SimCardId,
+                SimPhoneNumber = transaction.SimCard?.PhoneNumber,
+                SimOperator = transaction.SimCard?.Operator.ToString(),
+                PortNumber = transaction.DevicePort?.PortNumber,
+                transaction.ServiceDefinitionId,
+                ServiceName = transaction.ServiceDefinition?.NameAr ?? "استعلام / عملية USSD",
                 transaction.Status,
                 StatusName = transaction.Status.ToString(),
                 transaction.Amount,
@@ -33,12 +39,14 @@ public class SignalRNotifier : ISignalRNotifier
                 transaction.SimBalanceAfter,
                 transaction.RawResponse,
                 transaction.ErrorMessage,
+                transaction.RequestedAt,
                 transaction.CompletedAt
             };
 
-            // Notify specific tenant and admins
+            // Notify specific tenant, admins, and broadcast to all connected clients
             await _hubContext.Clients.Group($"Tenant_{transaction.TenantId}").SendAsync("OnTransactionUpdated", payload, cancellationToken);
             await _hubContext.Clients.Group("SuperAdmins").SendAsync("OnTransactionUpdated", payload, cancellationToken);
+            await _hubContext.Clients.All.SendAsync("OnTransactionUpdated", payload, cancellationToken);
         }
         catch (Exception ex)
         {

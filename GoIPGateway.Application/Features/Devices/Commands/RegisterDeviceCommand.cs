@@ -14,7 +14,8 @@ public record RegisterDeviceCommand(
     string Username,
     string Password,
     string? Location = null,
-    string? Notes = null
+    string? Notes = null,
+    string? MerchantCode = null
 ) : IRequest<Result<int>>;
 
 public class RegisterDeviceCommandValidator : AbstractValidator<RegisterDeviceCommand>

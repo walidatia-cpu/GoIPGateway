@@ -50,16 +50,26 @@ public class DeviceQueryService : IDeviceQueryService
         return Result.Success(devices);
     }
 
-    public async Task<Result<IReadOnlyList<TenantDevice>>> GetTenantDeviceAssignmentsAsync(int tenantId, CancellationToken cancellationToken = default)
+    public async Task<Result<IReadOnlyList<TenantDevice>>> GetTenantDeviceAssignmentsAsync(int tenantId, bool includeDeleted = false, CancellationToken cancellationToken = default)
     {
-        var tenantDevices = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
-            _unitOfWork.Repository<TenantDevice, int>().AsQueryable()
-                .Include(td => td.Device)
-                    .ThenInclude(d => d.Ports)
-                        .ThenInclude(p => p.SimCard)
-                .Where(td => td.TenantId == tenantId && td.IsActive && !td.Device.IsDelete),
-            cancellationToken);
+        var query = _unitOfWork.Repository<TenantDevice, int>().AsQueryable();
+        if (includeDeleted)
+        {
+            query = query.IgnoreQueryFilters();
+        }
 
+        query = query
+            .Include(td => td.Device)
+                .ThenInclude(d => d.Ports)
+                    .ThenInclude(p => p.SimCard)
+            .Where(td => td.TenantId == tenantId && td.IsActive);
+
+        if (!includeDeleted)
+        {
+            query = query.Where(td => !td.Device.IsDelete);
+        }
+
+        var tenantDevices = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(query, cancellationToken);
         return Result.Success<IReadOnlyList<TenantDevice>>(tenantDevices);
     }
 

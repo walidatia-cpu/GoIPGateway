@@ -91,7 +91,7 @@
                     <!-- Tenant Filter -->
                     <div class="col-md-3 col-sm-6">
                         <label class="form-label fs-8 fw-bold text-muted">🏢 الشركة / التاجر</label>
-                        <select name="tenantId" class="form-select rounded-3">
+                        <select name="tenantId" class="form-select rounded-3 searchable-select" data-placeholder="-- كل الشركات --" data-search-placeholder="ابحث باسم الشركة...">
                             <option value="">-- كل الشركات --</option>
                             @foreach (var t in Model.AvailableTenants)
                             {
@@ -103,7 +103,7 @@
                     <!-- Device Filter ("وتاخد الاجهزه معاك") -->
                     <div class="col-md-3 col-sm-6">
                         <label class="form-label fs-8 fw-bold text-muted">📟 جهاز GoIP Gateway</label>
-                        <select name="deviceId" class="form-select rounded-3">
+                        <select name="deviceId" class="form-select rounded-3 searchable-select" data-placeholder="-- كل الأجهزة --" data-search-placeholder="ابحث باسم الجهاز أو IP...">
                             <option value="">-- كل الأجهزة --</option>
                             @foreach (var d in Model.AvailableDevices)
                             {
@@ -115,7 +115,7 @@
                     <!-- SIM Card Filter -->
                     <div class="col-md-2 col-sm-6">
                         <label class="form-label fs-8 fw-bold text-muted">📱 الشريحة</label>
-                        <select name="simCardId" class="form-select rounded-3">
+                        <select name="simCardId" class="form-select rounded-3 searchable-select" data-placeholder="-- كل الشرائح --" data-search-placeholder="ابحث برقم الشريحة أو الشبكة...">
                             <option value="">-- كل الشرائح --</option>
                             @foreach (var s in Model.AvailableSimCards)
                             {
@@ -151,7 +151,7 @@
                     <!-- Service Filter -->
                     <div class="col-md-4 col-sm-6">
                         <label class="form-label fs-8 fw-bold text-muted">⚡ نوع الخدمة</label>
-                        <select name="serviceDefinitionId" class="form-select rounded-3">
+                        <select name="serviceDefinitionId" class="form-select rounded-3 searchable-select" data-placeholder="-- كل الخدمات المتاحة --" data-search-placeholder="ابحث باسم الخدمة أو الكود...">
                             <option value="">-- كل الخدمات المتاحة --</option>
                             @foreach (var svc in Model.AvailableServices)
                             {

@@ -8,6 +8,7 @@ public class Device : BaseEntity, ISoftDelete, IAuditable
     public string DeviceName { get; set; } = string.Empty;
     public DeviceType DeviceType { get; set; } = DeviceType.GoIP128;
     public string? SerialNumber { get; set; }
+    public string? MerchantCode { get; set; } // كود التاجر الافتراضي للجهاز لاستبداله في أوامر الـ USSD
 
     // Network / Auth details
     public string IpAddress { get; set; } = string.Empty;
@@ -27,6 +28,13 @@ public class Device : BaseEntity, ISoftDelete, IAuditable
     public string? Notes { get; set; }
     public string? Location { get; set; }
     public bool IsActive { get; set; } = true;
+
+    // Block & SIM Bank Slots config
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public int SlotsPerBlock => DeviceType == DeviceType.GoIP512 ? 8 : 4;
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public int TotalBlocks => DeviceType == DeviceType.GoIP512 ? 64 : 32;
 
     // Navigation
     public virtual ICollection<DevicePort> Ports { get; set; } = new List<DevicePort>();

@@ -286,7 +286,12 @@ public class PaymentExecutor : IServiceExecutor
     {
         var amt = amount?.ToString("0.##") ?? parameters.GetValueOrDefault("amount", "0");
         var pin = sim.WalletPassword ?? sim.UssdPassword ?? parameters.GetValueOrDefault("pin", parameters.GetValueOrDefault("walletPassword", "0000"));
-        var target = parameters.GetValueOrDefault("merchantCode", parameters.GetValueOrDefault("phoneNumber", parameters.GetValueOrDefault("receiverPhone", "")));
+        var deviceMerchant = sim.DevicePort?.Device?.MerchantCode ?? "";
+        var target = parameters.GetValueOrDefault("merchantCode", parameters.GetValueOrDefault("phoneNumber", parameters.GetValueOrDefault("receiverPhone", deviceMerchant)));
+        if (string.IsNullOrWhiteSpace(target) && !string.IsNullOrWhiteSpace(deviceMerchant))
+        {
+            target = deviceMerchant;
+        }
 
         return op switch
         {

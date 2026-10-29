@@ -29,25 +29,28 @@ public class ExecuteController : Controller
         _tenantProvider = tenantProvider;
     }
 
-    private async Task<int?> ResolveTenantIdAsync(CancellationToken cancellationToken)
+    private int? ResolveTenantId()
     {
-        var tenantId = _tenantProvider.GetCurrentTenantId() ?? _currentUser.TenantId;
-        if (tenantId.HasValue) return tenantId.Value;
-
-        var tenantsResult = await _mediator.Send(new GetTenantsListQuery(), cancellationToken);
-        if (tenantsResult.Succeeded && tenantsResult.Data != null)
+        // Execution of operations is strictly restricted to Company/Tenant accounts only.
+        if (_currentUser.IsSuperAdmin || User.IsInRole("SuperAdmin"))
         {
-            var firstActive = tenantsResult.Data.FirstOrDefault(t => t.IsActive && !t.IsDelete);
-            return firstActive?.Id;
+            return null;
+        }
+
+        var tenantId = _currentUser.TenantId ?? _tenantProvider.GetCurrentTenantId();
+        if (tenantId.HasValue)
+        {
+            _tenantProvider.SetCurrentTenantId(tenantId.Value);
+            return tenantId.Value;
         }
 
         return null;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(string? serviceCode, int? serviceId, CancellationToken cancellationToken)
     {
-        var tenantId = await ResolveTenantIdAsync(cancellationToken);
+        var tenantId = ResolveTenantId();
         if (!tenantId.HasValue) return Forbid();
 
         var servicesResult = await _mediator.Send(new GetSubscribedServicesQuery(tenantId.Value), cancellationToken);
@@ -56,10 +59,30 @@ public class ExecuteController : Controller
         var simsResult = await _mediator.Send(new GetCompanySimCardsQuery(tenantId.Value), cancellationToken);
         var sims = simsResult.Succeeded ? simsResult.Data ?? new List<SimCard>() : new List<SimCard>();
 
+        // Determine pre-selected service
+        string selectedCode = "";
+        if (!string.IsNullOrWhiteSpace(serviceCode))
+        {
+            var match = services.FirstOrDefault(s => string.Equals(s.ServiceCode, serviceCode.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (match != null) selectedCode = match.ServiceCode;
+        }
+        else if (serviceId.HasValue)
+        {
+            var match = services.FirstOrDefault(s => s.Id == serviceId.Value);
+            if (match != null) selectedCode = match.ServiceCode;
+        }
+
+        // If no explicit service specified, default to first available service so execution view is immediately loaded
+        if (string.IsNullOrEmpty(selectedCode) && services.Any())
+        {
+            selectedCode = services.First().ServiceCode;
+        }
+
         var vm = new ExecuteServiceViewModel
         {
             Services = services.ToList(),
-            AvailableSims = sims.ToList()
+            AvailableSims = sims.ToList(),
+            ServiceCode = selectedCode
         };
 
         return View(vm);
@@ -69,6 +92,9 @@ public class ExecuteController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Execute(string serviceCode, int? simCardId, OperatorType? op, string? externalRef, [FromForm] IFormCollection form, CancellationToken cancellationToken)
     {
+        var tenantId = ResolveTenantId();
+        if (!tenantId.HasValue) return Forbid();
+
         var parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var key in form.Keys)
         {
@@ -122,6 +148,9 @@ public class ExecuteController : Controller
     [HttpPost]
     public async Task<IActionResult> QuickTest([FromBody] ExecuteServiceRequestDto request, CancellationToken cancellationToken)
     {
+        var tenantId = ResolveTenantId();
+        if (!tenantId.HasValue) return Forbid();
+
         var parameters = request.GetNormalizedParameters();
         var command = new ExecuteServiceCommand(
             request.ServiceCode,

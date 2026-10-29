@@ -248,16 +248,34 @@ public class TenantsController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> GenerateApiKey(int tenantId, string keyName, CancellationToken cancellationToken)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GenerateApiKeyCommand(tenantId, keyName), cancellationToken);
-        if (result.IsSuccess)
+        var result = await _mediator.Send(new DeleteTenantCommand(id), cancellationToken);
+        if (result.Succeeded)
         {
-            TempData["Success"] = $"تم إنشاء المفتاح بنجاح: {result.Value.ApiKey}";
+            TempData["Success"] = "تم حذف الشركة بنجاح (حذف ناعم / نقل إلى الأرشيف)، وتم إيقاف قدرة مستخدميها على الدخول إلى المنصة.";
         }
         else
         {
-            TempData["Error"] = result.Error?.Message ?? "فشل توليد المفتاح.";
+            TempData["Error"] = result.Error?.Message ?? "فشلت عملية حذف الشركة.";
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Restore(int id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new RestoreTenantCommand(id), cancellationToken);
+        if (result.Succeeded)
+        {
+            TempData["Success"] = "تم استعادة الشركة بنجاح وإعادة تفعيلها.";
+        }
+        else
+        {
+            TempData["Error"] = result.Error?.Message ?? "فشلت عملية استعادة الشركة.";
         }
 
         return RedirectToAction(nameof(Index));

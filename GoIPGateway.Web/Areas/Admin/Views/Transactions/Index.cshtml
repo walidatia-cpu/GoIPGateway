@@ -248,9 +248,10 @@
                                     </div>
                                 </td>
                                 <td class="text-center">
-                                    <div class="actions-btn-group justify-content-center">
-                                        <button type="button" class="btn-action-icon btn-action-view" onclick="showTxModal('@tx.TransactionRef')" title="عرض تفاصيل العملية وجلسة USSD">
-                                            <i class="bi bi-eye"></i>
+                                    <div class="actions-pill-group justify-content-center">
+                                        <button type="button" class="action-pill-btn action-pill-primary" onclick="showTxModal('@tx.TransactionRef')" title="عرض تفاصيل العملية وجلسة الـ USSD">
+                                            <i class="bi bi-eye-fill"></i>
+                                            <span>عرض</span>
                                         </button>
                                     </div>
                                 </td>
@@ -336,7 +337,7 @@
                     document.getElementById('txDetailsContent').innerHTML = html;
                     new bootstrap.Modal(document.getElementById('txDetailsModal')).show();
                 })
-                .catch(err => alert('حدث خطأ أثناء تحميل تفاصيل العملية'));
+                .catch(err => showAlertModal('حدث خطأ أثناء تحميل تفاصيل العملية من الخادم.', 'خطأ في التحميل', 'danger'));
         }
     </script>
 }

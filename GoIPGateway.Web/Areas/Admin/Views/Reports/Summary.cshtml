@@ -87,7 +87,7 @@
                     <!-- Tenant Filter -->
                     <div class="col-md-5 col-sm-6">
                         <label class="form-label fs-8 fw-bold text-muted">🏢 نطاق التقرير (كل الشركات أو شركة محددة)</label>
-                        <select name="tenantId" class="form-select rounded-3">
+                        <select name="tenantId" class="form-select rounded-3 searchable-select" data-placeholder="-- كافة الشركات المعتمدة --" data-search-placeholder="ابحث باسم الشركة...">
                             <option value="">-- كافة الشركات المعتمدة (المنصة بالكامل) --</option>
                             @foreach (var t in Model.AvailableTenants)
                             {

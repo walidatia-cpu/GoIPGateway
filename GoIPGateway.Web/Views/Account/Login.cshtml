@@ -1,240 +1,1028 @@
 @model GoIPGateway.Web.Models.LoginViewModel
 @{
-    ViewData["Title"] = "تسجيل الدخول - GoIP Gateway";
+    ViewData["Title"] = "تسجيل الدخول - GoIP Gateway Enterprise";
     Layout = null;
     var isRtl = System.Globalization.CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
 }
 <!DOCTYPE html>
-<html lang="ar" dir="@(isRtl ? "rtl" : "ltr")" data-bs-theme="light">
+<html lang="@(isRtl ? "ar" : "en")" dir="@(isRtl ? "rtl" : "ltr")" data-bs-theme="dark">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Prevent theme flicker -->
     <script>
         (function () {
-            const savedTheme = localStorage.getItem('goip_theme') || 'light';
+            const savedTheme = localStorage.getItem('goip_theme') || 'dark';
             document.documentElement.setAttribute('data-bs-theme', savedTheme);
         })();
     </script>
 
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 & Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap@(isRtl ? ".rtl" : "").min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
         :root {
-            --primary-accent: #2563eb;
-            --font-family-base: @(isRtl ? "'Cairo', sans-serif" : "'Outfit', sans-serif");
+            --font-ar: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-en: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+            --primary-gradient: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
+            --primary-glow: rgba(79, 70, 229, 0.4);
         }
 
+        /* ---------------- DARK THEME (DEFAULT / SLEEK FINTECH) ---------------- */
+        [data-bs-theme="dark"] {
+            --page-bg: #070a13;
+            --form-panel-bg: rgba(13, 19, 34, 0.88);
+            --showcase-bg: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.22) 0%, rgba(15, 23, 42, 0) 55%),
+                           radial-gradient(circle at 80% 80%, rgba(124, 58, 237, 0.18) 0%, rgba(7, 10, 19, 0) 65%),
+                           #0b1020;
+            --text-heading: #f8fafc;
+            --text-body: #94a3b8;
+            --text-muted: #64748b;
+            --card-glass-bg: rgba(20, 29, 51, 0.65);
+            --card-glass-border: rgba(255, 255, 255, 0.08);
+            --card-glass-hover: rgba(30, 41, 69, 0.85);
+            --input-bg: rgba(15, 23, 42, 0.7);
+            --input-border: rgba(255, 255, 255, 0.12);
+            --input-focus-border: #6366f1;
+            --input-focus-glow: rgba(99, 102, 241, 0.25);
+            --input-text: #f8fafc;
+            --grid-line: rgba(255, 255, 255, 0.035);
+            --chip-bg: rgba(255, 255, 255, 0.05);
+            --chip-border: rgba(255, 255, 255, 0.08);
+            --live-status-bg: rgba(16, 185, 129, 0.15);
+            --live-status-border: rgba(16, 185, 129, 0.35);
+            --live-status-text: #34d399;
+            --shadow-card: 0 25px 60px -15px rgba(0, 0, 0, 0.75);
+        }
+
+        /* ---------------- LIGHT THEME (CRISP / ENTERPRISE) ---------------- */
         [data-bs-theme="light"] {
-            --bg-page: radial-gradient(circle at 50% 10%, #e0e7ff 0%, #f1f5f9 60%, #e2e8f0 100%);
-            --card-bg: rgba(255, 255, 255, 0.94);
-            --card-border: #cbd5e1;
-            --text-main: #0f172a;
-            --text-muted: #475569;
+            --page-bg: #f8fafc;
+            --form-panel-bg: rgba(255, 255, 255, 0.95);
+            --showcase-bg: radial-gradient(circle at 15% 15%, #e0e7ff 0%, rgba(241, 245, 249, 0) 55%),
+                           radial-gradient(circle at 85% 85%, #ede9fe 0%, rgba(248, 250, 252, 0) 60%),
+                           #f1f5f9;
+            --text-heading: #0f172a;
+            --text-body: #334155;
+            --text-muted: #64748b;
+            --card-glass-bg: rgba(255, 255, 255, 0.85);
+            --card-glass-border: rgba(226, 232, 240, 0.9);
+            --card-glass-hover: #ffffff;
             --input-bg: #ffffff;
             --input-border: #cbd5e1;
+            --input-focus-border: #4f46e5;
+            --input-focus-glow: rgba(79, 70, 229, 0.18);
             --input-text: #0f172a;
-            --quick-btn-admin: rgba(245, 158, 11, 0.12);
-            --quick-btn-admin-border: rgba(245, 158, 11, 0.4);
-            --quick-btn-admin-text: #b45309;
-            --quick-btn-merchant: rgba(37, 99, 235, 0.1);
-            --quick-btn-merchant-border: rgba(37, 99, 235, 0.35);
-            --quick-btn-merchant-text: #1d4ed8;
-            --box-shadow: 0 20px 45px rgba(15, 23, 42, 0.1);
+            --grid-line: rgba(15, 23, 42, 0.035);
+            --chip-bg: rgba(15, 23, 42, 0.04);
+            --chip-border: rgba(15, 23, 42, 0.08);
+            --live-status-bg: rgba(16, 185, 129, 0.12);
+            --live-status-border: rgba(16, 185, 129, 0.3);
+            --live-status-text: #059669;
+            --shadow-card: 0 25px 60px -15px rgba(15, 23, 42, 0.12);
         }
 
-        [data-bs-theme="dark"] {
-            --bg-page: radial-gradient(circle at 50% 20%, #172554 0%, #090d16 70%);
-            --card-bg: rgba(19, 28, 49, 0.88);
-            --card-border: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --input-bg: #18233c;
-            --input-border: #334155;
-            --input-text: #f8fafc;
-            --quick-btn-admin: rgba(245, 158, 11, 0.15);
-            --quick-btn-admin-border: rgba(245, 158, 11, 0.4);
-            --quick-btn-admin-text: #fbbf24;
-            --quick-btn-merchant: rgba(99, 102, 241, 0.18);
-            --quick-btn-merchant-border: rgba(99, 102, 241, 0.4);
-            --quick-btn-merchant-text: #93c5fd;
-            --box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+        * {
+            box-sizing: border-box;
+            transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease;
         }
 
         body {
-            font-family: var(--font-family-base);
-            background: var(--bg-page);
-            color: var(--text-main);
+            font-family: @(isRtl ? "var(--font-ar)" : "var(--font-en)");
+            background-color: var(--page-bg);
+            color: var(--text-body);
             min-height: 100vh;
+            margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow-x: hidden;
+            position: relative;
             padding: 24px 16px;
-            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* Ambient Dynamic Background Blobs */
+        .ambient-glow {
+            position: fixed;
+            width: 580px;
+            height: 580px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(140px);
+            opacity: 0.45;
+            animation: pulse-glow 11s ease-in-out infinite alternate;
+        }
+        .glow-1 {
+            top: -140px;
+            @(isRtl ? "right" : "left"): -140px;
+            background: radial-gradient(circle, #3b82f6, #4f46e5);
+        }
+        .glow-2 {
+            bottom: -140px;
+            @(isRtl ? "left" : "right"): -140px;
+            background: radial-gradient(circle, #8b5cf6, #ec4899);
+            animation-delay: -5.5s;
+        }
+
+        @@keyframes pulse-glow {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.35; }
+            50% { transform: scale(1.15) translate(30px, 20px); opacity: 0.55; }
+            100% { transform: scale(0.95) translate(-20px, -20px); opacity: 0.35; }
+        }
+
+        /* Main Container: Split-screen Frame */
+        .auth-container {
+            width: 100%;
+            max-width: 1180px;
+            min-height: 640px;
+            margin: auto;
+            border-radius: 28px;
+            overflow: hidden;
+            background: var(--form-panel-bg);
+            border: 1px solid var(--card-glass-border);
+            box-shadow: var(--shadow-card);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            z-index: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @@media (min-width: 992px) {
+            .auth-container {
+                flex-direction: row;
+                min-height: 700px;
+            }
+        }
+
+        /* Form Side */
+        .auth-form-side {
+            flex: 1 1 50%;
+            padding: 40px 36px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
             position: relative;
         }
 
-        .login-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--card-border);
-            border-radius: 24px;
-            box-shadow: var(--box-shadow);
-            max-width: 460px;
-            width: 100%;
-            padding: 36px 30px;
-            transition: all 0.3s ease;
+        @@media (min-width: 1200px) {
+            .auth-form-side {
+                padding: 48px 56px;
+            }
         }
 
-        .form-control {
-            background-color: var(--input-bg) !important;
-            border-color: var(--input-border) !important;
-            color: var(--input-text) !important;
-            border-radius: 12px;
-            padding: 12px 14px;
-            font-size: 1rem;
+        /* Showcase Side */
+        .auth-showcase-side {
+            flex: 1 1 50%;
+            background: var(--showcase-bg);
+            position: relative;
+            overflow: hidden;
+            padding: 44px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border-@(isRtl ? "right" : "left"): 1px solid var(--card-glass-border);
         }
 
-        .form-control:focus {
-            border-color: var(--primary-accent) !important;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+        .auth-showcase-side::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
         }
 
-        .input-group-text {
-            background-color: var(--input-bg);
-            border-color: var(--input-border);
-            color: var(--text-muted);
-            border-radius: 12px;
-        }
-
-        .theme-toggle-floating {
+        /* Floating Controls */
+        .top-floating-bar {
             position: absolute;
             top: 20px;
-            @(isRtl ? "left" : "right"): 20px;
+            @(isRtl ? "left" : "right"): 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             z-index: 10;
         }
 
-        .btn-quick-admin {
-            background: var(--quick-btn-admin);
-            border: 1px dashed var(--quick-btn-admin-border);
-            color: var(--quick-btn-admin-text);
+        .btn-theme-pill {
+            background: var(--card-glass-bg);
+            border: 1px solid var(--card-glass-border);
+            color: var(--text-heading);
+            padding: 8px 14px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .btn-theme-pill:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 6px 18px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Brand Header */
+        .brand-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 15px;
+            background: var(--primary-gradient);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1.55rem;
+            box-shadow: 0 10px 22px var(--primary-glow);
+            margin-bottom: 16px;
+            position: relative;
+        }
+        .brand-badge::after {
+            content: "";
+            position: absolute;
+            inset: -4px;
+            border-radius: 19px;
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @@keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.08); opacity: 0; }
+            100% { transform: scale(0.95); opacity: 0; }
+        }
+
+        .brand-title {
+            font-weight: 800;
+            font-size: 1.7rem;
+            letter-spacing: -0.4px;
+            color: var(--text-heading);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .version-chip {
+            font-size: 0.72rem;
             font-weight: 700;
-            border-radius: 12px;
-            padding: 10px 14px;
-            text-align: right;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: var(--chip-bg);
+            border: 1px solid var(--chip-border);
+            color: #6366f1;
+            letter-spacing: 0.3px;
+            vertical-align: middle;
+        }
+
+        .brand-subtitle {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        /* Form Inputs */
+        .form-label-custom {
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: var(--text-heading);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .custom-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            border-radius: 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            transition: all 0.25s ease;
+            overflow: hidden;
+        }
+        .custom-input-group:focus-within {
+            border-color: var(--input-focus-border);
+            box-shadow: 0 0 0 4px var(--input-focus-glow);
+        }
+
+        .input-icon-leading {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .form-control-modern {
+            border: none;
+            background: transparent !important;
+            color: var(--input-text) !important;
+            font-size: 0.95rem;
+            padding: 12px 14px 12px 4px;
+            width: 100%;
+            outline: none;
+            box-shadow: none !important;
+            font-family: inherit;
+        }
+        .form-control-modern::placeholder {
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+
+        .password-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            transition: color 0.2s ease;
+        }
+        .password-toggle-btn:hover {
+            color: var(--text-heading);
+        }
+
+        /* Checkbox */
+        .form-check-input-custom {
+            width: 1.15rem;
+            height: 1.15rem;
+            border-radius: 6px;
+            border: 1.5px solid var(--input-border);
+            background-color: var(--input-bg);
+            cursor: pointer;
             transition: all 0.2s ease;
         }
-
-        .btn-quick-admin:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.1);
+        .form-check-input-custom:checked {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .form-check-label-custom {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-body);
+            cursor: pointer;
+            user-select: none;
+            padding-@(isRtl ? "right" : "left"): 6px;
         }
 
-        .btn-quick-merchant {
-            background: var(--quick-btn-merchant);
-            border: 1px dashed var(--quick-btn-merchant-border);
-            color: var(--quick-btn-merchant-text);
+        /* Submit Button */
+        .btn-submit-glow {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 14px;
             font-weight: 700;
-            border-radius: 12px;
+            font-size: 0.98rem;
+            color: #ffffff;
+            background: var(--primary-gradient);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 10px 24px var(--primary-glow);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-submit-glow::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+            transition: left 0.6s ease;
+        }
+        .btn-submit-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px var(--primary-glow);
+        }
+        .btn-submit-glow:hover::before {
+            left: 100%;
+        }
+        .btn-submit-glow:active {
+            transform: translateY(1px);
+        }
+
+        /* Quick Demo Accounts Hub */
+        .demo-accounts-hub {
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 1px dashed var(--card-glass-border);
+        }
+        .demo-hub-header {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .demo-role-card {
+            background: var(--card-glass-bg);
+            border: 1px solid var(--card-glass-border);
+            border-radius: 14px;
             padding: 10px 14px;
-            text-align: right;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+        .demo-role-card:hover {
+            background: var(--card-glass-hover);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        }
+        .demo-role-card:active {
+            transform: translateY(0);
+        }
+
+        .demo-role-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .demo-icon-admin {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .demo-icon-merchant {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .demo-role-title {
+            font-weight: 700;
+            font-size: 0.86rem;
+            color: var(--text-heading);
+            margin-bottom: 2px;
+        }
+        .demo-role-email {
+            font-size: 0.74rem;
+            color: var(--text-muted);
+            font-family: var(--font-code);
+            direction: ltr;
+            text-align: @(isRtl ? "right" : "left");
+        }
+
+        .badge-pill-role {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge-role-admin {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .badge-role-merchant {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* Toast Feedback */
+        #fillToast {
+            position: fixed;
+            bottom: 24px;
+            @(isRtl ? "left" : "right"): 24px;
+            background: #10b981;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+            z-index: 9999;
+        }
+        #fillToast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ---------------- SHOWCASE SIDE STYLES ---------------- */
+        .showcase-header {
+            position: relative;
+            z-index: 2;
+        }
+
+        .live-badge-pulse {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--live-status-bg);
+            border: 1px solid var(--live-status-border);
+            color: var(--live-status-text);
+            padding: 5px 12px;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            margin-bottom: 16px;
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--live-status-text);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 1.8s infinite;
+        }
+        @@keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .showcase-hero-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-heading);
+            line-height: 1.35;
+            margin-bottom: 12px;
+        }
+        .showcase-hero-title span {
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-fill-color: transparent;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .showcase-hero-desc {
+            font-size: 0.92rem;
+            color: var(--text-body);
+            line-height: 1.6;
+            margin-bottom: 22px;
+        }
+
+        /* Gateway Telemetry Widget */
+        .gateway-telemetry-box {
+            background: var(--card-glass-bg);
+            border: 1px solid var(--card-glass-border);
+            border-radius: 20px;
+            padding: 18px;
+            backdrop-filter: blur(16px);
+            margin-bottom: 18px;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .telemetry-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--card-glass-border);
+        }
+        .telemetry-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-heading);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Port Matrix Grid */
+        .sim-matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .sim-port-cell {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #34d399;
+            font-family: var(--font-code);
             transition: all 0.2s ease;
         }
+        .sim-port-cell:hover {
+            transform: scale(1.1);
+            background: rgba(16, 185, 129, 0.3);
+            z-index: 5;
+        }
+        .sim-port-cell.idle {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+        }
+        .sim-port-cell.busy {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.4);
+            color: #60a5fa;
+            animation: pulse-busy 1.4s infinite alternate;
+        }
 
-        .btn-quick-merchant:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.1);
+        @@keyframes pulse-busy {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; filter: brightness(1.2); }
+        }
+
+        /* Stats Row */
+        .gateway-stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .stat-mini-card {
+            background: var(--chip-bg);
+            border: 1px solid var(--chip-border);
+            border-radius: 12px;
+            padding: 9px 10px;
+            text-align: center;
+        }
+        .stat-mini-val {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-heading);
+            font-family: var(--font-code);
+            margin-bottom: 2px;
+        }
+        .stat-mini-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* Showcase Features List */
+        .features-pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            position: relative;
+            z-index: 2;
+        }
+        .feature-pill {
+            background: var(--card-glass-bg);
+            border: 1px solid var(--card-glass-border);
+            border-radius: 9999px;
+            padding: 6px 12px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-body);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .feature-pill i {
+            color: #818cf8;
+        }
+
+        /* Showcase Footer */
+        .showcase-footer {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--card-glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            position: relative;
+            z-index: 2;
         }
     </style>
 </head>
 <body>
 
-    <!-- Floating Theme Switcher Button -->
-    <div class="theme-toggle-floating">
-        <button type="button" id="themeToggleBtn" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm" onclick="toggleTheme()" title="تبديل الوضع النهاري / الليلي">
-            <i id="themeIcon" class="bi bi-moon-stars-fill text-warning fs-6"></i>
-            <span id="themeLabel" class="fw-bold small">الوضع الليلي</span>
+    <!-- Ambient Glowing Blobs -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+
+    <!-- Floating Top Bar (Theme Toggle) -->
+    <div class="top-floating-bar">
+        <button type="button" class="btn-theme-pill" onclick="toggleTheme()" title="تبديل مظهر الواجهة (داكن / فاتح)">
+            <i id="themeIcon" class="bi bi-sun-fill text-warning fs-6"></i>
+            <span id="themeLabel">الوضع الفاتح</span>
         </button>
     </div>
 
-    <div class="login-card">
-        <!-- Brand Header -->
-        <div class="text-center mb-4">
-            <div class="d-inline-flex p-3 rounded-4 bg-primary bg-opacity-10 text-primary mb-3 shadow-sm">
-                <i class="bi bi-router-fill fs-2"></i>
+    <!-- Main Auth Card Container -->
+    <div class="auth-container">
+
+        <!-- ================= FORM SIDE ================= -->
+        <div class="auth-form-side">
+
+            <!-- Brand Header -->
+            <div>
+                <div class="brand-badge">
+                    <i class="bi bi-router-fill"></i>
+                </div>
+                <h1 class="brand-title">
+                    GoIP Gateway
+                    <span class="version-chip">v2.4 Pro</span>
+                </h1>
+                <p class="brand-subtitle">
+                    بوابة الاتصالات والمدفوعات المتكاملة لإدارة خطوط الـ USSD وقنوات الدفع للشركات والتجار.
+                </p>
             </div>
-            <h3 class="fw-bold mb-1">منصة GoIP Gateway</h3>
-            <p class="text-muted small mb-0">بوابة التاجر والشركات لإدارة خطط الدفع والـ USSD</p>
+
+            <!-- Login Form -->
+            <form asp-action="Login" method="post" id="loginForm" autocomplete="on">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ReturnUrl" />
+
+                <!-- Validation Alerts -->
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 rounded-3 small p-3 mb-3 shadow-sm d-flex align-items-center gap-2" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
+                    <div></div>
+                </div>
+
+                <!-- Email Input -->
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label-custom">
+                        <i class="bi bi-envelope"></i>
+                        البريد الإلكتروني / الحساب المؤسسي
+                    </label>
+                    <div class="custom-input-group">
+                        <div class="input-icon-leading">
+                            <i class="bi bi-at"></i>
+                        </div>
+                        <input asp-for="Email" 
+                               id="emailInput" 
+                               type="email" 
+                               class="form-control-modern" 
+                               placeholder="admin@goipgateway.com" 
+                               required 
+                               autofocus 
+                               autocomplete="username" />
+                    </div>
+                </div>
+
+                <!-- Password Input with Show/Hide Toggle -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label asp-for="Password" class="form-label-custom mb-0">
+                            <i class="bi bi-shield-lock"></i>
+                            كلمة المرور المشفرة
+                        </label>
+                    </div>
+                    <div class="custom-input-group">
+                        <div class="input-icon-leading">
+                            <i class="bi bi-key"></i>
+                        </div>
+                        <input asp-for="Password" 
+                               id="passwordInput" 
+                               type="password" 
+                               class="form-control-modern" 
+                               placeholder="••••••••••••" 
+                               required 
+                               autocomplete="current-password" />
+                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()" title="إظهار / إخفاء كلمة المرور">
+                            <i id="togglePassIcon" class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Me Checkbox -->
+                <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                    <div class="form-check d-flex align-items-center m-0">
+                        <input asp-for="RememberMe" class="form-check-input form-check-input-custom" id="rememberMeCheck" />
+                        <label asp-for="RememberMe" class="form-check-label form-check-label-custom" for="rememberMeCheck">
+                            تذكر جلستي بأمان على هذا المتصفح
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="submitBtn" class="btn-submit-glow">
+                    <i class="bi bi-box-arrow-in-right fs-5"></i>
+                    <span>تسجيل الدخول إلى البوابة</span>
+                </button>
+            </form>
+
+            <!-- Quick Demo Credential Hub -->
+            <div class="demo-accounts-hub">
+                <div class="demo-hub-header">
+                    <span>
+                        <i class="bi bi-lightning-charge-fill text-warning me-1"></i>
+                        حسابات تجريبية سريعة (نقرة واحدة للتعبئة)
+                    </span>
+                    <span class="badge bg-secondary bg-opacity-25 text-body small">بيئة التطوير</span>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <!-- Super Admin Card -->
+                    <div class="demo-role-card" onclick="quickFill('admin@goipgateway.com', 'Admin@123456', 'مدير النظام (Super Admin)')">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="demo-role-icon demo-icon-admin">
+                                <i class="bi bi-shield-fill-check"></i>
+                            </div>
+                            <div>
+                                <div class="demo-role-title">مدير النظام (Super Admin)</div>
+                                <div class="demo-role-email">admin@goipgateway.com</div>
+                            </div>
+                        </div>
+                        <span class="badge-pill-role badge-role-admin">
+                            <i class="bi bi-lock-fill"></i> تحكم كامل
+                        </span>
+                    </div>
+
+                    <!-- Merchant Card -->
+                    <div class="demo-role-card" onclick="quickFill('operator@fastpay.com', 'FastPay@123456', 'حساب التاجر (FastPay)')">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="demo-role-icon demo-icon-merchant">
+                                <i class="bi bi-shop"></i>
+                            </div>
+                            <div>
+                                <div class="demo-role-title">حساب التاجر (FastPay)</div>
+                                <div class="demo-role-email">operator@fastpay.com</div>
+                            </div>
+                        </div>
+                        <span class="badge-pill-role badge-role-merchant">
+                            <i class="bi bi-credit-card-2-front-fill"></i> بوابة الدفع
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Badge Footer -->
+            <div class="mt-4 pt-2 text-center text-muted small d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-patch-check-fill text-success"></i>
+                <span>جلسة آمنة ومحمية بتشفير 256-Bit SSL End-to-End</span>
+            </div>
+
         </div>
 
-        <form asp-action="Login" method="post">
-            @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="ReturnUrl" />
+        <!-- ================= SHOWCASE SIDE (DESKTOP) ================= -->
+        <div class="auth-showcase-side d-none d-lg-flex">
 
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger small p-2 rounded-3" role="alert"></div>
-
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label small fw-bold text-muted">البريد الإلكتروني / الحساب</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                    <input asp-for="Email" id="emailInput" class="form-control" placeholder="admin@goipgateway.com" required autofocus />
+            <div class="showcase-header">
+                <!-- Live System Indicator -->
+                <div class="live-badge-pulse">
+                    <span class="pulse-dot"></span>
+                    <span>النظام يعمل بكفاءة 99.98% • اتصال لحظي</span>
                 </div>
-            </div>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label small fw-bold text-muted">كلمة المرور / السري</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <input asp-for="Password" id="passwordInput" type="password" class="form-control" required />
-                </div>
-            </div>
+                <!-- Showcase Title -->
+                <h2 class="showcase-hero-title">
+                    تحكم فائق في أجهزة الـ <span>GoIP ومسارات USSD</span>
+                </h2>
+                <p class="showcase-hero-desc">
+                    منصة الجيل التالي لإدارة بوابات GSM/VoIP المتعددة، معالجة معاملات الدفع الرقمي، وتوجيه رسائل الـ USSD آلياً بسرعة فائقة.
+                </p>
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div class="form-check">
-                    <input asp-for="RememberMe" class="form-check-input" />
-                    <label asp-for="RememberMe" class="form-check-label small fw-bold text-muted">تذكرني على هذا الجهاز</label>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold fs-6 rounded-3 shadow">
-                <i class="bi bi-box-arrow-in-right me-2"></i> تسجيل الدخول إلى النظام
-            </button>
-        </form>
-
-        <!-- Quick 1-Click Fill Demo Credentials for Manual Testing -->
-        <div class="mt-4 pt-3 border-top" style="border-color: var(--card-border);">
-            <div class="small fw-bold text-muted mb-2 text-center">👇 دخول سريع بحسابات تجريبية (نقرة واحدة):</div>
-            <div class="d-grid gap-2">
-                <button type="button" class="btn btn-quick-merchant" onclick="fillCreds('operator@fastpay.com', 'FastPay@123456')">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <i class="bi bi-shop me-1"></i> <strong>حساب التاجر (FastPay)</strong>
-                            <div class="small fw-normal text-muted">operator@fastpay.com</div>
+                <!-- Gateway Telemetry Live Simulation Box -->
+                <div class="gateway-telemetry-box">
+                    <div class="telemetry-header">
+                        <div class="telemetry-title">
+                            <i class="bi bi-hdd-network-fill text-primary"></i>
+                            <span>حالة منافذ الـ SIM (GoIP 32-Port Cluster)</span>
                         </div>
-                        <span class="badge bg-primary bg-opacity-25 text-primary">دخول فوري</span>
+                        <span class="badge bg-success bg-opacity-25 text-success small fw-bold">Online</span>
                     </div>
-                </button>
 
-                <button type="button" class="btn btn-quick-admin" onclick="fillCreds('admin@goipgateway.com', 'Admin@123456')">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <i class="bi bi-shield-lock me-1"></i> <strong>مدير المنصة (Super Admin)</strong>
-                            <div class="small fw-normal text-muted">admin@goipgateway.com</div>
-                        </div>
-                        <span class="badge bg-warning bg-opacity-25 text-warning">تحكم كامل</span>
+                    <!-- 16 Port SIM Matrix Simulation -->
+                    <div class="sim-matrix-grid">
+                        <div class="sim-port-cell" title="Port 01: Vodacash Ready">S01</div>
+                        <div class="sim-port-cell busy" title="Port 02: Processing USSD">S02</div>
+                        <div class="sim-port-cell" title="Port 03: Instapay Ready">S03</div>
+                        <div class="sim-port-cell" title="Port 04: Orange Money">S04</div>
+                        <div class="sim-port-cell" title="Port 05: Etisalat Cash">S05</div>
+                        <div class="sim-port-cell busy" title="Port 06: Processing USSD">S06</div>
+                        <div class="sim-port-cell" title="Port 07: WE Pay Ready">S07</div>
+                        <div class="sim-port-cell idle" title="Port 08: Standby">S08</div>
+                        <div class="sim-port-cell" title="Port 09: Active">S09</div>
+                        <div class="sim-port-cell" title="Port 10: Active">S10</div>
+                        <div class="sim-port-cell busy" title="Port 11: Processing USSD">S11</div>
+                        <div class="sim-port-cell" title="Port 12: Active">S12</div>
+                        <div class="sim-port-cell" title="Port 13: Active">S13</div>
+                        <div class="sim-port-cell" title="Port 14: Active">S14</div>
+                        <div class="sim-port-cell" title="Port 15: Active">S15</div>
+                        <div class="sim-port-cell" title="Port 16: Active">S16</div>
                     </div>
-                </button>
+
+                    <!-- Mini Live Stats -->
+                    <div class="gateway-stats-row">
+                        <div class="stat-mini-card">
+                            <div class="stat-mini-val text-primary">340<span class="fs-6">ms</span></div>
+                            <div class="stat-mini-label">متوسط استجابة USSD</div>
+                        </div>
+                        <div class="stat-mini-card">
+                            <div class="stat-mini-val text-success">31/32</div>
+                            <div class="stat-mini-label">منافذ جاهزة للعمل</div>
+                        </div>
+                        <div class="stat-mini-card">
+                            <div class="stat-mini-val text-warning">284K+</div>
+                            <div class="stat-mini-label">معاملة ناجحة هذا الشهر</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Pills -->
+                <div class="features-pill-row">
+                    <div class="feature-pill">
+                        <i class="bi bi-shield-lock-fill"></i> عزل متعدد الشركات Multi-Tenant
+                    </div>
+                    <div class="feature-pill">
+                        <i class="bi bi-cpu-fill"></i> تدوير ذكي لشرائح SIM
+                    </div>
+                    <div class="feature-pill">
+                        <i class="bi bi-activity"></i> مراقبة حية لحظية بالـ WebSockets
+                    </div>
+                </div>
             </div>
+
+            <!-- Showcase Footer -->
+            <div class="showcase-footer">
+                <div>
+                    <i class="bi bi-check-circle-fill text-success me-1"></i>
+                    <span>جميع الخدمات السحابية ومنافذ Gateway تعمل بكفاءة</span>
+                </div>
+                <span>&copy; @DateTime.UtcNow.Year GoIP Gateway Platform</span>
+            </div>
+
         </div>
+
     </div>
 
+    <!-- Toast Notification for 1-Click Credentials -->
+    <div id="fillToast">
+        <i class="bi bi-check2-circle fs-5"></i>
+        <span id="toastMessage">تم تعبئة البيانات بنجاح!</span>
+    </div>
+
+    <!-- Interactive Scripts -->
     <script>
+        // Password Visibility Toggle
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('passwordInput');
+            const icon = document.getElementById('togglePassIcon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                icon.className = 'bi bi-eye-slash text-primary';
+            } else {
+                passInput.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+
+        // Theme Toggle Functionality
         function updateThemeUI(theme) {
             const icon = document.getElementById("themeIcon");
             const label = document.getElementById("themeLabel");
@@ -242,30 +1030,66 @@
 
             if (theme === "dark") {
                 icon.className = "bi bi-sun-fill text-warning fs-6";
-                label.innerText = "الوضع النهاري";
+                label.innerText = "الوضع الفاتح";
             } else {
                 icon.className = "bi bi-moon-stars-fill text-primary fs-6";
-                label.innerText = "الوضع الليلي";
+                label.innerText = "الوضع الداكن";
             }
         }
 
         function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
+            const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "dark";
             const newTheme = currentTheme === "dark" ? "light" : "dark";
             document.documentElement.setAttribute("data-bs-theme", newTheme);
             localStorage.setItem("goip_theme", newTheme);
             updateThemeUI(newTheme);
         }
 
-        document.addEventListener("DOMContentLoaded", function () {
-            const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
-            updateThemeUI(currentTheme);
-        });
+        // Quick Fill Demo Credentials with Visual Toast & Highlight
+        function quickFill(email, password, roleName) {
+            const emailInput = document.getElementById('emailInput');
+            const passwordInput = document.getElementById('passwordInput');
 
-        function fillCreds(email, pass) {
-            document.getElementById('emailInput').value = email;
-            document.getElementById('passwordInput').value = pass;
+            emailInput.value = email;
+            passwordInput.value = password;
+
+            // Highlight inputs briefly
+            emailInput.parentElement.style.borderColor = '#4f46e5';
+            passwordInput.parentElement.style.borderColor = '#4f46e5';
+            setTimeout(() => {
+                emailInput.parentElement.style.borderColor = '';
+                passwordInput.parentElement.style.borderColor = '';
+            }, 600);
+
+            // Show Toast
+            const toast = document.getElementById('fillToast');
+            const msg = document.getElementById('toastMessage');
+            msg.innerText = 'تم تعبئة بيانات ' + roleName + ' بنجاح! جاهز للدخول';
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+
+            // Focus submit button
+            document.getElementById('submitBtn').focus();
         }
+
+        // Init Theme on Load
+        document.addEventListener("DOMContentLoaded", function () {
+            const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "dark";
+            updateThemeUI(currentTheme);
+
+            // Form Submit Loading Feedback
+            const form = document.getElementById('loginForm');
+            if (form) {
+                form.addEventListener('submit', function () {
+                    const btn = document.getElementById('submitBtn');
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جارٍ التحقق وتسجيل الدخول...';
+                });
+            }
+        });
     </script>
+
 </body>
 </html>

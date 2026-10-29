@@ -36,22 +36,18 @@ public class TransactionCommandService : ITransactionCommandService
     public async Task<Result<TransactionResultDto>> ExecuteServiceAsync(ExecuteServiceCommand command, CancellationToken cancellationToken = default)
     {
         var tenantId = _tenantProvider.GetCurrentTenantId() ?? _currentUser.TenantId;
-        if (!tenantId.HasValue && !_currentUser.IsSuperAdmin)
+        if (!tenantId.HasValue)
         {
-            return Result.Failure<TransactionResultDto>("Auth.UnauthorizedTenant", "لم يتم تحديد الشركة المستأجرة.");
+            return Result.Failure<TransactionResultDto>("Auth.UnauthorizedTenant", "تنفيذ العمليات مخصص حصرياً للشركات والتجار من خلال حساباتهم. لا يُسمح لمدير النظام (Admin) بتنفيذ عمليات مباشرة.");
         }
 
         // 1. Verify Tenant
-        Tenant? tenant = null;
-        if (tenantId.HasValue)
-        {
-            tenant = await _unitOfWork.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId.Value && !t.IsDelete, cancellationToken);
-            if (tenant == null)
-                return Result.Failure<TransactionResultDto>("Tenant.NotFound", "الشركة غير موجودة.");
+        var tenant = await _unitOfWork.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId.Value && !t.IsDelete, cancellationToken);
+        if (tenant == null)
+            return Result.Failure<TransactionResultDto>("Tenant.NotFound", "الشركة غير موجودة.");
 
-            if (!tenant.IsActive || tenant.IsBlocked)
-                return Result.Failure<TransactionResultDto>("Tenant.Blocked", $"حساب الشركة متوقف أو محظور: {tenant.BlockReason}");
-        }
+        if (!tenant.IsActive || tenant.IsBlocked)
+            return Result.Failure<TransactionResultDto>("Tenant.Blocked", $"حساب الشركة متوقف أو محظور: {tenant.BlockReason}");
 
         // 2. Verify Service Definition
         var service = await _unitOfWork.Services.AsQueryable()
@@ -172,6 +168,12 @@ public class TransactionCommandService : ITransactionCommandService
 
             if (paramDef.IsRequired && string.IsNullOrWhiteSpace(val))
             {
+                // Defer merchantCode check to see if provided by the assigned GoIP device
+                if (key.Equals("merchantCode", StringComparison.OrdinalIgnoreCase) || key.Equals("merchant", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 var label = !string.IsNullOrWhiteSpace(paramDef.DisplayNameAr)
                     ? paramDef.DisplayNameAr
                     : (!string.IsNullOrWhiteSpace(paramDef.ParameterName) ? paramDef.ParameterName : key);
@@ -280,6 +282,21 @@ public class TransactionCommandService : ITransactionCommandService
             }
         }
 
+        // Auto-fill MerchantCode from Device settings if not sent in request parameters
+        if (!parameters.ContainsKey("merchantCode") && !string.IsNullOrWhiteSpace(selectedSim.DevicePort?.Device?.MerchantCode))
+        {
+            parameters["merchantCode"] = selectedSim.DevicePort.Device.MerchantCode.Trim();
+        }
+
+        // Validate if merchantCode was required by the service and still missing
+        var requiresMerchant = service.Parameters.Any(p => p.IsActive && p.IsRequired &&
+            (p.ParameterKey.Equals("merchantCode", StringComparison.OrdinalIgnoreCase) || p.ParameterKey.Equals("merchant", StringComparison.OrdinalIgnoreCase)));
+        if (requiresMerchant && !parameters.ContainsKey("merchantCode"))
+        {
+            return Result.Failure<TransactionResultDto>("Validation.MissingMerchantCode",
+                "كود التاجر (MerchantCode) مطلوب لإتمام هذه الخدمة، ولم يتم إرساله بالطلب أو ضبطه في إعدادات جهاز GoIP.");
+        }
+
         // 5. Create Transaction Record
         var cost = tenantService?.CustomPrice ?? service.BaseCost;
         var txRef = $"GW-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
@@ -290,8 +307,11 @@ public class TransactionCommandService : ITransactionCommandService
             ExternalRef = command.ExternalRef,
             TenantId = tenant?.Id ?? 1,
             ServiceDefinitionId = service.Id,
+            ServiceDefinition = service,
             SimCardId = selectedSim.Id,
+            SimCard = selectedSim,
             DevicePortId = selectedSim.DevicePortId,
+            DevicePort = selectedSim.DevicePort,
             Parameters = JsonSerializer.Serialize(parameters),
             Amount = transactionAmount,
             Status = TransactionStatus.Pending,

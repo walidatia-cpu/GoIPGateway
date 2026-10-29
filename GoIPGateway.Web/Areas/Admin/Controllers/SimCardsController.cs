@@ -154,32 +154,4 @@ public class SimCardsController : Controller
         }
         return RedirectToAction(nameof(Index));
     }
-
-    [HttpPost]
-    public async Task<IActionResult> QueryBalance(int simId, CancellationToken cancellationToken)
-    {
-        var command = new ExecuteServiceCommand("BAL_INQ", null, simId, null, new Dictionary<string, string>(), null, RequestSource.Dashboard);
-        var result = await _mediator.Send(command, cancellationToken);
-
-        if (result.IsSuccess)
-            TempData["Success"] = $"تم استعلام الرصيد بنجاح: {result.Value.Message}";
-        else
-            TempData["Error"] = $"فشل استعلام الرصيد: {result.Error.Message}";
-
-        return RedirectToAction(nameof(Index));
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> QueryNumber(int simId, CancellationToken cancellationToken)
-    {
-        var command = new ExecuteServiceCommand("NUM_INQ", null, simId, null, new Dictionary<string, string>(), null, RequestSource.Dashboard);
-        var result = await _mediator.Send(command, cancellationToken);
-
-        if (result.IsSuccess)
-            TempData["Success"] = $"تم استعلام رقم الشريحة بنجاح: {result.Value.Message}";
-        else
-            TempData["Error"] = $"فشل استعلام رقم الشريحة: {result.Error.Message}";
-
-        return RedirectToAction(nameof(Index));
-    }
 }

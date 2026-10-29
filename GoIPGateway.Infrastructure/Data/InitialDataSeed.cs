@@ -24,6 +24,14 @@ public static class InitialDataSeed
             // Apply migrations or ensure database is created
             await context.Database.EnsureCreatedAsync();
 
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Devices') AND name = 'MerchantCode') " +
+                    "BEGIN ALTER TABLE Devices ADD MerchantCode nvarchar(max) NULL; END");
+            }
+            catch { }
+
             // 1. Roles
             string[] roles = { "SuperAdmin", "TenantAdmin", "TenantOperator", "TenantViewer" };
             foreach (var role in roles)

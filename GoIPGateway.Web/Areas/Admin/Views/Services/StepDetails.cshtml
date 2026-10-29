@@ -114,7 +114,7 @@
                 <i class="bi bi-code-square text-primary"></i>
                 <span>أمر الـ USSD الموجه لجهاز GoIP</span>
             </h6>
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('@Model.UssdCommand'); alert('تم نسخ أمر الـ USSD');">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('@Model.UssdCommand'); showAlertModal('تم نسخ أمر الـ USSD إلى الحافظة بنجاح.', 'تم النسخ', 'success');">
                 <i class="bi bi-clipboard me-1"></i> نسخ الأمر
             </button>
         </div>

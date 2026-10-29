@@ -29,9 +29,9 @@ public class TenantQueryService : ITenantQueryService
         return Result.Success(tenants);
     }
 
-    public async Task<Result<IReadOnlyList<Tenant>>> GetActiveTenantsWithStatsAsync(CancellationToken cancellationToken = default)
+    public async Task<Result<IReadOnlyList<Tenant>>> GetActiveTenantsWithStatsAsync(bool includeDeleted = false, CancellationToken cancellationToken = default)
     {
-        var tenants = await _unitOfWork.Tenants.GetActiveTenantsWithStatsAsync(cancellationToken);
+        var tenants = await _unitOfWork.Tenants.GetActiveTenantsWithStatsAsync(includeDeleted, cancellationToken);
         return Result.Success(tenants);
     }
 
@@ -76,6 +76,7 @@ public class TenantQueryService : ITenantQueryService
     {
         var services = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
             _unitOfWork.TenantServices.AsQueryable()
+                .AsNoTracking()
                 .Include(ts => ts.ServiceDefinition)
                 .Where(ts => ts.TenantId == tenantId && ts.IsActive && !ts.ServiceDefinition.IsDelete)
                 .OrderBy(ts => ts.ServiceDefinition.Category)

@@ -5,7 +5,7 @@ using MediatR;
 
 namespace GoIPGateway.Application.Features.Tenants.Queries;
 
-public record GetTenantsListQuery : IRequest<Result<IReadOnlyList<Tenant>>>;
+public record GetTenantsListQuery(bool IncludeDeleted = true) : IRequest<Result<IReadOnlyList<Tenant>>>;
 
 public class GetTenantsListQueryHandler : IRequestHandler<GetTenantsListQuery, Result<IReadOnlyList<Tenant>>>
 {
@@ -18,6 +18,6 @@ public class GetTenantsListQueryHandler : IRequestHandler<GetTenantsListQuery, R
 
     public async Task<Result<IReadOnlyList<Tenant>>> Handle(GetTenantsListQuery request, CancellationToken cancellationToken)
     {
-        return await _queryService.GetActiveTenantsWithStatsAsync(cancellationToken);
+        return await _queryService.GetActiveTenantsWithStatsAsync(request.IncludeDeleted, cancellationToken);
     }
 }

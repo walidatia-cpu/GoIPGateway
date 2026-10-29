@@ -193,22 +193,22 @@
                                     @switch (sim.Operator)
                                     {
                                         case GoIPGateway.Domain.Enums.OperatorType.Vodafone:
-                                            <span class="pill-badge pill-badge-danger">
+                                            <span class="pill-telecom pill-op-vodafone">
                                                 <span class="dot-indicator"></span>فودافون كاش
                                             </span>
                                             break;
                                         case GoIPGateway.Domain.Enums.OperatorType.Orange:
-                                            <span class="pill-badge pill-badge-warning">
+                                            <span class="pill-telecom pill-op-orange">
                                                 <span class="dot-indicator"></span>أورانج كاش
                                             </span>
                                             break;
                                         case GoIPGateway.Domain.Enums.OperatorType.Etisalat:
-                                            <span class="pill-badge pill-badge-success">
+                                            <span class="pill-telecom pill-op-etisalat">
                                                 <span class="dot-indicator"></span>اتصالات كاش
                                             </span>
                                             break;
                                         default:
-                                            <span class="pill-badge pill-badge-primary">
+                                            <span class="pill-telecom pill-op-we">
                                                 <span class="dot-indicator"></span>وي باي WE
                                             </span>
                                             break;
@@ -263,39 +263,23 @@
                                     }
                                 </td>
                                 <td class="text-center">
-                                    <div class="actions-btn-group justify-content-center">
-                                        <!-- Instant Balance Query -->
-                                        <form asp-action="QueryBalance" method="post" class="d-inline">
-                                            <input type="hidden" name="simId" value="@sim.Id" />
-                                            <button type="submit" class="btn-action-icon btn-action-view" title="استعلام رصيد USSD فوري">
-                                                <i class="bi bi-wallet2"></i>
-                                            </button>
-                                        </form>
-
-                                        <!-- Instant Number Query -->
-                                        <form asp-action="QueryNumber" method="post" class="d-inline">
-                                            <input type="hidden" name="simId" value="@sim.Id" />
-                                            <button type="submit" class="btn-action-icon" style="color: #0891b2;" title="استعلام رقم الشريحة USSD">
-                                                <i class="bi bi-telephone"></i>
-                                            </button>
-                                        </form>
+                                    <div class="actions-pill-group justify-content-center">
+                                        <!-- Edit SIM & PIN -->
+                                        <a asp-action="Edit" asp-route-id="@sim.Id" class="action-pill-btn action-pill-warning" title="تعديل بيانات الشريحة والباسورد">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
 
                                         <!-- Dropdown for more options -->
-                                        <div class="dropdown">
-                                            <button class="btn-action-icon" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" title="خيارات إضافية">
-                                                <i class="bi bi-three-dots-vertical"></i>
+                                        <div class="dropdown d-inline-block">
+                                            <button class="action-pill-btn action-pill-more dropdown-toggle-no-caret" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" title="المزيد من الإجراءات">
+                                                <i class="bi bi-three-dots"></i>
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-actions">
-                                                <li>
-                                                    <a class="dropdown-item" asp-action="Edit" asp-route-id="@sim.Id">
-                                                        <i class="bi bi-pencil-square text-warning"></i>تعديل الشريحة والباسورد
-                                                    </a>
-                                                </li>
+                                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-actions shadow-lg border-0 rounded-3 p-2">
                                                 <li>
                                                     <form asp-action="ToggleStatus" method="post" class="d-inline">
                                                         <input type="hidden" name="id" value="@sim.Id" />
-                                                        <button type="submit" class="dropdown-item @(sim.IsActive ? "text-warning" : "text-success")">
-                                                            <i class="bi @(sim.IsActive ? "bi-pause-circle" : "bi-play-circle")"></i>@(sim.IsActive ? "تعطيل الشريحة مؤقتاً" : "تفعيل الشريحة للعمل")
+                                                        <button type="submit" class="dropdown-item py-2 rounded-2 fw-semibold @(sim.IsActive ? "text-warning" : "text-success")">
+                                                            <i class="bi @(sim.IsActive ? "bi-pause-circle text-warning" : "bi-play-circle text-success") me-2 fs-6"></i>@(sim.IsActive ? "تعطيل الشريحة مؤقتاً" : "تفعيل الشريحة للعمل")
                                                         </button>
                                                     </form>
                                                 </li>
@@ -311,8 +295,8 @@
                                                           data-confirm-btn="نعم، حذف الشريحة"
                                                           data-confirm-type="danger">
                                                         <input type="hidden" name="id" value="@sim.Id" />
-                                                        <button type="submit" class="dropdown-item text-danger">
-                                                            <i class="bi bi-trash"></i>حذف الشريحة وتحرير المنفذ
+                                                        <button type="submit" class="dropdown-item py-2 rounded-2 fw-semibold text-danger">
+                                                            <i class="bi bi-trash3 text-danger me-2 fs-6"></i>حذف الشريحة وتحرير المنفذ
                                                         </button>
                                                     </form>
                                                 </li>

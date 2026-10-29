@@ -14,7 +14,8 @@ public record UpdateDeviceCommand(
     string Password,
     string? Location,
     string? Notes,
-    bool IsActive
+    bool IsActive,
+    string? MerchantCode = null
 ) : IRequest<Result<bool>>;
 
 public class UpdateDeviceCommandValidator : AbstractValidator<UpdateDeviceCommand>
@@ -49,6 +50,7 @@ public class UpdateDeviceCommandHandler : IRequestHandler<UpdateDeviceCommand, R
             request.Location,
             request.Notes,
             request.IsActive,
+            request.MerchantCode,
             cancellationToken);
     }
 }

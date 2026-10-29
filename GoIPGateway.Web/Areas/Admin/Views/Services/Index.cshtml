@@ -16,6 +16,7 @@
     int orCount = servicesList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.Orange);
     int etCount = servicesList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.Etisalat);
     int weCount = servicesList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.WE);
+    int generalCount = servicesList.Count(s => s.Operator == null);
 }
 
 <style>
@@ -190,10 +191,58 @@
             </h3>
             <p class="text-muted small mb-0">تعريف وتهيئة خدمات المحافظ الذكية، أكواد الـ API، وسلاسل أوامر USSD التفاعلية</p>
         </div>
-        <a asp-action="Create" class="btn btn-primary px-4 py-2 fw-bold shadow-sm rounded-3 d-flex align-items-center gap-2">
-            <i class="bi bi-plus-circle-fill fs-5"></i>
-            <span>إضافة خدمة جديدة</span>
-        </a>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Searchable Service Quick Jump Combobox -->
+            <div class="searchable-combobox position-relative" id="adminServiceQuickJump" style="min-width: 260px;">
+                <div class="combobox-trigger d-flex align-items-center justify-content-between p-2 rounded-3 border bg-white cursor-pointer shadow-xs" onclick="toggleAdminQuickJump(event)">
+                    <span class="text-muted small d-flex align-items-center gap-1.5 text-truncate">
+                        <i class="bi bi-search text-primary"></i>
+                        <span id="adminQuickJumpText">انتقال وبحث سريع لخدمة...</span>
+                    </span>
+                    <i class="bi bi-chevron-down text-muted fs-9 ms-1.5"></i>
+                </div>
+                <div class="combobox-menu shadow-lg p-2 rounded-3 bg-white border position-absolute end-0 z-3" id="adminQuickJumpMenu" style="min-width: 310px; display: none; top: calc(100% + 5px);">
+                    <div class="p-1 mb-2 sticky-top bg-white border-bottom">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                            <input type="text" id="adminQuickJumpSearch" class="form-control border-start-0 fs-7" 
+                                   placeholder="ابحث باسم الخدمة أو الكود..." 
+                                   onkeyup="filterAdminQuickJump(this.value)" 
+                                   onclick="event.stopPropagation()" />
+                        </div>
+                    </div>
+                    <div id="adminQuickJumpItems" style="max-height: 280px; overflow-y: auto;">
+                        @foreach (var srv in servicesList)
+                        {
+                            var sSearch = $"{srv.NameAr} {srv.NameEn} {srv.ServiceCode} {srv.Operator}".ToLower();
+                            <div class="combobox-item p-2 rounded-2 mb-1 border-bottom border-light" data-search="@sSearch">
+                                <div class="d-flex align-items-center justify-content-between w-100">
+                                    <div class="me-2 text-truncate">
+                                        <a asp-action="Details" asp-route-id="@srv.Id" class="text-decoration-none fw-bold text-main fs-7 d-block text-truncate">
+                                            @srv.NameAr
+                                        </a>
+                                        <small class="text-muted font-monospace fs-9">@srv.ServiceCode • @(srv.Operator?.ToString() ?? "عام")</small>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                        <a asp-action="ConfigureSteps" asp-route-id="@srv.Id" class="btn btn-xs btn-outline-warning px-1.5 py-0.5 rounded" title="تهيئة USSD">
+                                            <i class="bi bi-sliders"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div id="adminQuickJumpNoResults" class="text-center py-3 text-muted small d-none">
+                        لا توجد خدمات مطابقة
+                    </div>
+                </div>
+            </div>
+
+            <a asp-action="Create" class="btn btn-primary px-3.5 py-2 fw-bold shadow-sm rounded-3 d-flex align-items-center gap-2">
+                <i class="bi bi-plus-circle-fill fs-5"></i>
+                <span>إضافة خدمة جديدة</span>
+            </a>
+        </div>
     </div>
 
     <!-- 4 Quick Stats Cards -->
@@ -290,6 +339,12 @@
             <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-op="ALL" onclick="filterByOp(this, 'ALL')">
                 كل الشبكات (@totalServices)
             </button>
+            @if (generalCount > 0)
+            {
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="General" onclick="filterByOp(this, 'General')">
+                    🌐 عامة / لكافة الشبكات (@generalCount)
+                </button>
+            }
             <button type="button" class="btn btn-sm pill-op-vodafone rounded-pill px-3 filter-pill" data-op="Vodafone" onclick="filterByOp(this, 'Vodafone')">
                 <span class="dot-indicator"></span> فودافون كاش (@vfCount)
             </button>
@@ -378,64 +433,6 @@
     </div>
 </div>
 
-<!-- Admin Test Service Modal -->
-<div class="modal fade" id="adminTestServiceModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header border-bottom pb-3">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="p-2 rounded-3 bg-success bg-opacity-10 text-success fs-5">
-                        <i class="bi bi-cpu-fill"></i>
-                    </span>
-                    <div>
-                        <h5 class="modal-title fw-bold mb-0">تجربة واختبار الخدمة عبر أجهزة GoIP</h5>
-                        <small class="text-muted" id="modalServiceSubtitle"></small>
-                    </div>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form id="adminTestForm" onsubmit="submitAdminTestService(event)">
-                    <input type="hidden" id="modalServiceCode" />
-                    <input type="hidden" id="modalServiceCategory" />
-
-                    <!-- Inputs row -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6" id="modalMerchantCodeGroup">
-                            <label class="form-label fw-bold small">كود التاجر (Merchant Code):</label>
-                            <input type="text" id="modalMerchantCode" class="form-control" placeholder="مثال: 123456" />
-                        </div>
-                        <div class="col-md-6" id="modalPhoneGroup">
-                            <label class="form-label fw-bold small">رقم الهاتف المستلم (Phone):</label>
-                            <input type="tel" id="modalPhoneNumber" class="form-control" placeholder="مثال: 01012345678" />
-                        </div>
-                        <div class="col-md-6" id="modalAmountGroup">
-                            <label class="form-label fw-bold small">المبلغ المطلوب (Amount):</label>
-                            <div class="input-group">
-                                <input type="number" step="0.01" min="1" id="modalAmount" class="form-control fw-bold text-success" placeholder="مثال: 100" />
-                                <span class="input-group-text fw-bold">ج.م</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small">رقم مرجع اختياري (External Ref):</label>
-                            <input type="text" id="modalExternalRef" class="form-control" placeholder="ADMIN-TEST-AUTO" />
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mb-3">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
-                        <button type="submit" id="btnRunAdminTest" class="btn btn-success fw-bold px-4">
-                            <i class="bi bi-play-circle-fill me-1"></i> تشغيل الأمر والـ USSD
-                        </button>
-                    </div>
-                </form>
-
-                <!-- Result container in modal -->
-                <div id="modalTestResult" class="d-none mt-3"></div>
-            </div>
-        </div>
-    </div>
-</div>
 
 @section Scripts {
     <script>
@@ -503,7 +500,9 @@
                 const rowActive = r.getAttribute('data-active') === 'true';
                 const rowSearch = (r.getAttribute('data-search') || '').toLowerCase();
 
-                const matchesOp = (currentOp === 'ALL' || rowOp === currentOp);
+                const matchesOp = (currentOp === 'ALL')
+                               || (currentOp === 'General' && (rowOp === 'General' || rowOp === 'ALL'))
+                               || (rowOp === currentOp || rowOp === 'General' || rowOp === 'ALL');
                 const matchesCat = (currentCat === 'ALL' || rowCat === currentCat);
                 const matchesActive = (!activeOnly || rowActive);
                 const matchesQuery = (!query || rowSearch.includes(query));
@@ -552,121 +551,53 @@
             });
         }
 
-        function openTestServiceModal(serviceCode, serviceName, category, operator) {
-            document.getElementById('modalServiceCode').value = serviceCode;
-            document.getElementById('modalServiceCategory').value = category;
-            document.getElementById('modalServiceSubtitle').innerText = `${serviceName} (${serviceCode}) - شبكة ${operator}`;
-            document.getElementById('modalTestResult').innerHTML = '';
-            document.getElementById('modalTestResult').classList.add('d-none');
 
-            const upper = (serviceCode || '').toUpperCase();
-            const cat = category || '';
-
-            const isPayment = cat === 'Payment' || upper.includes('PAY') || upper.includes('QR');
-            const isTransfer = cat === 'Transfer' || upper.includes('TRANS');
-            const isInquiry = cat === 'Inquiry' || cat === 'NumberInquiry' || upper.includes('INQ');
-
-            document.getElementById('modalMerchantCodeGroup').classList.toggle('d-none', !isPayment);
-            document.getElementById('modalPhoneGroup').classList.toggle('d-none', !isTransfer);
-            document.getElementById('modalAmountGroup').classList.toggle('d-none', isInquiry);
-
-            const modal = new bootstrap.Modal(document.getElementById('adminTestServiceModal'));
-            modal.show();
-        }
-
-        async function submitAdminTestService(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btnRunAdminTest');
-            const originalHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> جاري إرسال الأمر للجهاز...`;
-
-            const serviceCode = document.getElementById('modalServiceCode').value;
-            const amount = document.getElementById('modalAmount').value;
-            const merchantCode = document.getElementById('modalMerchantCode').value;
-            const phoneNumber = document.getElementById('modalPhoneNumber').value;
-            const externalRef = document.getElementById('modalExternalRef').value || `TEST-${Date.now()}`;
-
-            const payload = {
-                serviceCode: serviceCode,
-                externalRef: externalRef,
-                amount: amount ? parseFloat(amount) : null,
-                merchantCode: merchantCode ? merchantCode.trim() : null,
-                phoneNumber: phoneNumber ? phoneNumber.trim() : null,
-                parameters: {}
-            };
-
-            const resultContainer = document.getElementById('modalTestResult');
-            resultContainer.classList.remove('d-none');
-            resultContainer.innerHTML = `<div class="p-4 text-center text-muted"><span class="spinner-border spinner-border-sm me-2"></span> جاري التواصل مع بوابة GoIP واستلام رد الـ USSD...</div>`;
-
-            try {
-                const response = await fetch('/Admin/Services/TestService', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                const json = await response.json();
-                if (json.success) {
-                    const d = json.data;
-                    let logsRows = '';
-                    if (d.logs && d.logs.length > 0) {
-                        logsRows = d.logs.map(l => `
-                            <tr>
-                                <td class="text-center font-monospace">${l.stepOrder}</td>
-                                <td>${l.stepName || ''}</td>
-                                <td><code>${l.command || ''}</code></td>
-                                <td><small class="text-muted">${l.response || ''}</small></td>
-                                <td class="text-center font-monospace">${l.durationMs}ms</td>
-                                <td class="text-center"><span class="badge ${l.isSuccess ? 'bg-success' : 'bg-danger'}">${l.isSuccess ? 'ناجحة' : 'فشل'}</span></td>
-                            </tr>
-                        `).join('');
-                    }
-
-                    resultContainer.innerHTML = `
-                        <div class="p-3 rounded-3 border border-success bg-success bg-opacity-10 mb-3">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <h6 class="fw-bold text-success mb-0"><i class="bi bi-check-circle-fill me-1"></i> تمت التجربة بنجاح</h6>
-                                <span class="badge bg-success font-monospace">${d.transactionRef}</span>
-                            </div>
-                            <div class="small text-muted mb-2">
-                                المنفذ: <strong class="text-dark">منفذ #${d.portNumber || 'Auto'} (${d.simPhoneNumber || 'شريحة تلقائية'})</strong> |
-                                الرصيد بعد: <strong class="text-success font-monospace">${d.simBalanceAfter != null ? d.simBalanceAfter.toFixed(2) + ' ج.م' : '--'}</strong>
-                            </div>
-                            <div class="p-2 bg-dark text-info rounded font-monospace small" style="direction: ltr; text-align: left;">
-                                &gt; ${d.rawResponse || d.message}
-                            </div>
-                        </div>
-                        ${logsRows ? `
-                            <div class="table-responsive">
-                                <table class="table table-sm table-bordered fs-8 bg-white mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>#</th><th>الخطوة</th><th>الأمر</th><th>الرد</th><th>الزمن</th><th>الحالة</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>${logsRows}</tbody>
-                                </table>
-                            </div>
-                        ` : ''}
-                    `;
-                } else {
-                    resultContainer.innerHTML = `
-                        <div class="alert alert-danger mb-0">
-                            <strong><i class="bi bi-x-circle-fill me-1"></i> فشل الاختبار:</strong> ${json.message || 'حدث خطأ غير متوقع'}
-                        </div>
-                    `;
+        // Admin Searchable Quick Jump Combobox
+        function toggleAdminQuickJump(e) {
+            e.stopPropagation();
+            const menu = document.getElementById("adminQuickJumpMenu");
+            if (!menu) return;
+            const isShown = menu.style.display === "block";
+            if (isShown) {
+                closeAdminQuickJump();
+            } else {
+                menu.style.display = "block";
+                const inp = document.getElementById("adminQuickJumpSearch");
+                if (inp) {
+                    inp.value = '';
+                    filterAdminQuickJump('');
+                    setTimeout(() => inp.focus(), 50);
                 }
-            } catch (err) {
-                resultContainer.innerHTML = `<div class="alert alert-danger mb-0">حدث خطأ في الاتصال: ${err.message}</div>`;
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
             }
         }
+
+        function closeAdminQuickJump() {
+            const menu = document.getElementById("adminQuickJumpMenu");
+            if (menu) menu.style.display = "none";
+        }
+
+        function filterAdminQuickJump(query) {
+            const q = (query || '').trim().toLowerCase();
+            const items = document.querySelectorAll("#adminQuickJumpItems .combobox-item");
+            let visible = 0;
+            items.forEach(el => {
+                const s = el.getAttribute("data-search") || "";
+                if (!q || s.includes(q)) {
+                    el.style.display = "";
+                    visible++;
+                } else {
+                    el.style.display = "none";
+                }
+            });
+            const noRes = document.getElementById("adminQuickJumpNoResults");
+            if (noRes) noRes.classList.toggle("d-none", visible > 0);
+        }
+
+        document.addEventListener("click", function (e) {
+            const box = document.getElementById("adminServiceQuickJump");
+            if (box && !box.contains(e.target)) {
+                closeAdminQuickJump();
+            }
+        });
     </script>
 }

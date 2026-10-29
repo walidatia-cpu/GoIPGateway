@@ -1,6 +1,8 @@
 @model IEnumerable<GoIPGateway.Domain.Entities.SimCard>
+@using GoIPGateway.Domain.Enums
+@using GoIPGateway.Application.DTOs
 @{
-    ViewData["Title"] = "إدارة الشرائح والمحافظ";
+    ViewData["Title"] = "إدارة الشرائح والمحافظ الإلكترونية";
     var simList = Model.ToList();
     var totalSims = simList.Count;
     var activeSims = simList.Count(s => s.IsActive && !s.IsBlocked);
@@ -8,11 +10,68 @@
     var totalBalance = simList.Sum(s => s.CurrentBalance);
     var totalConsumed = simList.Sum(s => s.DailyConsumed);
 
-    int vfCount = simList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.Vodafone);
-    int orCount = simList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.Orange);
-    int etCount = simList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.Etisalat);
-    int weCount = simList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.WE);
+    int vfCount = simList.Count(s => s.Operator == OperatorType.Vodafone);
+    int orCount = simList.Count(s => s.Operator == OperatorType.Orange);
+    int etCount = simList.Count(s => s.Operator == OperatorType.Etisalat);
+    int weCount = simList.Count(s => s.Operator == OperatorType.WE);
+
+    var devices = ViewBag.Devices as List<GoIPGateway.Domain.Entities.Device> ?? new List<GoIPGateway.Domain.Entities.Device>();
 }
+
+<style>
+    .pulse-online {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background-color: #22c55e;
+        display: inline-block;
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+        animation: pulse-green 1.8s infinite;
+    }
+    @@keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+
+    .bulk-action-bar {
+        background: var(--card-bg);
+        border: 1.5px solid var(--primary-accent);
+        box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.2), 0 8px 10px -6px rgba(37, 99, 235, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: sticky;
+        top: 80px;
+        z-index: 1020;
+    }
+
+    .balance-updated-flash {
+        animation: green-balance-flash 2.5s ease;
+    }
+    @@keyframes green-balance-flash {
+        0% { background-color: rgba(34, 197, 94, 0.35); padding: 2px 6px; border-radius: 6px; }
+        50% { background-color: rgba(34, 197, 94, 0.2); }
+        100% { background-color: transparent; }
+    }
+
+    .tx-row-new {
+        animation: slide-in-tx 0.6s ease-out;
+    }
+    @@keyframes slide-in-tx {
+        0% { opacity: 0; transform: translateY(-12px); background-color: rgba(37, 99, 235, 0.12); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .tx-status-badge {
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 5px 10px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+</style>
 
 <div class="container-xl px-0 py-2">
     <!-- Breadcrumb -->
@@ -34,13 +93,18 @@
             </h3>
             <p class="text-muted small mb-0">الشرائح المركبة في أجهزتك لتنفيذ عمليات الكاش، السداد الآلي والاستعلام اللحظي</p>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <a asp-action="Create" class="btn btn-primary px-4 py-2 fw-bold shadow-sm rounded-3 d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a asp-action="Create" class="btn btn-primary px-3.5 py-2 fw-bold shadow-sm rounded-3 d-flex align-items-center gap-2">
                 <i class="bi bi-plus-circle-fill fs-5"></i>
                 <span>إضافة شريحة جديدة</span>
             </a>
-            <a asp-area="Company" asp-controller="Routing" asp-action="Index" class="btn btn-outline-info px-3 py-2 rounded-3 fw-bold">
-                <i class="bi bi-shuffle me-1"></i> توجيه الخدمات
+            <a asp-area="Company" asp-controller="Routing" asp-action="Index" class="btn btn-outline-info px-3 py-2 rounded-3 fw-bold d-flex align-items-center gap-1.5">
+                <i class="bi bi-shuffle"></i>
+                <span>توجيه الخدمات</span>
+            </a>
+            <a asp-area="Company" asp-controller="Reports" asp-action="Index" class="btn btn-outline-primary px-3 py-2 rounded-3 fw-bold d-flex align-items-center gap-1.5">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+                <span>تقارير الحركات</span>
             </a>
         </div>
     </div>
@@ -82,7 +146,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="text-muted small fw-bold">إجمالي رصيد المحافظ</div>
-                        <div class="fs-4 fw-black text-primary font-monospace my-1">@totalBalance.ToString("N0") <span class="fs-8 text-muted">ج.م</span></div>
+                        <div class="fs-4 fw-black text-primary font-monospace my-1" id="kpiTotalBalance">@totalBalance.ToString("N0") <span class="fs-8 text-muted">ج.م</span></div>
                         <div class="text-muted fs-8">رصيد كاش متاح للعمليات</div>
                     </div>
                     <div class="icon-box bg-info bg-opacity-10 text-info">
@@ -108,46 +172,98 @@
         </div>
     </div>
 
-    <!-- Toolbar: Search & Operator Filters -->
+    <!-- Floating / Docked Bulk Action Bar -->
+    <div id="bulkActionBar" class="bulk-action-bar p-3 mb-4 d-none">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-2.5">
+                <div class="p-2 rounded-circle bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-check2-all fs-5"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-0 text-main d-flex align-items-center gap-2">
+                        <span>إجراء جماعي فوري (Bulk USSD Action)</span>
+                        <span class="badge bg-primary text-white font-monospace fs-7 px-2 py-0.5 rounded-pill" id="bulkSelectedBadge">0 محدد</span>
+                    </h6>
+                    <small class="text-muted">اختر نوع العملية ليتم إطلاق الطلبات بالتوازي وعرض مسارها بالـ SignalR أدناه</small>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Action 1: Bulk Balance Inquiry -->
+                <button type="button" class="btn btn-primary px-3.5 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center gap-2" id="btnBulkBalance" onclick="triggerBulkAction('BAL_INQ')">
+                    <i class="bi bi-wallet2 fs-6"></i>
+                    <span>استعلام رصيد جماعي</span>
+                </button>
+
+                <!-- Action 2: Bulk Number Inquiry -->
+                <button type="button" class="btn btn-info text-white px-3.5 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center gap-2" id="btnBulkNumber" onclick="triggerBulkAction('NUM_INQ')">
+                    <i class="bi bi-telephone fs-6"></i>
+                    <span>استعلام رقم جماعي</span>
+                </button>
+
+                <!-- Deselect All -->
+                <button type="button" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-semibold" onclick="clearAllSimSelections()">
+                    <i class="bi bi-x-lg me-1"></i> إلغاء التحديد
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar: Search, Device Filter & Operator Filters -->
     <div class="portal-card p-3 mb-4 shadow-sm">
         <div class="row g-3 align-items-center">
-            <div class="col-12 col-md-5">
+            <div class="col-12 col-md-4">
                 <div class="input-group">
                     <span class="input-group-text bg-transparent border-end-0 text-muted">
                         <i class="bi bi-search"></i>
                     </span>
                     <input type="text" id="compSimSearchInput" class="form-control border-start-0" 
-                           placeholder="ابحث برقم الشريحة، اسم الجهاز أو المنفذ..." 
+                           placeholder="ابحث برقم الشريحة، أو المنفذ..." 
                            onkeyup="filterCompanySims()" />
                 </div>
             </div>
 
-            <div class="col-12 col-md-7 d-flex align-items-center justify-content-md-between flex-wrap gap-2">
+            <!-- Device Filter Dropdown -->
+            <div class="col-12 col-md-3">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 text-muted">
+                        <i class="bi bi-router"></i>
+                    </span>
+                    <select id="compSimDeviceFilter" class="form-select border-start-0 fw-semibold" onchange="filterCompanySims()">
+                        <option value="ALL">📟 كل أجهزة GoIP (@devices.Count)</option>
+                        @foreach (var dev in devices)
+                        {
+                            <option value="@dev.Id">@dev.DeviceName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-5 d-flex align-items-center justify-content-md-between flex-wrap gap-2">
                 <div class="d-flex flex-wrap gap-1.5">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-op="ALL" onclick="setCompOpFilter(this, 'ALL')">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 filter-pill active" data-op="ALL" onclick="setCompOpFilter(this, 'ALL')">
                         الكل (@totalSims)
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="Vodafone" onclick="setCompOpFilter(this, 'Vodafone')">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 filter-pill" data-op="Vodafone" onclick="setCompOpFilter(this, 'Vodafone')">
                         فودافون (@vfCount)
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="Orange" onclick="setCompOpFilter(this, 'Orange')">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 filter-pill" data-op="Orange" onclick="setCompOpFilter(this, 'Orange')">
                         أورانج (@orCount)
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="Etisalat" onclick="setCompOpFilter(this, 'Etisalat')">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 filter-pill" data-op="Etisalat" onclick="setCompOpFilter(this, 'Etisalat')">
                         اتصالات (@etCount)
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="WE" onclick="setCompOpFilter(this, 'WE')">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 filter-pill" data-op="WE" onclick="setCompOpFilter(this, 'WE')">
                         WE (@weCount)
                     </button>
                 </div>
                 <div class="text-muted small">
-                    عرض <strong class="text-primary font-monospace" id="visibleCompSimCount">@totalSims</strong> من أصل @totalSims
+                    عرض <strong class="text-primary font-monospace" id="visibleCompSimCount">@totalSims</strong> من @totalSims
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SIMs Table Card -->
+    <!-- SIMs Master Table Card -->
     <div class="portal-card shadow-sm table-card-container mb-4">
         @if (!simList.Any())
         {
@@ -168,6 +284,9 @@
                 <table class="table table-custom align-middle mb-0" id="compSimMasterTable">
                     <thead>
                         <tr>
+                            <th style="width: 44px;" class="text-center">
+                                <input type="checkbox" id="selectAllSimsCheckbox" class="form-check-input sim-check-all" onchange="toggleSelectAllSims(this)" title="تحديد / إلغاء تحديد الكل" />
+                            </th>
                             <th style="min-width: 170px;">رقم الشريحة (المحفظة)</th>
                             <th style="min-width: 130px;">الشبكة</th>
                             <th style="min-width: 180px;">الجهاز والمنفذ</th>
@@ -183,14 +302,17 @@
                             var opKey = sim.Operator.ToString();
                             var searchKeywords = $"{sim.PhoneNumber} {sim.DevicePort?.Device?.DeviceName} {sim.DevicePort?.PortLabel} {sim.Operator}".ToLower();
 
-                            <tr class="comp-sim-row" data-op="@opKey" data-search="@searchKeywords">
+                            <tr class="comp-sim-row" id="sim-row-@sim.Id" data-op="@opKey" data-device-id="@(sim.DevicePort?.DeviceId ?? 0)" data-search="@searchKeywords">
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input sim-row-checkbox" value="@sim.Id" data-phone="@sim.PhoneNumber" onchange="updateSimSelectionState()" />
+                                </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="row-avatar" style="width: 40px; height: 40px; font-size: 1rem;">
                                             <i class="bi bi-phone"></i>
                                         </div>
                                         <div>
-                                            <span class="fw-bold font-monospace text-main fs-6 d-block">@sim.PhoneNumber</span>
+                                            <span class="fw-bold font-monospace text-main fs-6 d-block" id="sim-phone-@sim.Id">@sim.PhoneNumber</span>
                                             <small class="text-muted font-monospace fs-8">PIN: ••••</small>
                                         </div>
                                     </div>
@@ -198,17 +320,17 @@
                                 <td>
                                     @switch (sim.Operator)
                                     {
-                                        case GoIPGateway.Domain.Enums.OperatorType.Vodafone:
+                                        case OperatorType.Vodafone:
                                             <span class="pill-badge pill-badge-danger">
                                                 <span class="dot-indicator"></span>فودافون كاش
                                             </span>
                                             break;
-                                        case GoIPGateway.Domain.Enums.OperatorType.Orange:
+                                        case OperatorType.Orange:
                                             <span class="pill-badge pill-badge-warning">
                                                 <span class="dot-indicator"></span>أورانج كاش
                                             </span>
                                             break;
-                                        case GoIPGateway.Domain.Enums.OperatorType.Etisalat:
+                                        case OperatorType.Etisalat:
                                             <span class="pill-badge pill-badge-success">
                                                 <span class="dot-indicator"></span>اتصالات كاش
                                             </span>
@@ -225,7 +347,7 @@
                                     <span class="badge bg-light text-muted border font-monospace fs-8">منفذ #@sim.DevicePort?.PortNumber (@sim.DevicePort?.PortLabel)</span>
                                 </td>
                                 <td>
-                                    <span class="fw-bold text-success font-monospace fs-6">@sim.CurrentBalance.ToString("N2") <small class="text-muted fs-8">ج.م</small></span>
+                                    <span class="fw-bold text-success font-monospace fs-6" id="sim-balance-@sim.Id">@sim.CurrentBalance.ToString("N2") <small class="text-muted fs-8">ج.م</small></span>
                                 </td>
                                 <td>
                                     <div class="small fw-bold font-monospace">@sim.DailyConsumed.ToString("N0") / @(sim.DailyLimit > 0 ? sim.DailyLimit.ToString("N0") : "∞") <small class="text-muted fs-8">ج.م</small></div>
@@ -253,26 +375,19 @@
                                 <td class="text-center">
                                     <div class="actions-btn-group justify-content-center">
                                         <!-- Instant Balance Query -->
-                                        <form asp-action="QueryBalance" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="simId" value="@sim.Id" />
-                                            <button type="submit" class="btn-action-icon btn-action-view" title="استعلام رصيد USSD فوري">
-                                                <i class="bi bi-wallet2"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn-action-icon btn-action-view" title="استعلام رصيد USSD فوري" onclick="runSingleQuery('BAL_INQ', @sim.Id, this)">
+                                            <i class="bi bi-wallet2"></i>
+                                        </button>
 
                                         <!-- Instant Number Query -->
-                                        <form asp-action="QueryNumber" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="simId" value="@sim.Id" />
-                                            <button type="submit" class="btn-action-icon" style="color: #0891b2;" title="استعلام رقم الشريحة USSD">
-                                                <i class="bi bi-telephone"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn-action-icon" style="color: #0891b2;" title="استعلام رقم الشريحة USSD" onclick="runSingleQuery('NUM_INQ', @sim.Id, this)">
+                                            <i class="bi bi-telephone"></i>
+                                        </button>
 
                                         <a asp-action="Edit" asp-route-id="@sim.Id" class="btn-action-icon" style="color: #d97706;" title="تعديل الشريحة">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
+
                                         <form asp-action="Delete" asp-route-id="@sim.Id" method="post" class="d-inline"
                                               data-confirm="true"
                                               data-confirm-title="إزالة وتفريغ الشريحة"
@@ -296,6 +411,8 @@
             </div>
         }
     </div>
+
+
 </div>
 
 @section Scripts {
@@ -311,17 +428,20 @@
 
         function filterCompanySims() {
             const query = (document.getElementById('compSimSearchInput')?.value || '').trim().toLowerCase();
+            const selectedDev = document.getElementById('compSimDeviceFilter')?.value || 'ALL';
             const rows = document.querySelectorAll('.comp-sim-row');
             let visible = 0;
 
             rows.forEach(row => {
                 const rowOp = row.getAttribute('data-op');
+                const rowDevId = row.getAttribute('data-device-id');
                 const rowSearch = row.getAttribute('data-search') || '';
 
                 const matchesOp = (currentCompOpFilter === 'ALL') || (rowOp === currentCompOpFilter);
+                const matchesDev = (selectedDev === 'ALL') || (rowDevId === selectedDev);
                 const matchesQuery = !query || rowSearch.includes(query);
 
-                if (matchesOp && matchesQuery) {
+                if (matchesOp && matchesDev && matchesQuery) {
                     row.style.display = '';
                     visible++;
                 } else {
@@ -332,5 +452,187 @@
             const countEl = document.getElementById('visibleCompSimCount');
             if (countEl) countEl.innerText = visible;
         }
+
+        // Checkbox & Bulk Selection Management
+        function toggleSelectAllSims(masterCheckbox) {
+            const checked = masterCheckbox.checked;
+            const visibleCheckboxes = Array.from(document.querySelectorAll('.comp-sim-row'))
+                .filter(row => row.style.display !== 'none')
+                .map(row => row.querySelector('.sim-row-checkbox'))
+                .filter(cb => cb !== null);
+
+            visibleCheckboxes.forEach(cb => { cb.checked = checked; });
+            updateSimSelectionState();
+        }
+
+        function onSimCheckboxChanged() {
+            updateSimSelectionState();
+        }
+
+        function clearAllSimSelections() {
+            document.querySelectorAll('.sim-row-checkbox').forEach(cb => { cb.checked = false; });
+            const master = document.getElementById('selectAllSimsCheckbox');
+            if (master) master.checked = false;
+            updateSimSelectionState();
+        }
+
+        function getSelectedSimIds() {
+            const selected = [];
+            document.querySelectorAll('.sim-row-checkbox:checked').forEach(cb => {
+                const id = parseInt(cb.value, 10);
+                if (!isNaN(id) && id > 0) selected.push(id);
+            });
+            return selected;
+        }
+
+        function updateSimSelectionState() {
+            const selected = getSelectedSimIds();
+            const bar = document.getElementById('bulkActionBar');
+            const badge = document.getElementById('bulkSelectedBadge');
+            const master = document.getElementById('selectAllSimsCheckbox');
+
+            if (badge) badge.innerText = selected.length + ' محدد';
+
+            if (selected.length > 0) {
+                if (bar) bar.classList.remove('d-none');
+            } else {
+                if (bar) bar.classList.add('d-none');
+                if (master) master.checked = false;
+            }
+        }
+
+        // Trigger Bulk USSD Action (BAL_INQ or NUM_INQ)
+        function triggerBulkAction(actionCode) {
+            const selectedIds = getSelectedSimIds();
+            if (selectedIds.length === 0) {
+                showAlertModal({
+                    title: 'لم يتم تحديد شرائح',
+                    message: 'يرجى تحديد شريحة واحدة على الأقل من الجدول لتنفيذ الاستعلام.',
+                    type: 'warning'
+                });
+                return;
+            }
+
+            const actionName = (actionCode === 'BAL_INQ') ? 'استعلام الرصيد' : 'استعلام رقم الشريحة';
+            showConfirmModal({
+                title: `تأكيد إطلاق ${actionName} الجماعي`,
+                message: `هل ترغب في إرسال أمر ${actionName} لعدد (${selectedIds.length}) شريحة محددة دفعة واحدة عبر أجهزة GoIP؟`,
+                detail: `${actionName} (${selectedIds.length} شريحة)`,
+                detailLabel: 'نوع الإجراء:',
+                btnText: `نعم، إطلاق الاستعلام (${selectedIds.length})`,
+                type: 'primary',
+                onConfirm: async function () {
+                    const btnBalance = document.getElementById('btnBulkBalance');
+                    const btnNumber = document.getElementById('btnBulkNumber');
+                    const targetBtn = (actionCode === 'BAL_INQ') ? btnBalance : btnNumber;
+                    const originalHtml = targetBtn ? targetBtn.innerHTML : '';
+
+                    if (targetBtn) {
+                        targetBtn.disabled = true;
+                        targetBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جاري الإطلاق...';
+                    }
+
+                    try {
+                        const response = await fetch('/Company/SimCards/BulkExecute', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                simIds: selectedIds,
+                                actionCode: actionCode
+                            })
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            showInlineToast(`${result.message} <a href="/Company/Reports" class="btn btn-sm btn-light text-primary ms-2 fw-bold text-decoration-none">سجل وتقارير الحركات &larr;</a>`, 'success');
+                        } else {
+                            showAlertModal({
+                                title: 'فشل إطلاق العملية',
+                                message: result.message || 'حدث خطأ أثناء إطلاق العملية.',
+                                type: 'danger'
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Bulk execute error:', err);
+                        showAlertModal({
+                            title: 'خطأ في الاتصال',
+                            message: 'حدث خطأ في الاتصال بالخادم، يرجى المحاولة مرة أخرى.',
+                            type: 'danger'
+                        });
+                    } finally {
+                        if (targetBtn) {
+                            targetBtn.disabled = false;
+                            targetBtn.innerHTML = originalHtml;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Single SIM Instant Query via AJAX
+        async function runSingleQuery(actionCode, simId, btnEl) {
+            const originalHtml = btnEl.innerHTML;
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            const url = (actionCode === 'BAL_INQ') ? '/Company/SimCards/QueryBalance' : '/Company/SimCards/QueryNumber';
+            const formData = new FormData();
+            formData.append('simId', simId);
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showInlineToast(`${data.message || 'تم إرسال الطلب بنجاح.'} <a href="/Company/Reports" class="btn btn-sm btn-light text-primary ms-2 fw-bold text-decoration-none">عرض بالسجل &larr;</a>`, 'success');
+                } else {
+                    showInlineToast(data.message || 'فشل تنفيذ الطلب.', 'danger');
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btnEl.disabled = false;
+                btnEl.innerHTML = originalHtml;
+            }
+        }
+
+        // Helper Toast Notification
+        function showInlineToast(message, type) {
+            const toastDiv = document.createElement('div');
+            toastDiv.className = `alert alert-${type} shadow-lg rounded-4 position-fixed bottom-0 start-50 translate-middle-x mb-4 px-4 py-3 fw-bold d-flex align-items-center gap-2`;
+            toastDiv.style.zIndex = '9999';
+            toastDiv.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill'} fs-5"></i> <span>${message}</span>`;
+            document.body.appendChild(toastDiv);
+            setTimeout(() => {
+                toastDiv.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                toastDiv.style.opacity = '0';
+                toastDiv.style.transform = 'translate(-50%, 20px)';
+                setTimeout(() => toastDiv.remove(), 400);
+            }, 6000);
+        }
+
+        // Real-Time SIM Balance & Phone Changes
+        window.addEventListener("goip:simBalanceChanged", function (e) {
+            const sim = e.detail;
+            if (!sim) return;
+
+            const balEl = document.getElementById('sim-balance-' + sim.id);
+            if (balEl) {
+                balEl.innerHTML = parseFloat(sim.currentBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' <small class="text-muted fs-8">ج.م</small>';
+                balEl.classList.add('balance-updated-flash');
+                setTimeout(() => balEl.classList.remove('balance-updated-flash'), 2500);
+            }
+
+            const phoneEl = document.getElementById('sim-phone-' + sim.id);
+            if (phoneEl && sim.phoneNumber) {
+                phoneEl.innerText = sim.phoneNumber;
+            }
+        });
     </script>
 }

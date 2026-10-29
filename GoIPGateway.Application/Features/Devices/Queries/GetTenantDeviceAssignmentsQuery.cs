@@ -6,7 +6,7 @@ using MediatR;
 
 namespace GoIPGateway.Application.Features.Devices.Queries;
 
-public record GetTenantDeviceAssignmentsQuery(int? TenantId = null) : IRequest<Result<IReadOnlyList<TenantDevice>>>;
+public record GetTenantDeviceAssignmentsQuery(int? TenantId = null, bool IncludeDeleted = true) : IRequest<Result<IReadOnlyList<TenantDevice>>>;
 
 public class GetTenantDeviceAssignmentsQueryHandler : IRequestHandler<GetTenantDeviceAssignmentsQuery, Result<IReadOnlyList<TenantDevice>>>
 {
@@ -30,6 +30,6 @@ public class GetTenantDeviceAssignmentsQueryHandler : IRequestHandler<GetTenantD
         if (!tenantId.HasValue)
             return Result.Failure<IReadOnlyList<TenantDevice>>("Tenant.NotResolved", "تعذر تحديد حساب الشركة.");
 
-        return await _queryService.GetTenantDeviceAssignmentsAsync(tenantId.Value, cancellationToken);
+        return await _queryService.GetTenantDeviceAssignmentsAsync(tenantId.Value, request.IncludeDeleted, cancellationToken);
     }
 }

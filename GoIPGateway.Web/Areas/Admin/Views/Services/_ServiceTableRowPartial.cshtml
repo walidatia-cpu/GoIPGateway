@@ -146,37 +146,33 @@
         </form>
     </td>
     <td class="text-center">
-        <div class="actions-btn-group justify-content-center">
+        <div class="actions-pill-group justify-content-center">
             <!-- Action 1: View Details -->
-            <a asp-action="Details" asp-route-id="@srv.Id" class="btn-action-icon btn-action-view" title="عرض التفاصيل">
-                <i class="bi bi-eye"></i>
+            <a asp-action="Details" asp-route-id="@srv.Id" class="action-pill-btn action-pill-primary" title="عرض التفاصيل الكاملة">
+                <i class="bi bi-eye-fill"></i>
+                <span>عرض</span>
             </a>
 
-            <!-- Action 2: Configure USSD Steps -->
-            <a asp-action="ConfigureSteps" asp-route-id="@srv.Id" class="btn-action-icon" style="color: #b45309;" title="تهيئة خطوات USSD (@stepCount خطوة)">
-                <i class="bi bi-sliders"></i>
+            <!-- Action 2: Quick Edit Service -->
+            <a asp-action="Edit" asp-route-id="@srv.Id" class="action-pill-btn action-pill-warning" title="تعديل بيانات الخدمة">
+                <i class="bi bi-pencil-square"></i>
             </a>
 
-            <!-- Action 3: Test Service Directly -->
-            <button type="button" class="btn-action-icon" style="color: #059669;" title="تجربة واختبار الخدمة مباشرة على GoIP" onclick="openTestServiceModal('@srv.ServiceCode', '@srv.NameAr', '@srv.Category', '@opArabic')">
-                <i class="bi bi-play-circle-fill"></i>
-            </button>
-
-            <!-- Action 4: Dropdown for more actions -->
-            <div class="dropdown">
-                <button class="btn-action-icon" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" title="خيارات إضافية">
-                    <i class="bi bi-three-dots-vertical"></i>
+            <!-- Action 3: Dropdown for more actions -->
+            <div class="dropdown d-inline-block">
+                <button class="action-pill-btn action-pill-more dropdown-toggle-no-caret" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" title="المزيد من الخيارات">
+                    <i class="bi bi-three-dots"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-actions">
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-actions shadow-lg border-0 rounded-3 p-2">
                     <li>
-                        <a class="dropdown-item" asp-action="Edit" asp-route-id="@srv.Id">
-                            <i class="bi bi-pencil-square text-warning"></i>تعديل بيانات الخدمة
+                        <a class="dropdown-item py-2 rounded-2 fw-semibold" asp-action="ConfigureSteps" asp-route-id="@srv.Id">
+                            <i class="bi bi-sliders text-warning me-2 fs-6"></i>تهيئة خطوات USSD (@stepCount خطوة)
                         </a>
                     </li>
                     <li><hr class="dropdown-divider my-1"></li>
                     <li>
-                        <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="openDeleteServiceModal(@srv.Id, '@srv.NameAr', '@srv.ServiceCode')">
-                            <i class="bi bi-trash"></i>حذف الخدمة
+                        <a class="dropdown-item py-2 rounded-2 fw-semibold text-danger" href="javascript:void(0)" onclick="openDeleteServiceModal(@srv.Id, '@srv.NameAr', '@srv.ServiceCode')">
+                            <i class="bi bi-trash3 text-danger me-2 fs-6"></i>حذف الخدمة نهائياً
                         </a>
                     </li>
                 </ul>

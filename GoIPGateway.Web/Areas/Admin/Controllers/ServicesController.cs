@@ -1,4 +1,5 @@
 using System.Text.Json;
+using GoIPGateway.Application.Common.Models;
 using GoIPGateway.Application.Features.ServiceDefinitions.Commands;
 using GoIPGateway.Application.Features.ServiceDefinitions.Queries;
 using GoIPGateway.Domain.Entities;
@@ -228,7 +229,7 @@ public class ServicesController : Controller
             return RedirectToAction(nameof(ConfigureSteps), new { id = serviceId });
         }
 
-        TempData["Error"] = result.Error?.Message ?? "فشل إضافة الخطوة.";
+        TempData["Error"] = GetResultErrorMessage(result, "فشل إضافة الخطوة.");
         return RedirectToAction(nameof(ConfigureSteps), new { id = serviceId });
     }
 
@@ -265,7 +266,7 @@ public class ServicesController : Controller
             return RedirectToAction(nameof(ConfigureSteps), new { id = serviceId });
         }
 
-        TempData["Error"] = result.Error?.Message ?? "فشل تعديل الخطوة.";
+        TempData["Error"] = GetResultErrorMessage(result, "فشل تعديل الخطوة.");
         return RedirectToAction(nameof(ConfigureSteps), new { id = serviceId });
     }
 
@@ -290,7 +291,7 @@ public class ServicesController : Controller
         }
         else
         {
-            TempData["Error"] = result.Error?.Message ?? "فشل حذف الخطوة.";
+            TempData["Error"] = GetResultErrorMessage(result, "فشل حذف الخطوة.");
         }
 
         return RedirectToAction(nameof(ConfigureSteps), new { id = serviceId });
@@ -301,14 +302,26 @@ public class ServicesController : Controller
     public async Task<IActionResult> AddParameter(int serviceId, ServiceParameter param, CancellationToken cancellationToken)
     {
         param.ServiceDefinitionId = serviceId;
+        param.ParameterKey = (param.ParameterKey ?? string.Empty).Trim().Trim('{', '}').Trim();
+        if (string.IsNullOrWhiteSpace(param.ParameterName))
+        {
+            param.ParameterName = !string.IsNullOrWhiteSpace(param.ParameterKey)
+                ? (char.ToUpper(param.ParameterKey[0]) + (param.ParameterKey.Length > 1 ? param.ParameterKey[1..] : ""))
+                : (!string.IsNullOrWhiteSpace(param.DisplayNameAr) ? param.DisplayNameAr : "Param");
+        }
+        if (string.IsNullOrWhiteSpace(param.DisplayNameAr))
+        {
+            param.DisplayNameAr = param.ParameterName;
+        }
+
         var result = await _mediator.Send(new AddServiceParameterCommand(param), cancellationToken);
         if (result.Succeeded)
         {
-            TempData["Success"] = $"تمت إضافة البارامتر '{param.DisplayNameAr}' بنجاح.";
+            TempData["Success"] = $"تمت إضافة البارامتر '{param.DisplayNameAr}' ({{{param.ParameterKey}}}) بنجاح.";
         }
         else
         {
-            TempData["Error"] = result.Error?.Message ?? "فشل إضافة البارامتر.";
+            TempData["Error"] = GetResultErrorMessage(result, "فشل إضافة البارامتر.");
         }
 
         return RedirectToAction(nameof(ConfigureSteps), new { id = serviceId });
@@ -324,10 +337,18 @@ public class ServicesController : Controller
         }
         else
         {
-            TempData["Error"] = result.Error?.Message ?? "فشل حذف البارامتر.";
+            TempData["Error"] = GetResultErrorMessage(result, "فشل حذف البارامتر.");
         }
 
         return RedirectToAction(nameof(ConfigureSteps), new { id = serviceId });
+    }
+
+    private static string GetResultErrorMessage(Result result, string defaultMsg)
+    {
+        if (result.ValidationErrors != null && result.ValidationErrors.Any())
+            return string.Join(" | ", result.ValidationErrors.Select(v => v.Message));
+
+        return !string.IsNullOrWhiteSpace(result.Error?.Message) ? result.Error.Message : defaultMsg;
     }
 
     private static void PackStepRules(
@@ -388,29 +409,5 @@ public class ServicesController : Controller
         }
 
         target.FailurePattern = failureRules.Any() ? JsonSerializer.Serialize(failureRules) : null;
-    }
-
-    /// <summary>
-    /// تجربة واختبار الخدمة مباشرة للإدارة عبر أجهزة GoIP
-    /// </summary>
-    [HttpPost]
-    public async Task<IActionResult> TestService([FromBody] GoIPGateway.Application.DTOs.ExecuteServiceRequestDto request, CancellationToken cancellationToken)
-    {
-        var parameters = request.GetNormalizedParameters();
-        var command = new GoIPGateway.Application.Features.Transactions.Commands.ExecuteServiceCommand(
-            request.ServiceCode,
-            request.ExternalRef ?? $"ADMIN-TEST-{Guid.NewGuid().ToString("N")[..6].ToUpper()}",
-            request.SimCardId,
-            request.Operator,
-            parameters,
-            request.CallbackUrl,
-            RequestSource.Dashboard
-        );
-
-        var result = await _mediator.Send(command, cancellationToken);
-        if (result.IsSuccess)
-            return Ok(new { success = true, data = result.Value });
-
-        return BadRequest(new { success = false, errorCode = result.Error.Code, message = result.Error.Message });
     }
 }

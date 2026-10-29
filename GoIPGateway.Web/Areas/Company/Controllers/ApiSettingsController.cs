@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
 [Area("Company")]
-[Authorize(Roles = "TenantAdmin,TenantOperator")]
+[Authorize(Roles = "TenantAdmin,TenantOperator,SuperAdmin")]
 public class ApiSettingsController : Controller
 {
     private readonly IMediator _mediator;

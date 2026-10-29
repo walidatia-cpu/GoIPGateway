@@ -265,7 +265,7 @@
                                         <div class="ussd-code-box" dir="ltr" title="@step.UssdCommand">
                                             @Html.Raw(FormatUssdDisplay(step.UssdCommand))
                                         </div>
-                                        <button type="button" class="btn btn-xs btn-outline-secondary p-1 border-0" onclick="navigator.clipboard.writeText('@step.UssdCommand'); alert('تم نسخ أمر الـ USSD');" title="نسخ الأمر">
+                                        <button type="button" class="btn btn-xs btn-outline-secondary p-1 border-0" onclick="navigator.clipboard.writeText('@step.UssdCommand'); showAlertModal('تم نسخ أمر الـ USSD إلى الحافظة بنجاح.', 'تم النسخ', 'success');" title="نسخ الأمر">
                                             <i class="bi bi-clipboard"></i>
                                         </button>
                                     </div>
@@ -333,29 +333,44 @@
                                     </div>
                                 </td>
                                 <td class="text-center">
-                                    <div class="actions-btn-group justify-content-center">
-                                        <a asp-action="StepDetails" asp-route-id="@step.Id" class="btn btn-action-step btn-outline-info" title="عرض تفاصيل الخطوة">
-                                            <i class="bi bi-eye"></i> عرض
+                                    <div class="actions-pill-group justify-content-center">
+                                        <!-- Action 1: View Step Details -->
+                                        <a asp-action="StepDetails" asp-route-id="@step.Id" class="action-pill-btn action-pill-primary" title="عرض تفاصيل الخطوة">
+                                            <i class="bi bi-eye-fill"></i>
+                                            <span>عرض</span>
                                         </a>
-                                        <a asp-action="EditStep" asp-route-id="@step.Id" class="btn btn-action-step btn-outline-primary" title="تعديل الخطوة">
-                                            <i class="bi bi-pencil-square"></i> تعديل
+
+                                        <!-- Action 2: Quick Edit Step -->
+                                        <a asp-action="EditStep" asp-route-id="@step.Id" class="action-pill-btn action-pill-warning" title="تعديل بيانات وأوامر الخطوة">
+                                            <i class="bi bi-pencil-square"></i>
                                         </a>
-                                        <form asp-action="DeleteStep" method="post" class="d-inline"
-                                              data-confirm="true"
-                                              data-confirm-title="حذف خطوة USSD"
-                                              data-confirm-message="هل أنت متأكد من حذف هذه الخطوة من مسار التنفيذ؟"
-                                              data-confirm-detail="خطوة رقم #@step.StepOrder: @(step.StepTitle ?? step.UssdCommand)"
-                                              data-confirm-detail-label="الخطوة:"
-                                              data-confirm-consequence="سيؤدي حذف الخطوة إلى تعديل تسلسل الخطوات البرمجية في محرك الـ Gateway وقد يفشل تنفيذ الخدمة إذا كانت الخطوة إلزامية."
-                                              data-confirm-btn="نعم، حذف الخطوة"
-                                              data-confirm-type="danger">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@step.Id" />
-                                            <input type="hidden" name="serviceId" value="@Model.Id" />
-                                            <button type="submit" class="btn btn-action-step btn-outline-danger" title="حذف الخطوة">
-                                                <i class="bi bi-trash3-fill"></i>
+
+                                        <!-- Action 3: Dropdown More Actions -->
+                                        <div class="dropdown d-inline-block">
+                                            <button class="action-pill-btn action-pill-more dropdown-toggle-no-caret" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" title="المزيد">
+                                                <i class="bi bi-three-dots"></i>
                                             </button>
-                                        </form>
+                                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-actions shadow-lg border-0 rounded-3 p-2">
+                                                <li>
+                                                    <form asp-action="DeleteStep" method="post"
+                                                          data-confirm="true"
+                                                          data-confirm-title="حذف خطوة USSD"
+                                                          data-confirm-message="هل أنت متأكد من حذف هذه الخطوة من مسار التنفيذ؟"
+                                                          data-confirm-detail="خطوة رقم #@step.StepOrder: @(step.StepTitle ?? step.UssdCommand)"
+                                                          data-confirm-detail-label="الخطوة:"
+                                                          data-confirm-consequence="سيؤدي حذف الخطوة إلى تعديل تسلسل الخطوات البرمجية في محرك الـ Gateway."
+                                                          data-confirm-btn="نعم، حذف الخطوة"
+                                                          data-confirm-type="danger">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@step.Id" />
+                                                        <input type="hidden" name="serviceId" value="@Model.Id" />
+                                                        <button type="submit" class="dropdown-item py-2 rounded-2 fw-semibold text-danger border-0 bg-transparent w-100 text-start">
+                                                            <i class="bi bi-trash3 text-danger me-2 fs-6"></i>حذف الخطوة
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -400,28 +415,37 @@
                     <div class="row g-2.5 align-items-end">
                         <div class="col-md-3">
                             <label class="form-label small fw-bold mb-1">مفتاح الـ API <span class="text-danger">*</span></label>
-                            <input type="text" name="ParameterKey" class="form-control form-control-sm font-monospace" placeholder="مثال: amount أو merchantCode" required />
+                            <input type="text" name="ParameterKey" class="form-control form-control-sm font-monospace" placeholder="مثال: amount أو merchantCode" oninput="this.value = this.value.replace(/[{}]/g, '')" required />
+                            <small class="text-muted fs-9">بدون أقواس، يُستخدم كـ <code>{اسم_المفتاح}</code></small>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small fw-bold mb-1">الاسم بالعربية <span class="text-danger">*</span></label>
                             <input type="text" name="DisplayNameAr" class="form-control form-control-sm" placeholder="مثال: المبلغ المطلوب" required />
+                            <small class="text-muted fs-9">الاسم الذي يظهر للعملاء في التوثيق</small>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold mb-1">الاسم التقني (إنجليزي)</label>
+                            <input type="text" name="ParameterName" class="form-control form-control-sm font-monospace" placeholder="مثال: Amount" />
+                            <small class="text-muted fs-9">اختياري (يتم توليده تلقائياً)</small>
+                        </div>
+                        <div class="col-md-2">
                             <label class="form-label small fw-bold mb-1">نوع البيانات</label>
                             <select name="DataType" class="form-select form-select-sm">
                                 <option value="1">نص (String)</option>
-                                <option value="2">رقم صحيح (Integer/Number)</option>
+                                <option value="2">رقم صحيح (Integer)</option>
                                 <option value="3">مبلغ عشري (Decimal)</option>
                                 <option value="4">رقم هاتف (Phone)</option>
                                 <option value="5">منطقي (Boolean)</option>
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-center gap-2">
+                        <div class="col-md-2 d-flex align-items-center gap-2">
                             <div class="form-check form-switch mb-0">
                                 <input type="checkbox" name="IsRequired" value="true" class="form-check-input" role="switch" checked id="isReqParamInline" />
                                 <label class="form-check-label small fw-bold" for="isReqParamInline">إجباري</label>
                             </div>
-                            <button type="submit" class="btn btn-sm btn-primary fw-bold px-3 ms-auto rounded-2">حفظ البارامتر</button>
+                            <button type="submit" class="btn btn-sm btn-primary fw-bold px-3 ms-auto rounded-2">
+                                <i class="bi bi-check2 me-1"></i>حفظ
+                            </button>
                         </div>
                     </div>
                 </form>
@@ -433,7 +457,7 @@
             <div class="text-center py-4 border rounded-3 border-dashed bg-light bg-opacity-30">
                 <span class="text-muted small d-block mb-2">لا توجد بارامترات مسجلة لهذه الخدمة بعد.</span>
                 <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#addParamInline">
-                    + إضافة أول بارامتر (مثل {amount})
+                    + إضافة أول بارامتر (مثل amount)
                 </button>
             </div>
         }
@@ -445,6 +469,7 @@
                         <tr>
                             <th style="min-width: 140px;">مفتاح الـ API</th>
                             <th style="min-width: 160px;">الاسم بالعربية</th>
+                            <th style="min-width: 140px;">الاسم البرمجي</th>
                             <th style="min-width: 120px;">نوع البيانات</th>
                             <th style="min-width: 100px;">الإلزامية</th>
                             <th style="width: 80px;" class="text-center">إجراء</th>
@@ -472,6 +497,9 @@
                                     <span class="fw-bold text-main">@(p.DisplayNameAr ?? p.ParameterName)</span>
                                 </td>
                                 <td>
+                                    <span class="font-monospace text-muted small">@p.ParameterName</span>
+                                </td>
+                                <td>
                                     <span class="badge @typeBadge border px-2 py-0.5 rounded-pill fs-8">
                                         @p.DataType
                                     </span>
@@ -491,22 +519,24 @@
                                     }
                                 </td>
                                 <td class="text-center">
-                                    <form asp-action="DeleteParameter" method="post" class="d-inline"
-                                          data-confirm="true"
-                                          data-confirm-title="حذف بارامتر الخدمة"
-                                          data-confirm-message="هل أنت متأكد من حذف هذا المتغير/البارامتر؟"
-                                          data-confirm-detail="@p.ParameterKey (@(p.DisplayNameAr ?? p.ParameterName))"
-                                          data-confirm-detail-label="المتغير:"
-                                          data-confirm-consequence="إذا كان هذا المتغير مستخدماً داخل نصوص أو قوالب USSD، فقد تفشل الطلبات القادمة من الـ API."
-                                          data-confirm-btn="نعم، حذف المتغير"
-                                          data-confirm-type="danger">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@p.Id" />
-                                        <input type="hidden" name="serviceId" value="@Model.Id" />
-                                        <button type="submit" class="btn btn-xs btn-outline-danger p-1 border-0" title="حذف البارامتر">
-                                            <i class="bi bi-trash3-fill fs-6"></i>
-                                        </button>
-                                    </form>
+                                    <div class="actions-pill-group justify-content-center">
+                                        <form asp-action="DeleteParameter" method="post" class="d-inline"
+                                              data-confirm="true"
+                                              data-confirm-title="حذف بارامتر الخدمة"
+                                              data-confirm-message="هل أنت متأكد من حذف هذا المتغير/البارامتر؟"
+                                              data-confirm-detail="@p.ParameterKey (@(p.DisplayNameAr ?? p.ParameterName))"
+                                              data-confirm-detail-label="المتغير:"
+                                              data-confirm-consequence="إذا كان هذا المتغير مستخدماً داخل نصوص أو قوالب USSD، فقد تفشل الطلبات القادمة من الـ API."
+                                              data-confirm-btn="نعم، حذف المتغير"
+                                              data-confirm-type="danger">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@p.Id" />
+                                            <input type="hidden" name="serviceId" value="@Model.Id" />
+                                            <button type="submit" class="action-pill-btn action-pill-more text-danger" title="حذف البارامتر" style="color: #ef4444 !important; border-color: rgba(239, 68, 68, 0.25);">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         }

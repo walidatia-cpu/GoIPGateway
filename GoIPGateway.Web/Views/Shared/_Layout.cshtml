@@ -134,6 +134,10 @@
             transition: background-color 0.2s ease, color 0.2s ease;
         }
 
+        .text-main {
+            color: var(--text-main) !important;
+        }
+
         /* Top Navbar */
         .navbar-custom {
             background: var(--navbar-bg);
@@ -338,52 +342,163 @@
         /* ========================================================
            GLOBAL GRID & TABLE STANDARDIZATION SYSTEM (GOLD STANDARD)
            ======================================================== */
-        .actions-btn-group {
+        /* Modern Segmented Action Toolbar Capsule */
+        .actions-pill-group, .actions-btn-group {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            background: rgba(148, 163, 184, 0.08);
+            padding: 3px 6px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            white-space: nowrap;
         }
-
-        .btn-action-icon {
-            width: 34px;
-            height: 34px;
+        [data-bs-theme="dark"] .actions-pill-group, [data-bs-theme="dark"] .actions-btn-group {
+            background: rgba(30, 41, 59, 0.7);
+            border-color: rgba(51, 65, 85, 0.6);
+        }
+        .action-pill-btn, .btn-action-icon {
+            height: 30px;
+            padding: 0 10px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 9px;
-            border: 1px solid #cbd5e1;
-            background-color: #ffffff;
-            color: #475569;
-            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            gap: 5px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            border: 1px solid transparent;
             text-decoration: none;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
         }
-        .btn-action-icon:hover {
-            background-color: rgba(37, 99, 235, 0.08);
+        .action-pill-primary, .btn-action-icon.btn-action-view {
+            background-color: #ffffff;
+            color: #2563eb !important;
+            border-color: rgba(37, 99, 235, 0.25);
+        }
+        .action-pill-primary:hover, .btn-action-icon.btn-action-view:hover {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
             border-color: #2563eb;
-            color: #2563eb;
             transform: translateY(-1px);
-            box-shadow: 0 3px 6px rgba(37, 99, 235, 0.15);
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
         }
-        .btn-action-icon.btn-action-view {
-            color: #2563eb;
-            border-color: rgba(37, 99, 235, 0.3);
-            background-color: rgba(37, 99, 235, 0.04);
+        .action-pill-warning {
+            background-color: #ffffff;
+            color: #d97706 !important;
+            border-color: rgba(245, 158, 11, 0.25);
+            width: 30px;
+            padding: 0;
         }
-        .btn-action-icon.btn-action-view:hover {
-            background-color: #2563eb;
-            border-color: #2563eb;
-            color: #ffffff;
+        .action-pill-warning:hover {
+            background-color: #f59e0b !important;
+            color: #ffffff !important;
+            border-color: #f59e0b;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25);
         }
-        [data-bs-theme="dark"] .btn-action-icon {
+        .action-pill-success, .action-pill-test {
+            background-color: #ffffff;
+            color: #059669 !important;
+            border-color: rgba(16, 185, 129, 0.25);
+            width: 30px;
+            padding: 0;
+        }
+        .action-pill-success:hover, .action-pill-test:hover {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+            border-color: #10b981;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+        }
+        .action-pill-query {
+            background-color: #ffffff;
+            color: #0891b2 !important;
+            border-color: rgba(6, 182, 212, 0.25);
+            height: 30px;
+            padding: 0 10px;
+        }
+        .action-pill-query:hover {
+            background-color: #06b6d4 !important;
+            color: #ffffff !important;
+            border-color: #06b6d4;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(6, 182, 212, 0.25);
+        }
+        .action-pill-more, .btn-action-icon:not(.btn-action-view) {
+            background-color: #ffffff;
+            color: #64748b !important;
+            border-color: rgba(100, 116, 139, 0.25);
+            width: 30px;
+            padding: 0;
+        }
+        .action-pill-more:hover, .action-pill-more[aria-expanded="true"],
+        .btn-action-icon:not(.btn-action-view):hover {
+            background-color: #475569 !important;
+            color: #ffffff !important;
+            border-color: #475569;
+            transform: translateY(-1px);
+        }
+        [data-bs-theme="dark"] .action-pill-primary, [data-bs-theme="dark"] .btn-action-icon.btn-action-view {
             background-color: #1e293b;
-            border-color: #334155;
-            color: #94a3b8;
+            color: #60a5fa !important;
+            border-color: rgba(96, 165, 250, 0.3);
         }
-        [data-bs-theme="dark"] .btn-action-icon:hover {
-            background-color: #334155;
-            color: #60a5fa;
-            border-color: #60a5fa;
+        [data-bs-theme="dark"] .action-pill-primary:hover, [data-bs-theme="dark"] .btn-action-icon.btn-action-view:hover {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+        }
+        [data-bs-theme="dark"] .action-pill-warning {
+            background-color: #1e293b;
+            color: #fbbf24 !important;
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+        [data-bs-theme="dark"] .action-pill-warning:hover {
+            background-color: #d97706 !important;
+            color: #ffffff !important;
+        }
+        [data-bs-theme="dark"] .action-pill-success, [data-bs-theme="dark"] .action-pill-test {
+            background-color: #1e293b;
+            color: #34d399 !important;
+            border-color: rgba(52, 211, 153, 0.3);
+        }
+        [data-bs-theme="dark"] .action-pill-success:hover, [data-bs-theme="dark"] .action-pill-test:hover {
+            background-color: #059669 !important;
+            color: #ffffff !important;
+        }
+        [data-bs-theme="dark"] .action-pill-query {
+            background-color: #1e293b;
+            color: #38bdf8 !important;
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+        [data-bs-theme="dark"] .action-pill-query:hover {
+            background-color: #0891b2 !important;
+            color: #ffffff !important;
+        }
+        [data-bs-theme="dark"] .action-pill-more, [data-bs-theme="dark"] .btn-action-icon:not(.btn-action-view) {
+            background-color: #1e293b;
+            color: #94a3b8 !important;
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+        [data-bs-theme="dark"] .action-pill-more:hover, [data-bs-theme="dark"] .action-pill-more[aria-expanded="true"],
+        [data-bs-theme="dark"] .btn-action-icon:not(.btn-action-view):hover {
+            background-color: #334155 !important;
+            color: #ffffff !important;
+        }
+
+        .btn-restore-tenant, .btn-restore-pill {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: #ffffff !important;
+            border: none;
+            box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+            transition: all 0.2s ease;
+        }
+        .btn-restore-tenant:hover, .btn-restore-pill:hover {
+            background: linear-gradient(135deg, #15803d, #166534);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4);
         }
 
         .filter-pill {
@@ -433,6 +548,59 @@
             background-color: rgba(239, 68, 68, 0.08);
             color: #dc2626 !important;
         }
+
+        /* Unified Telecom Operator Brand Pills */
+        .pill-telecom {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            white-space: nowrap;
+        }
+        .pill-telecom .dot-indicator {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .pill-op-vodafone {
+            background-color: rgba(225, 29, 72, 0.08) !important;
+            color: #be123c !important;
+            border: 1px solid rgba(225, 29, 72, 0.2) !important;
+        }
+        .pill-op-vodafone .dot-indicator { background-color: #e11d48; }
+
+        .pill-op-orange {
+            background-color: rgba(249, 115, 22, 0.08) !important;
+            color: #c2410c !important;
+            border: 1px solid rgba(249, 115, 22, 0.2) !important;
+        }
+        .pill-op-orange .dot-indicator { background-color: #ea580c; }
+
+        .pill-op-etisalat {
+            background-color: rgba(22, 163, 74, 0.08) !important;
+            color: #15803d !important;
+            border: 1px solid rgba(22, 163, 74, 0.2) !important;
+        }
+        .pill-op-etisalat .dot-indicator { background-color: #16a34a; }
+
+        .pill-op-we {
+            background-color: rgba(147, 51, 234, 0.08) !important;
+            color: #7e22ce !important;
+            border: 1px solid rgba(147, 51, 234, 0.2) !important;
+        }
+        .pill-op-we .dot-indicator { background-color: #9333ea; }
+
+        .pill-op-general {
+            background-color: rgba(100, 116, 139, 0.08) !important;
+            color: #475569 !important;
+            border: 1px solid rgba(100, 116, 139, 0.2) !important;
+        }
+        .pill-op-general .dot-indicator { background-color: #64748b; }
 
         /* Standard Modern High-Contrast Pill Badges */
         .pill-badge {
@@ -587,6 +755,181 @@
             border: 1px solid rgba(37, 99, 235, 0.25);
             box-shadow: 0 0 24px rgba(37, 99, 235, 0.16);
         }
+        .confirm-icon-info {
+            background: rgba(6, 182, 212, 0.12);
+            color: #0891b2;
+            border: 1px solid rgba(6, 182, 212, 0.25);
+            box-shadow: 0 0 24px rgba(6, 182, 212, 0.16);
+        }
+        .confirm-icon-success {
+            background: rgba(22, 163, 74, 0.12);
+            color: #16a34a;
+            border: 1px solid rgba(22, 163, 74, 0.25);
+            box-shadow: 0 0 24px rgba(22, 163, 74, 0.16);
+        }
+
+        /* Auto-dismissing Alert & Visual Progress Bar */
+        .auto-dismiss-alert, .alert-dismissible {
+            position: relative;
+            overflow: hidden;
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.4s ease, margin 0.4s ease, padding 0.4s ease;
+        }
+
+        .alert-progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3.5px;
+            background: rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        [data-bs-theme="dark"] .alert-progress-bar {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .alert-progress-inner {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            background: currentColor;
+            opacity: 0.65;
+            animation: alertCountdownRtl 20s linear forwards;
+        }
+
+        [dir="ltr"] .alert-progress-inner {
+            right: auto;
+            left: 0;
+            animation-name: alertCountdownLtr;
+        }
+
+        @@keyframes alertCountdownRtl {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+        @@keyframes alertCountdownLtr {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+        /* ========================================================
+           GLOBAL SEARCHABLE COMBOBOX SYSTEM
+           ======================================================== */
+        .searchable-combobox {
+            position: relative;
+            width: 100%;
+        }
+        .searchable-combobox .combobox-trigger {
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--input-text);
+            border-radius: 12px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            user-select: none;
+            min-height: 44px;
+        }
+        .searchable-combobox.combobox-sm .combobox-trigger {
+            padding: 6px 12px;
+            min-height: 36px;
+            font-size: 0.875rem;
+            border-radius: 10px;
+        }
+        .searchable-combobox .combobox-trigger:hover, 
+        .searchable-combobox .combobox-trigger.active {
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+        }
+        .searchable-combobox .combobox-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            left: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.16);
+            z-index: 1060;
+            max-height: 340px;
+            overflow-y: auto;
+            display: none;
+            padding: 8px;
+        }
+        .searchable-combobox .combobox-menu.show {
+            display: block;
+            animation: comboboxPopIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @@keyframes comboboxPopIn {
+            from { opacity: 0; transform: translateY(-6px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .searchable-combobox .combobox-search-box {
+            position: sticky;
+            top: -8px;
+            background: var(--card-bg);
+            z-index: 2;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .searchable-combobox .combobox-group-header {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 8px 10px 4px 10px;
+            letter-spacing: 0.3px;
+            background: rgba(148, 163, 184, 0.08);
+            border-radius: 6px;
+            margin: 4px 0 2px 0;
+        }
+        .searchable-combobox .combobox-item {
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: var(--text-main);
+            font-size: 0.92rem;
+        }
+        .searchable-combobox.combobox-sm .combobox-item {
+            padding: 6px 10px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+        }
+        .searchable-combobox .combobox-item:hover {
+            background-color: rgba(37, 99, 235, 0.08);
+        }
+        .searchable-combobox .combobox-item.selected {
+            background-color: rgba(37, 99, 235, 0.14);
+            border-right: 3px solid var(--primary-accent);
+            font-weight: 700;
+        }
+        [dir="ltr"] .searchable-combobox .combobox-item.selected {
+            border-right: none;
+            border-left: 3px solid var(--primary-accent);
+        }
+        .searchable-combobox .combobox-caret {
+            transition: transform 0.2s ease;
+        }
+        .searchable-combobox .combobox-trigger.active .combobox-caret {
+            transform: rotate(180deg);
+        }
+        [data-bs-theme="dark"] .searchable-combobox .combobox-item:hover {
+            background-color: rgba(37, 99, 235, 0.2);
+        }
+        [data-bs-theme="dark"] .searchable-combobox .combobox-item.selected {
+            background-color: rgba(37, 99, 235, 0.3);
+        }
     </style>
     @RenderSection("Styles", required: false)
 </head>
@@ -702,9 +1045,12 @@
                     <a asp-area="Company" asp-controller="Routing" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Routing" ? "active" : "")">
                         <i class="bi bi-shuffle text-primary"></i> <span>توجيه الخدمات والشرائح</span>
                     </a>
-                    <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Execute" ? "active" : "")">
-                        <i class="bi bi-lightning-charge-fill text-warning"></i> <span>تنفيذ عملية فورية</span>
-                    </a>
+                    @if (!User.IsInRole("SuperAdmin"))
+                    {
+                        <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Execute" ? "active" : "")">
+                            <i class="bi bi-lightning-charge-fill text-warning"></i> <span>تنفيذ عملية فورية</span>
+                        </a>
+                    }
                     <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")">
                         <i class="bi bi-receipt"></i> <span>سجل العمليات</span>
                     </a>
@@ -724,22 +1070,46 @@
         <main class="flex-grow-1 p-3 p-md-4">
             @if (TempData["Success"] != null)
             {
-                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 py-3" role="alert">
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 py-3 auto-dismiss-alert position-relative overflow-hidden" role="alert" data-timeout="20000">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-check-circle-fill fs-5 me-2"></i>
                         <div class="fw-bold">@TempData["Success"]</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <div class="alert-progress-bar"><div class="alert-progress-inner"></div></div>
                 </div>
             }
             @if (TempData["Error"] != null)
             {
-                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 py-3" role="alert">
+                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 py-3 auto-dismiss-alert position-relative overflow-hidden" role="alert" data-timeout="20000">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
                         <div class="fw-bold">@TempData["Error"]</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <div class="alert-progress-bar"><div class="alert-progress-inner"></div></div>
+                </div>
+            }
+            @if (TempData["Warning"] != null)
+            {
+                <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm rounded-3 py-3 auto-dismiss-alert position-relative overflow-hidden" role="alert" data-timeout="20000">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-circle-fill fs-5 me-2"></i>
+                        <div class="fw-bold">@TempData["Warning"]</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <div class="alert-progress-bar"><div class="alert-progress-inner"></div></div>
+                </div>
+            }
+            @if (TempData["Info"] != null)
+            {
+                <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm rounded-3 py-3 auto-dismiss-alert position-relative overflow-hidden" role="alert" data-timeout="20000">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill fs-5 me-2"></i>
+                        <div class="fw-bold">@TempData["Info"]</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <div class="alert-progress-bar"><div class="alert-progress-inner"></div></div>
                 </div>
             }
 
@@ -779,11 +1149,11 @@
 
                     <!-- Action Buttons -->
                     <div class="d-flex align-items-center gap-2 justify-content-center">
-                        <button type="button" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-bold fs-7 flex-grow-1" data-bs-dismiss="modal">
+                        <button type="button" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-bold fs-7 flex-grow-1" id="globalConfirmCancelBtn" data-bs-dismiss="modal">
                             إلغاء وتراجع
                         </button>
                         <button type="button" class="btn btn-danger px-4 py-2 rounded-pill fw-bold fs-7 flex-grow-1 shadow-sm d-flex align-items-center justify-content-center gap-1.5" id="globalConfirmActionBtn">
-                            <i class="bi bi-check-circle-fill"></i>
+                            <i class="bi bi-check-circle-fill" id="globalConfirmActionBtnIcon"></i>
                             <span id="globalConfirmActionBtnText">نعم، تأكيد</span>
                         </button>
                     </div>
@@ -814,6 +1184,8 @@
             const consequenceEl = document.getElementById('globalConfirmConsequence');
             const btn = document.getElementById('globalConfirmActionBtn');
             const btnText = document.getElementById('globalConfirmActionBtnText');
+            const btnIcon = document.getElementById('globalConfirmActionBtnIcon');
+            const cancelBtn = document.getElementById('globalConfirmCancelBtn');
             const iconWrapper = document.getElementById('globalConfirmIconWrapper');
             const icon = document.getElementById('globalConfirmIcon');
 
@@ -835,25 +1207,77 @@
                 consequenceBox.classList.add('d-none');
             }
 
-            const type = options.type || 'danger';
-            iconWrapper.className = 'confirm-icon-wrapper mb-3 mx-auto confirm-icon-' + type;
-            btn.className = 'btn px-4 py-2 rounded-pill fw-bold fs-7 flex-grow-1 shadow-sm d-flex align-items-center justify-content-center gap-1.5 btn-' + (type === 'danger' ? 'danger' : type === 'warning' ? 'warning text-dark' : 'primary');
-
-            if (type === 'danger') {
-                icon.className = 'bi bi-shield-x';
-            } else if (type === 'warning') {
-                icon.className = 'bi bi-exclamation-triangle-fill';
-            } else {
-                icon.className = 'bi bi-question-circle-fill';
+            const isAlertMode = (options.hideCancel === true || options.isAlert === true);
+            if (cancelBtn) {
+                if (isAlertMode) {
+                    cancelBtn.classList.add('d-none');
+                } else {
+                    cancelBtn.classList.remove('d-none');
+                }
             }
 
-            btnText.innerText = options.btnText || (type === 'danger' ? 'نعم، تأكيد' : 'تأكيد الإجراء');
+            const type = options.type || 'danger';
+            iconWrapper.className = 'confirm-icon-wrapper mb-3 mx-auto confirm-icon-' + type;
+
+            let btnClass = 'btn-danger';
+            let defaultIcon = 'bi-shield-x';
+
+            if (type === 'danger') {
+                btnClass = 'btn-danger';
+                defaultIcon = 'bi-shield-x';
+            } else if (type === 'warning') {
+                btnClass = 'btn-warning text-dark';
+                defaultIcon = 'bi-exclamation-triangle-fill';
+            } else if (type === 'info') {
+                btnClass = 'btn-primary';
+                defaultIcon = 'bi-info-circle-fill';
+            } else if (type === 'success') {
+                btnClass = 'btn-success';
+                defaultIcon = 'bi-check-circle-fill';
+            } else {
+                btnClass = 'btn-primary';
+                defaultIcon = 'bi-question-circle-fill';
+            }
+
+            btn.className = 'btn px-4 py-2 rounded-pill fw-bold fs-7 shadow-sm d-flex align-items-center justify-content-center gap-1.5 ' + btnClass + (isAlertMode ? ' px-5' : ' flex-grow-1');
+            icon.className = 'bi ' + (options.icon || defaultIcon);
+            if (btnIcon) {
+                btnIcon.className = 'bi ' + (isAlertMode ? 'bi-check-lg' : 'bi-check-circle-fill');
+            }
+
+            btnText.innerText = options.btnText || (isAlertMode ? 'حسناً، فهمت' : (type === 'danger' ? 'نعم، تأكيد' : 'تأكيد الإجراء'));
 
             globalPendingConfirmAction = options.onConfirm || null;
 
             const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
             bsModal.show();
         }
+
+        function showAlertModal(options, title, type) {
+            let opts = {};
+            if (typeof options === 'string') {
+                opts = {
+                    message: options,
+                    title: title || 'تنبيه النظام',
+                    type: type || 'warning',
+                    btnText: 'حسناً، فهمت'
+                };
+            } else {
+                opts = Object.assign({}, options);
+            }
+            opts.hideCancel = true;
+            opts.isAlert = true;
+            showConfirmModal(opts);
+        }
+
+        // Global exposure
+        window.showAlertModal = showAlertModal;
+        window.showConfirmModal = showConfirmModal;
+
+        // Global override for window.alert to guarantee 100% UI consistency across the entire app
+        window.alert = function (message) {
+            showAlertModal(message);
+        };
 
         function updateThemeUI(theme) {
             const icon = document.getElementById("themeIcon");
@@ -931,6 +1355,10 @@
                 if (indicator) indicator.style.backgroundColor = "#22c55e";
                 if (statusLabel) statusLabel.innerText = "متصل لحظياً";
                 connection.invoke("JoinAdminGroup").catch(err => console.log(err));
+                var currentTenantId = '@(User.FindFirst("TenantId")?.Value ?? "")';
+                if (currentTenantId) {
+                    connection.invoke("JoinTenantGroup", currentTenantId).catch(err => console.log(err));
+                }
             }).catch(err => {
                 if (indicator) indicator.style.backgroundColor = "#ef4444";
                 if (statusLabel) statusLabel.innerText = "غير متصل";
@@ -946,6 +1374,316 @@
 
             connection.on("OnPortStatusChanged", function (port) {
                 window.dispatchEvent(new CustomEvent("goip:portStatusChanged", { detail: port }));
+            });
+
+            // Auto-dismiss Alerts (20 Seconds with Countdown & Hover Pause)
+            function setupAutoDismissAlerts() {
+                const alerts = document.querySelectorAll('.alert-dismissible');
+                alerts.forEach(function (alertEl) {
+                    if (alertEl.dataset.autoDismissInit === 'true') return;
+                    alertEl.dataset.autoDismissInit = 'true';
+                    alertEl.classList.add('auto-dismiss-alert', 'position-relative', 'overflow-hidden');
+
+                    let progressBar = alertEl.querySelector('.alert-progress-bar');
+                    if (!progressBar) {
+                        progressBar = document.createElement('div');
+                        progressBar.className = 'alert-progress-bar';
+                        const progressInner = document.createElement('div');
+                        progressInner.className = 'alert-progress-inner';
+                        progressBar.appendChild(progressInner);
+                        alertEl.appendChild(progressBar);
+                    }
+
+                    const progressInner = alertEl.querySelector('.alert-progress-inner');
+                    const timeoutMs = parseInt(alertEl.getAttribute('data-timeout') || '20000', 10);
+
+                    if (progressInner) {
+                        progressInner.style.animationDuration = timeoutMs + 'ms';
+                    }
+
+                    let remainingMs = timeoutMs;
+                    let startTime = Date.now();
+                    let timerId = null;
+
+                    function startTimer() {
+                        startTime = Date.now();
+                        timerId = setTimeout(function () {
+                            try {
+                                const bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
+                                bsAlert.close();
+                            } catch {
+                                alertEl.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                                alertEl.style.opacity = '0';
+                                alertEl.style.transform = 'translateY(-10px)';
+                                setTimeout(() => alertEl.remove(), 400);
+                            }
+                        }, remainingMs);
+                    }
+
+                    function pauseTimer() {
+                        if (timerId) {
+                            clearTimeout(timerId);
+                            timerId = null;
+                            const elapsed = Date.now() - startTime;
+                            remainingMs = Math.max(0, remainingMs - elapsed);
+                            if (progressInner) {
+                                progressInner.style.animationPlayState = 'paused';
+                            }
+                        }
+                    }
+
+                    function resumeTimer() {
+                        if (!timerId && remainingMs > 0) {
+                            if (progressInner) {
+                                progressInner.style.animationPlayState = 'running';
+                            }
+                            startTimer();
+                        }
+                    }
+
+                    alertEl.addEventListener('mouseenter', pauseTimer);
+                    alertEl.addEventListener('mouseleave', resumeTimer);
+
+                    startTimer();
+                });
+            }
+
+            setupAutoDismissAlerts();
+
+            // ========================================================
+            // UNIVERSAL SEARCHABLE COMBOBOX ENGINE
+            // Enhances any <select class="searchable-select"> automatically
+            // ========================================================
+            function initSearchableSelects(container) {
+                const root = container || document;
+                const selects = root.querySelectorAll('select.searchable-select, select[data-searchable="true"]');
+                selects.forEach(function (select) {
+                    if (select.dataset.searchableInit === 'true') return;
+                    select.dataset.searchableInit = 'true';
+
+                    const isSm = select.classList.contains('form-select-sm') || select.classList.contains('input-sm');
+                    const placeholder = select.getAttribute('data-placeholder') || 'اختر أو ابحث...';
+                    const searchPlaceholder = select.getAttribute('data-search-placeholder') || 'ابحث هنا...';
+
+                    // Create Wrapper
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'searchable-combobox ' + (isSm ? 'combobox-sm' : '');
+                    if (select.classList.contains('w-100')) wrapper.classList.add('w-100');
+
+                    // Create Trigger
+                    const trigger = document.createElement('div');
+                    trigger.className = 'combobox-trigger d-flex align-items-center justify-content-between ' + (isSm ? 'py-1.5 px-2.5 fs-7' : '');
+                    trigger.setAttribute('tabindex', '0');
+                    trigger.setAttribute('role', 'combobox');
+                    trigger.setAttribute('aria-expanded', 'false');
+
+                    const triggerContent = document.createElement('div');
+                    triggerContent.className = 'd-flex align-items-center gap-2 overflow-hidden text-truncate';
+
+                    const caret = document.createElement('i');
+                    caret.className = 'bi bi-chevron-down text-muted fs-7 combobox-caret ms-2 flex-shrink-0';
+
+                    trigger.appendChild(triggerContent);
+                    trigger.appendChild(caret);
+                    wrapper.appendChild(trigger);
+
+                    // Create Menu Dropdown
+                    const menu = document.createElement('div');
+                    menu.className = 'combobox-menu shadow-lg p-2';
+
+                    // Sticky Search Box
+                    const searchBox = document.createElement('div');
+                    searchBox.className = 'combobox-search-box';
+                    searchBox.innerHTML = `
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control border-start-0 combobox-search-input" placeholder="${searchPlaceholder}" />
+                        </div>
+                    `;
+                    menu.appendChild(searchBox);
+
+                    // Items Container
+                    const itemsContainer = document.createElement('div');
+                    itemsContainer.className = 'combobox-items-list';
+                    menu.appendChild(itemsContainer);
+
+                    // Empty State Notice
+                    const noResults = document.createElement('div');
+                    noResults.className = 'combobox-no-results text-center py-3 text-muted small d-none';
+                    noResults.innerHTML = '<i class="bi bi-search d-block mb-1 opacity-50"></i> لا توجد نتائج مطابقة للبحث';
+                    menu.appendChild(noResults);
+
+                    wrapper.appendChild(menu);
+
+                    // Build Options
+                    function buildItems() {
+                        itemsContainer.innerHTML = '';
+                        Array.from(select.children).forEach(function (child) {
+                            if (child.tagName === 'OPTGROUP') {
+                                const groupHeader = document.createElement('div');
+                                groupHeader.className = 'combobox-group-header';
+                                groupHeader.textContent = child.label;
+                                itemsContainer.appendChild(groupHeader);
+                                Array.from(child.children).forEach(opt => appendOptionItem(opt));
+                            } else if (child.tagName === 'OPTION') {
+                                appendOptionItem(child);
+                            }
+                        });
+                    }
+
+                    function appendOptionItem(opt) {
+                        const item = document.createElement('div');
+                        const isSel = opt.selected;
+                        item.className = 'combobox-item ' + (isSm ? 'py-1.5 px-2 fs-7' : 'py-2 px-2.5') + (isSel ? ' selected' : '');
+                        item.setAttribute('data-value', opt.value);
+                        item.setAttribute('data-search', (opt.text + ' ' + (opt.getAttribute('data-search') || '')).toLowerCase());
+
+                        const badge = opt.getAttribute('data-badge');
+                        const badgeClass = opt.getAttribute('data-badge-class') || 'bg-light text-dark border';
+                        const icon = opt.getAttribute('data-icon');
+
+                        let itemHtml = '<div class="d-flex align-items-center gap-2 overflow-hidden text-truncate">';
+                        if (icon) {
+                            itemHtml += `<i class="bi ${icon} text-primary flex-shrink-0"></i>`;
+                        }
+                        itemHtml += `<span class="text-truncate">${opt.text}</span></div>`;
+                        if (badge) {
+                            itemHtml += `<span class="badge ${badgeClass} fs-9 ms-2 flex-shrink-0">${badge}</span>`;
+                        }
+                        item.innerHTML = itemHtml;
+
+                        item.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            select.value = opt.value;
+                            select.dispatchEvent(new Event('change', { bubbles: true }));
+                            select.dispatchEvent(new Event('input', { bubbles: true }));
+                            updateTriggerDisplay();
+                            closeMenu();
+                        });
+
+                        itemsContainer.appendChild(item);
+                    }
+
+                    function updateTriggerDisplay() {
+                        const currentOpt = select.options[select.selectedIndex];
+                        if (!currentOpt || currentOpt.value === '') {
+                            const promptText = currentOpt ? currentOpt.text : placeholder;
+                            triggerContent.innerHTML = `<span class="text-muted text-truncate">${promptText}</span>`;
+                        } else {
+                            const icon = currentOpt.getAttribute('data-icon');
+                            const badge = currentOpt.getAttribute('data-badge');
+                            const badgeClass = currentOpt.getAttribute('data-badge-class') || 'bg-light text-dark border';
+                            let html = '';
+                            if (icon) html += `<i class="bi ${icon} text-primary flex-shrink-0"></i> `;
+                            html += `<span class="fw-semibold text-main text-truncate">${currentOpt.text}</span>`;
+                            if (badge) html += ` <span class="badge ${badgeClass} fs-9 ms-1">${badge}</span>`;
+                            triggerContent.innerHTML = html;
+                        }
+
+                        itemsContainer.querySelectorAll('.combobox-item').forEach(function (it) {
+                            if (it.getAttribute('data-value') === select.value) {
+                                it.classList.add('selected');
+                            } else {
+                                it.classList.remove('selected');
+                            }
+                        });
+                    }
+
+                    function openMenu() {
+                        document.querySelectorAll('.combobox-menu.show').forEach(function (m) {
+                            if (m !== menu) {
+                                m.classList.remove('show');
+                                m.parentElement.querySelector('.combobox-trigger')?.classList.remove('active');
+                            }
+                        });
+                        menu.classList.add('show');
+                        trigger.classList.add('active');
+                        trigger.setAttribute('aria-expanded', 'true');
+                        const input = searchBox.querySelector('.combobox-search-input');
+                        if (input) {
+                            input.value = '';
+                            filterItems('');
+                            setTimeout(() => input.focus(), 60);
+                        }
+                    }
+
+                    function closeMenu() {
+                        menu.classList.remove('show');
+                        trigger.classList.remove('active');
+                        trigger.setAttribute('aria-expanded', 'false');
+                    }
+
+                    function filterItems(query) {
+                        const q = (query || '').trim().toLowerCase();
+                        let visibleCount = 0;
+                        itemsContainer.querySelectorAll('.combobox-item').forEach(function (it) {
+                            const searchData = it.getAttribute('data-search') || '';
+                            const matches = !q || searchData.includes(q);
+                            it.style.display = matches ? 'flex' : 'none';
+                            if (matches) visibleCount++;
+                        });
+
+                        itemsContainer.querySelectorAll('.combobox-group-header').forEach(function (header) {
+                            let next = header.nextElementSibling;
+                            let hasVisible = false;
+                            while (next && !next.classList.contains('combobox-group-header')) {
+                                if (next.style.display !== 'none') hasVisible = true;
+                                next = next.nextElementSibling;
+                            }
+                            header.style.display = hasVisible ? 'block' : 'none';
+                        });
+
+                        noResults.classList.toggle('d-none', visibleCount > 0);
+                    }
+
+                    const searchInput = searchBox.querySelector('.combobox-search-input');
+                    searchInput.addEventListener('input', e => filterItems(e.target.value));
+                    searchInput.addEventListener('click', e => e.stopPropagation());
+
+                    trigger.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        if (menu.classList.contains('show')) closeMenu();
+                        else openMenu();
+                    });
+
+                    // Sync when select value changes programmatically or via form reset
+                    select.addEventListener('change', updateTriggerDisplay);
+                    if (select.form) {
+                        select.form.addEventListener('reset', function () {
+                            setTimeout(updateTriggerDisplay, 50);
+                        });
+                    }
+
+                    // Hide original select and insert combobox right after it
+                    select.style.display = 'none';
+                    select.parentNode.insertBefore(wrapper, select.nextSibling);
+
+                    buildItems();
+                    updateTriggerDisplay();
+                });
+            }
+
+            // Expose globally
+            window.initSearchableSelects = initSearchableSelects;
+            initSearchableSelects();
+
+            // Global Click Outside & Escape Key Listener
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('.searchable-combobox')) {
+                    document.querySelectorAll('.combobox-menu.show').forEach(function (m) {
+                        m.classList.remove('show');
+                        m.parentElement.querySelector('.combobox-trigger')?.classList.remove('active');
+                    });
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.combobox-menu.show').forEach(function (m) {
+                        m.classList.remove('show');
+                        m.parentElement.querySelector('.combobox-trigger')?.classList.remove('active');
+                    });
+                }
             });
         });
     </script>

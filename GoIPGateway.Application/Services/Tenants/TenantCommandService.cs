@@ -4,6 +4,7 @@ using GoIPGateway.Application.Common.Interfaces.Repositories;
 using GoIPGateway.Application.Common.Models;
 using GoIPGateway.Application.Features.Tenants.Commands;
 using GoIPGateway.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace GoIPGateway.Application.Services.Tenants;
 
@@ -88,11 +89,44 @@ public class TenantCommandService : ITenantCommandService
 
     public async Task<Result<bool>> DeleteTenantAsync(int id, CancellationToken cancellationToken = default)
     {
-        var tenant = await _unitOfWork.Tenants.GetByIdAsync(id, cancellationToken);
+        var tenant = await _unitOfWork.Tenants.AsQueryable()
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+
         if (tenant == null)
             return Result.Failure<bool>("Tenant.NotFound", "الشركة غير موجودة.");
 
         tenant.IsDelete = true;
+        tenant.IsActive = false;
+        tenant.ModifiedDate = DateTime.UtcNow;
+        tenant.ModifiedById = _currentUser.UserId;
+
+        _unitOfWork.Tenants.Update(tenant);
+
+        // Deactivate all active API keys for this tenant
+        var keys = await _unitOfWork.TenantApiKeys.FindAsync(k => k.TenantId == tenant.Id && k.IsActive, cancellationToken);
+        foreach (var key in keys)
+        {
+            key.IsActive = false;
+            _unitOfWork.TenantApiKeys.Update(key);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result.Success(true);
+    }
+
+    public async Task<Result<bool>> RestoreTenantAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var tenant = await _unitOfWork.Tenants.AsQueryable()
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+
+        if (tenant == null)
+            return Result.Failure<bool>("Tenant.NotFound", "الشركة غير موجودة.");
+
+        tenant.IsDelete = false;
+        tenant.IsActive = true;
         tenant.ModifiedDate = DateTime.UtcNow;
         tenant.ModifiedById = _currentUser.UserId;
 
@@ -254,15 +288,15 @@ public class TenantCommandService : ITenantCommandService
 
     public async Task<Result<bool>> UpdateRoutingByServiceAsync(int tenantId, int serviceDefinitionId, int[]? selectedSimIds, CancellationToken cancellationToken = default)
     {
-        var tenantService = await _unitOfWork.TenantServices.FirstOrDefaultAsync(
-            ts => ts.TenantId == tenantId && ts.ServiceDefinitionId == serviceDefinitionId && ts.IsActive,
+        var tenantService = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
+            _unitOfWork.TenantServices.AsQueryable()
+                .Where(ts => ts.TenantId == tenantId && ts.ServiceDefinitionId == serviceDefinitionId && ts.IsActive),
             cancellationToken);
 
         if (tenantService == null)
             return Result.Failure<bool>("Service.NotAssigned", "الخدمة المحددة غير مفعلة لحساب شركتك.");
 
         tenantService.AssignedSimCardIds = selectedSimIds?.ToList() ?? new List<int>();
-        _unitOfWork.TenantServices.Update(tenantService);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success(true);
@@ -270,22 +304,22 @@ public class TenantCommandService : ITenantCommandService
 
     public async Task<Result<bool>> UpdateRoutingBySimAsync(int tenantId, int simId, int[]? selectedServiceIds, CancellationToken cancellationToken = default)
     {
-        var tenantServices = await _unitOfWork.TenantServices.FindAsync(
-            ts => ts.TenantId == tenantId && ts.IsActive,
+        var tenantServices = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+            _unitOfWork.TenantServices.AsQueryable()
+                .Where(ts => ts.TenantId == tenantId && ts.IsActive),
             cancellationToken);
 
         var selectedSet = (selectedServiceIds ?? Array.Empty<int>()).ToHashSet();
 
         foreach (var ts in tenantServices)
         {
-            var simIds = ts.AssignedSimCardIds;
+            var simIds = ts.AssignedSimCardIds.ToList();
             if (selectedSet.Contains(ts.ServiceDefinitionId))
             {
                 if (!simIds.Contains(simId))
                 {
                     simIds.Add(simId);
                     ts.AssignedSimCardIds = simIds;
-                    _unitOfWork.TenantServices.Update(ts);
                 }
             }
             else
@@ -294,7 +328,6 @@ public class TenantCommandService : ITenantCommandService
                 {
                     simIds.Remove(simId);
                     ts.AssignedSimCardIds = simIds;
-                    _unitOfWork.TenantServices.Update(ts);
                 }
             }
         }

@@ -51,12 +51,9 @@
 
                 <div class="col-md-4">
                     <label class="form-label fw-bold small">نوع وموديل الجهاز <span class="text-danger">*</span></label>
-                    <select name="DeviceType" class="form-select form-select-sm">
-                        <option value="1">GoIP 1 Port (منفذ واحد)</option>
-                        <option value="2" selected>GoIP 4 Ports (4 منافذ)</option>
-                        <option value="3">GoIP 8 Ports (8 منافذ)</option>
-                        <option value="4">GoIP 16 Ports (16 منفذ)</option>
-                        <option value="5">GoIP 32 Ports (32 منفذ)</option>
+                    <select name="DeviceType" class="form-select form-select-sm" asp-for="DeviceType">
+                        <option value="@((int)GoIPGateway.Domain.Enums.DeviceType.GoIP128)">GoIP 128 Ports (128 منفذ)</option>
+                        <option value="@((int)GoIPGateway.Domain.Enums.DeviceType.GoIP512)">GoIP 512 Ports (512 منفذ)</option>
                     </select>
                 </div>
 
@@ -85,8 +82,14 @@
                     <input type="password" name="Password" class="form-control form-control-sm" value="admin" />
                 </div>
 
-                <div class="col-12">
-                    <label class="form-label fw-bold small">موقع الجهاز أو ملاحظات</label>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">كود التاجر (MerchantCode) الخاص بالجهاز</label>
+                    <input type="text" name="MerchantCode" class="form-control form-control-sm font-monospace" placeholder="مثال: 123456 أو كود المحل" />
+                    <small class="text-muted fs-9">يُقرأ تلقائياً لاستبدال <code>{MerchantCode}</code> في أوامر USSD في حال عدم إرساله من الـ API</small>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small">موقع الجهاز</label>
                     <input type="text" name="Location" class="form-control form-control-sm" placeholder="مثال: الفرع الرئيسي - غرفة الخوادم" />
                 </div>
 

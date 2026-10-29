@@ -164,6 +164,26 @@ public class ServiceDefinitionCommandService : IServiceDefinitionCommandService
 
     public async Task<Result<int>> AddParameterAsync(ServiceParameter param, CancellationToken cancellationToken = default)
     {
+        param.ParameterKey = (param.ParameterKey ?? string.Empty).Trim().Trim('{', '}').Trim();
+        if (string.IsNullOrWhiteSpace(param.ParameterKey))
+            return Result.Failure<int>("Parameter.InvalidKey", "مفتاح البارامتر مطلوب.");
+
+        if (string.IsNullOrWhiteSpace(param.ParameterName))
+            param.ParameterName = char.ToUpper(param.ParameterKey[0]) + (param.ParameterKey.Length > 1 ? param.ParameterKey[1..] : "");
+
+        if (string.IsNullOrWhiteSpace(param.DisplayNameAr))
+            param.DisplayNameAr = param.ParameterName;
+
+        var existing = await _unitOfWork.ServiceParameters.FirstOrDefaultAsync(
+            p => p.ServiceDefinitionId == param.ServiceDefinitionId && 
+                 p.ParameterKey.ToLower() == param.ParameterKey.ToLower() && 
+                 !p.IsDelete, cancellationToken);
+
+        if (existing != null)
+        {
+            return Result.Failure<int>("Parameter.Exists", $"مفتاح البارامتر '{param.ParameterKey}' مضاف مسبقاً لهذه الخدمة.");
+        }
+
         param.IsActive = true;
         await _unitOfWork.ServiceParameters.AddAsync(param, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

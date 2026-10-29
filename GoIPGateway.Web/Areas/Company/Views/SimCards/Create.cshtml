@@ -45,10 +45,14 @@
                 <!-- Select Empty Port -->
                 <div class="col-md-6">
                     <label class="form-label fw-bold small">منفذ الجهاز الشاغر <span class="text-danger">*</span></label>
-                    <select name="DevicePortId" class="form-select form-select-sm" required>
+                    <select name="DevicePortId" class="form-select form-select-sm searchable-select" 
+                            data-placeholder="-- اضغط لاختيار المنفذ الشاغر --" 
+                            data-search-placeholder="ابحث برقم المنفذ (مثل 1.01 أو 1A أو 32) أو الجهاز..." required>
                         @foreach (var p in emptyPorts)
                         {
-                            <option value="@p.Id" selected="@(selectedPortId == p.Id ? "selected" : null)">
+                            <option value="@p.Id" selected="@(selectedPortId == p.Id ? "selected" : null)"
+                                    data-badge="@p.PortLabel" data-badge-class="bg-primary bg-opacity-10 text-primary border"
+                                    data-search="@p.Device.DeviceName @p.PortNumber @p.PortLabel">
                                 @p.Device.DeviceName - منفذ #@p.PortNumber (@p.PortLabel)
                             </option>
                         }

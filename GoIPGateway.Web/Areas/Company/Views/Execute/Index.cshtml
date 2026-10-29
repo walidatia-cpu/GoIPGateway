@@ -11,11 +11,14 @@
     var numberServices = servicesList.Where(s => s.Category == GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry).ToList();
     var otherServices = servicesList.Except(paymentServices).Except(balanceServices).Except(numberServices).ToList();
 
-    // Egyptian Operators counts
-    int vfCount = servicesList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.Vodafone);
-    int orCount = servicesList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.Orange);
-    int etCount = servicesList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.Etisalat);
-    int weCount = servicesList.Count(s => s.Operator == GoIPGateway.Domain.Enums.OperatorType.WE);
+    // Active Selected Service
+    var initialSelectedCode = Model.ServiceCode;
+    var initialSelectedService = servicesList.FirstOrDefault(s => string.Equals(s.ServiceCode, initialSelectedCode, StringComparison.OrdinalIgnoreCase)) 
+                                ?? servicesList.FirstOrDefault();
+    if (initialSelectedService != null)
+    {
+        initialSelectedCode = initialSelectedService.ServiceCode;
+    }
 
     // Check for Execution Result from TempData
     var executionResultJson = TempData["ExecutionResultJson"] as string;
@@ -28,32 +31,95 @@
 }
 
 <style>
-    .exec-service-card {
+    /* Searchable Combobox Styles */
+    .searchable-combobox {
+        position: relative;
+        width: 100%;
+    }
+    .combobox-trigger {
+        background-color: #ffffff;
+        border: 2px solid var(--card-border);
+        border-radius: 14px;
+        padding: 12px 18px;
         cursor: pointer;
         transition: all 0.2s ease-in-out;
-        border-width: 2px !important;
-        border-radius: 14px;
+        user-select: none;
     }
-    .exec-service-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08) !important;
+    .combobox-trigger:hover, .combobox-trigger.active {
+        border-color: var(--primary-accent);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
     }
-    .exec-service-card.card-selected {
-        border-color: var(--primary-accent) !important;
-        background-color: rgba(13, 110, 253, 0.06) !important;
-        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.18) !important;
+    .combobox-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        left: 0;
+        background: #ffffff;
+        border: 1px solid var(--card-border);
+        border-radius: 16px;
+        box-shadow: 0 14px 35px rgba(0, 0, 0, 0.12);
+        z-index: 1050;
+        max-height: 380px;
+        overflow-y: auto;
+        display: none;
     }
-    .filter-pill.active, .filter-cat-pill.active {
-        background-color: var(--primary-accent) !important;
-        color: #fff !important;
-        border-color: var(--primary-accent) !important;
+    .combobox-menu.show {
+        display: block;
+        animation: comboboxFadeIn 0.15s ease-out;
     }
-    .category-section-title {
-        background: rgba(13, 110, 253, 0.04);
+    @@keyframes comboboxFadeIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .combobox-group-header {
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #64748b;
+        padding: 8px 12px 4px 12px;
+        letter-spacing: 0.3px;
+    }
+    .combobox-item {
+        padding: 10px 14px;
         border-radius: 10px;
-        padding: 8px 14px;
-        margin-bottom: 12px;
-        border-right: 4px solid var(--primary-accent);
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .combobox-item:hover {
+        background-color: rgba(13, 110, 253, 0.08);
+    }
+    .combobox-item.selected {
+        background-color: rgba(13, 110, 253, 0.12);
+        border-right: 3px solid var(--primary-accent);
+    }
+    .combobox-caret {
+        transition: transform 0.2s ease;
+    }
+    .combobox-trigger.active .combobox-caret {
+        transform: rotate(180deg);
+    }
+
+    /* Dedicated Execution Card */
+    .selected-service-banner {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, rgba(13, 110, 253, 0.01) 100%);
+        border: 1.5px solid rgba(13, 110, 253, 0.2);
+        border-radius: 16px;
+        padding: 20px;
+    }
+    .param-field-box {
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        padding: 16px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .param-field-box:focus-within {
+        border-color: var(--primary-accent);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
     }
     .goip-terminal {
         background-color: #0f172a;
@@ -203,665 +269,964 @@
                     <i class="bi bi-lightning-charge-fill"></i>
                 </div>
                 <div>
-                    <h3 class="fw-bold mb-1">تنفيذ وتجربة العمليات الفورية</h3>
-                    <p class="text-muted small mb-0">اختر الخدمة، واملأ الحقول المطلوبة ديناميكياً لتنفيذها ومحاكاتها لحظياً عبر أجهزة وسيرفر GoIP</p>
+                    <h3 class="fw-bold mb-1">تنفيذ وتجربة العمليات والخدمات</h3>
+                    <p class="text-muted small mb-0">اختر الخدمة بالبحث السريع، وتعرف على حقولها المطلوبة ونفذها أو جربها لحظياً عبر أجهزة وسيرفر GoIP</p>
                 </div>
             </div>
 
-            <form asp-action="Execute" method="post" id="executeForm" onsubmit="showExecutingState()">
-                @Html.AntiForgeryToken()
-
-                <!-- Step 1: Operation Selection with Search & Unified Filters -->
-                <div class="mb-5">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <label class="form-label fw-bold fs-5 mb-0 d-flex align-items-center gap-2">
-                            <span class="badge bg-primary rounded-pill px-2.5 py-1">1</span>
-                            <span>اختر نوع العملية والخدمة المطلوبة:</span>
-                        </label>
-                        <div class="text-muted small">
-                            عرض <strong class="text-primary font-monospace" id="execVisibleCount">@totalServices</strong> من @totalServices خدمة
-                        </div>
-                    </div>
-
-                    <!-- Filter & Search Toolbar for Services -->
-                    <div class="p-3 rounded-3 bg-light border mb-4">
-                        <div class="row g-2 mb-2">
-                            <div class="col-12">
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                                    <input type="text" id="execSearchInput" class="form-control border-start-0" placeholder="ابحث باسم الخدمة، الكود (مثل QR_PAY أو VF_PAY)، أو الشبكة..." onkeyup="filterExecServices()" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Network Filters -->
-                        <div class="d-flex flex-wrap align-items-center gap-1.5 mb-2">
-                            <span class="text-muted fs-8 fw-bold me-1">الشبكة:</span>
-                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill filter-pill active" data-op="ALL" onclick="filterExecByOp(this, 'ALL')">
-                                كل الشبكات (@totalServices)
-                            </button>
-                            <button type="button" class="btn btn-xs btn-outline-danger rounded-pill filter-pill" data-op="Vodafone" onclick="filterExecByOp(this, 'Vodafone')">
-                                🔴 فودافون كاش (@vfCount)
-                            </button>
-                            <button type="button" class="btn btn-xs btn-outline-warning text-dark rounded-pill filter-pill" data-op="Orange" onclick="filterExecByOp(this, 'Orange')">
-                                🟠 أورانج كاش (@orCount)
-                            </button>
-                            <button type="button" class="btn btn-xs btn-outline-success rounded-pill filter-pill" data-op="Etisalat" onclick="filterExecByOp(this, 'Etisalat')">
-                                🟢 اتصالات كاش (@etCount)
-                            </button>
-                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill filter-pill" data-op="WE" onclick="filterExecByOp(this, 'WE')">
-                                🟣 وي باي WE (@weCount)
-                            </button>
-                        </div>
-
-                        <!-- Category Filters -->
-                        <div class="d-flex flex-wrap align-items-center gap-1.5 pt-1 border-top">
-                            <span class="text-muted fs-8 fw-bold me-1">التصنيف:</span>
-                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill filter-cat-pill active" data-cat="ALL" onclick="filterExecByCat(this, 'ALL')">
-                                كل التصنيفات (@totalServices)
-                            </button>
-                            <button type="button" class="btn btn-xs btn-outline-primary rounded-pill filter-cat-pill" data-cat="Payment" onclick="filterExecByCat(this, 'Payment')">
-                                💳 دفع وتحويل كاش (@paymentServices.Count)
-                            </button>
-                            <button type="button" class="btn btn-xs btn-outline-info rounded-pill filter-cat-pill" data-cat="Inquiry" onclick="filterExecByCat(this, 'Inquiry')">
-                                🔍 استعلام رصيد (@balanceServices.Count)
-                            </button>
-                            <button type="button" class="btn btn-xs btn-outline-warning text-dark rounded-pill filter-cat-pill" data-cat="NumberInquiry" onclick="filterExecByCat(this, 'NumberInquiry')">
-                                📱 استعلام رقم (@numberServices.Count)
-                            </button>
-                        </div>
-                    </div>
-
-                    @if (!servicesList.Any())
-                    {
-                        <div class="text-center py-5 text-muted border rounded-3 bg-light">
-                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
-                            لا توجد خدمات مفعلة لحساب شركتك حالياً. يرجى مراجعة إدارة النظام لتفعيل الخدمات المطلوبة.
-                        </div>
-                    }
-                    else
-                    {
-                        <!-- Helper Local Functions -->
-                        @functions {
-                            string GetExecOpArabic(GoIPGateway.Domain.Enums.OperatorType? op) => op switch
-                            {
-                                GoIPGateway.Domain.Enums.OperatorType.Vodafone => "فودافون كاش",
-                                GoIPGateway.Domain.Enums.OperatorType.Orange => "أورانج كاش",
-                                GoIPGateway.Domain.Enums.OperatorType.Etisalat => "اتصالات كاش",
-                                GoIPGateway.Domain.Enums.OperatorType.WE => "وي باي WE",
-                                _ => "عامة"
-                            };
-
-                            string GetExecOpBadgeClass(GoIPGateway.Domain.Enums.OperatorType? op) => op switch
-                            {
-                                GoIPGateway.Domain.Enums.OperatorType.Vodafone => "badge-op-vodafone",
-                                GoIPGateway.Domain.Enums.OperatorType.Orange => "badge-op-orange",
-                                GoIPGateway.Domain.Enums.OperatorType.Etisalat => "badge-op-etisalat",
-                                GoIPGateway.Domain.Enums.OperatorType.WE => "badge-op-we",
-                                _ => "bg-secondary"
-                            };
-
-                            string GetExecCatArabic(GoIPGateway.Domain.Enums.ServiceCategory cat) => cat switch
-                            {
-                                GoIPGateway.Domain.Enums.ServiceCategory.Payment => "دفع تاجر",
-                                GoIPGateway.Domain.Enums.ServiceCategory.Transfer => "تحويل كاش",
-                                GoIPGateway.Domain.Enums.ServiceCategory.Inquiry => "استعلام رصيد",
-                                GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry => "استعلام رقم",
-                                _ => cat.ToString()
-                            };
-
-                            string GetExecBorderClass(GoIPGateway.Domain.Enums.OperatorType? op) => op switch
-                            {
-                                GoIPGateway.Domain.Enums.OperatorType.Vodafone => "border-danger border-opacity-25",
-                                GoIPGateway.Domain.Enums.OperatorType.Orange => "border-warning border-opacity-50",
-                                GoIPGateway.Domain.Enums.OperatorType.Etisalat => "border-success border-opacity-25",
-                                GoIPGateway.Domain.Enums.OperatorType.WE => "border-secondary border-opacity-50",
-                                _ => "border-secondary border-opacity-25"
-                            };
-
-                            string BuildParamsJson(GoIPGateway.Domain.Entities.ServiceDefinition s)
-                            {
-                                var pars = s.Parameters?.Where(p => p.IsActive).OrderBy(p => p.SortOrder).Select(p => new
-                                {
-                                    key = p.ParameterKey,
-                                    name = p.DisplayNameAr ?? p.ParameterName,
-                                    type = p.DataType.ToString(),
-                                    required = p.IsRequired,
-                                    defaultValue = p.DefaultValue ?? ""
-                                }).ToList() ?? new();
-                                return System.Text.Json.JsonSerializer.Serialize(pars);
-                            }
-                        }
-
-                        <!-- GROUP 1: PAYMENT & TRANSFER -->
-                        @if (paymentServices.Any())
-                        {
-                            <div class="exec-category-group mb-4" id="exec-group-payment">
-                                <div class="category-section-title d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="fs-5">💳</span>
-                                        <strong class="text-main">عمليات الدفع والتحويل المالي</strong>
-                                    </div>
-                                    <span class="badge bg-primary bg-opacity-10 text-primary font-monospace fs-8">@paymentServices.Count عمليات</span>
-                                </div>
-                                <div class="row g-3">
-                                    @foreach (var srv in paymentServices)
-                                    {
-                                        var opStr = srv.Operator?.ToString() ?? "ALL";
-                                        var opArabic = GetExecOpArabic(srv.Operator);
-                                        var opBadgeClass = GetExecOpBadgeClass(srv.Operator);
-                                        var catArabic = GetExecCatArabic(srv.Category);
-                                        var borderClass = GetExecBorderClass(srv.Operator);
-                                        var searchStr = $"{srv.NameAr} {srv.NameEn} {srv.ServiceCode} {opArabic} {catArabic} {opStr}".ToLower();
-                                        var paramsJson = BuildParamsJson(srv);
-
-                                        <div class="col-12 col-md-6 exec-service-item" 
-                                             data-op="@opStr" 
-                                             data-cat="Payment" 
-                                             data-search="@searchStr">
-                                            <div class="p-3 border h-100 exec-service-card @borderClass bg-white position-relative" 
-                                                 id="card_srv_@srv.ServiceCode"
-                                                 data-params='@paramsJson'
-                                                 onclick="selectExecuteCard('@srv.ServiceCode', 'Payment')">
-                                                <input type="radio" 
-                                                       class="btn-check" 
-                                                       name="serviceCode" 
-                                                       id="srv_@srv.ServiceCode" 
-                                                       value="@srv.ServiceCode" 
-                                                       data-cat="Payment"
-                                                       required />
-                                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                                    <div class="d-flex align-items-center gap-2">
-                                                        <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary fs-5" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                                                            <i class="bi @(string.IsNullOrEmpty(srv.IconClass) ? "bi-credit-card-2-front" : srv.IconClass)"></i>
-                                                        </div>
-                                                        <div>
-                                                            <h6 class="fw-bold mb-0 text-main">@srv.NameAr</h6>
-                                                            @if (!string.IsNullOrEmpty(srv.NameEn))
-                                                            {
-                                                                <small class="text-muted" style="font-size: 0.78rem;">@srv.NameEn</small>
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                    <span class="badge @opBadgeClass px-2 py-1 rounded-pill fs-8">
-                                                        @opArabic
-                                                    </span>
-                                                </div>
-
-                                                @if (!string.IsNullOrEmpty(srv.Description))
-                                                {
-                                                    <p class="text-muted small mb-2" style="font-size: 0.82rem;">@srv.Description</p>
-                                                }
-
-                                                <div class="d-flex justify-content-between align-items-center pt-2 border-top fs-8 text-muted">
-                                                    <span class="badge bg-light text-dark font-monospace border">@srv.ServiceCode</span>
-                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">@catArabic</span>
-                                                    <span>الرسوم: <strong class="text-primary font-monospace">@srv.BaseCost.ToString("N2") ج.م</strong></span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        }
-
-                        <!-- GROUP 2: BALANCE INQUIRY -->
-                        @if (balanceServices.Any())
-                        {
-                            <div class="exec-category-group mb-4" id="exec-group-inquiry">
-                                <div class="category-section-title d-flex justify-content-between align-items-center" style="border-right-color: #0dcaf0;">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="fs-5">🔍</span>
-                                        <strong class="text-main">عمليات استعلام الرصيد</strong>
-                                    </div>
-                                    <span class="badge bg-info bg-opacity-10 text-info font-monospace fs-8">@balanceServices.Count عمليات</span>
-                                </div>
-                                <div class="row g-3">
-                                    @foreach (var srv in balanceServices)
-                                    {
-                                        var opStr = srv.Operator?.ToString() ?? "ALL";
-                                        var opArabic = GetExecOpArabic(srv.Operator);
-                                        var opBadgeClass = GetExecOpBadgeClass(srv.Operator);
-                                        var catArabic = GetExecCatArabic(srv.Category);
-                                        var borderClass = GetExecBorderClass(srv.Operator);
-                                        var searchStr = $"{srv.NameAr} {srv.NameEn} {srv.ServiceCode} {opArabic} {catArabic} {opStr}".ToLower();
-                                        var paramsJson = BuildParamsJson(srv);
-
-                                        <div class="col-12 col-md-6 exec-service-item" 
-                                             data-op="@opStr" 
-                                             data-cat="Inquiry" 
-                                             data-search="@searchStr">
-                                            <div class="p-3 border h-100 exec-service-card @borderClass bg-white position-relative" 
-                                                 id="card_srv_@srv.ServiceCode"
-                                                 data-params='@paramsJson'
-                                                 onclick="selectExecuteCard('@srv.ServiceCode', 'Inquiry')">
-                                                <input type="radio" 
-                                                       class="btn-check" 
-                                                       name="serviceCode" 
-                                                       id="srv_@srv.ServiceCode" 
-                                                       value="@srv.ServiceCode" 
-                                                       data-cat="Inquiry"
-                                                       required />
-                                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                                    <div class="d-flex align-items-center gap-2">
-                                                        <div class="p-2 rounded-3 bg-info bg-opacity-10 text-info fs-5" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                                                            <i class="bi @(string.IsNullOrEmpty(srv.IconClass) ? "bi-search" : srv.IconClass)"></i>
-                                                        </div>
-                                                        <div>
-                                                            <h6 class="fw-bold mb-0 text-main">@srv.NameAr</h6>
-                                                            @if (!string.IsNullOrEmpty(srv.NameEn))
-                                                            {
-                                                                <small class="text-muted" style="font-size: 0.78rem;">@srv.NameEn</small>
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                    <span class="badge @opBadgeClass px-2 py-1 rounded-pill fs-8">
-                                                        @opArabic
-                                                    </span>
-                                                </div>
-
-                                                @if (!string.IsNullOrEmpty(srv.Description))
-                                                {
-                                                    <p class="text-muted small mb-2" style="font-size: 0.82rem;">@srv.Description</p>
-                                                }
-
-                                                <div class="d-flex justify-content-between align-items-center pt-2 border-top fs-8 text-muted">
-                                                    <span class="badge bg-light text-dark font-monospace border">@srv.ServiceCode</span>
-                                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">@catArabic</span>
-                                                    <span>الرسوم: <strong class="text-primary font-monospace">@srv.BaseCost.ToString("N2") ج.م</strong></span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        }
-
-                        <!-- GROUP 3: NUMBER INQUIRY -->
-                        @if (numberServices.Any())
-                        {
-                            <div class="exec-category-group mb-4" id="exec-group-numberinquiry">
-                                <div class="category-section-title d-flex justify-content-between align-items-center" style="border-right-color: #ffc107;">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="fs-5">📱</span>
-                                        <strong class="text-main">عمليات استعلام وتأكيد الرقم</strong>
-                                    </div>
-                                    <span class="badge bg-warning bg-opacity-10 text-dark font-monospace fs-8">@numberServices.Count عمليات</span>
-                                </div>
-                                <div class="row g-3">
-                                    @foreach (var srv in numberServices)
-                                    {
-                                        var opStr = srv.Operator?.ToString() ?? "ALL";
-                                        var opArabic = GetExecOpArabic(srv.Operator);
-                                        var opBadgeClass = GetExecOpBadgeClass(srv.Operator);
-                                        var catArabic = GetExecCatArabic(srv.Category);
-                                        var borderClass = GetExecBorderClass(srv.Operator);
-                                        var searchStr = $"{srv.NameAr} {srv.NameEn} {srv.ServiceCode} {opArabic} {catArabic} {opStr}".ToLower();
-                                        var paramsJson = BuildParamsJson(srv);
-
-                                        <div class="col-12 col-md-6 exec-service-item" 
-                                             data-op="@opStr" 
-                                             data-cat="NumberInquiry" 
-                                             data-search="@searchStr">
-                                            <div class="p-3 border h-100 exec-service-card @borderClass bg-white position-relative" 
-                                                 id="card_srv_@srv.ServiceCode"
-                                                 data-params='@paramsJson'
-                                                 onclick="selectExecuteCard('@srv.ServiceCode', 'NumberInquiry')">
-                                                <input type="radio" 
-                                                       class="btn-check" 
-                                                       name="serviceCode" 
-                                                       id="srv_@srv.ServiceCode" 
-                                                       value="@srv.ServiceCode" 
-                                                       data-cat="NumberInquiry"
-                                                       required />
-                                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                                    <div class="d-flex align-items-center gap-2">
-                                                        <div class="p-2 rounded-3 bg-warning bg-opacity-10 text-warning fs-5" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                                                            <i class="bi @(string.IsNullOrEmpty(srv.IconClass) ? "bi-phone" : srv.IconClass)"></i>
-                                                        </div>
-                                                        <div>
-                                                            <h6 class="fw-bold mb-0 text-main">@srv.NameAr</h6>
-                                                            @if (!string.IsNullOrEmpty(srv.NameEn))
-                                                            {
-                                                                <small class="text-muted" style="font-size: 0.78rem;">@srv.NameEn</small>
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                    <span class="badge @opBadgeClass px-2 py-1 rounded-pill fs-8">
-                                                        @opArabic
-                                                    </span>
-                                                </div>
-
-                                                @if (!string.IsNullOrEmpty(srv.Description))
-                                                {
-                                                    <p class="text-muted small mb-2" style="font-size: 0.82rem;">@srv.Description</p>
-                                                }
-
-                                                <div class="d-flex justify-content-between align-items-center pt-2 border-top fs-8 text-muted">
-                                                    <span class="badge bg-light text-dark font-monospace border">@srv.ServiceCode</span>
-                                                    <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25">@catArabic</span>
-                                                    <span>الرسوم: <strong class="text-primary font-monospace">@srv.BaseCost.ToString("N2") ج.م</strong></span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        }
-
-                        <!-- GROUP 4: OTHER SERVICES -->
-                        @if (otherServices.Any())
-                        {
-                            <div class="exec-category-group mb-4" id="exec-group-other">
-                                <div class="category-section-title d-flex justify-content-between align-items-center" style="border-right-color: #6c757d;">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="fs-5">⚙️</span>
-                                        <strong class="text-main">عمليات وخدمات أخرى</strong>
-                                    </div>
-                                    <span class="badge bg-secondary bg-opacity-10 text-main font-monospace fs-8">@otherServices.Count عمليات</span>
-                                </div>
-                                <div class="row g-3">
-                                    @foreach (var srv in otherServices)
-                                    {
-                                        var opStr = srv.Operator?.ToString() ?? "ALL";
-                                        var opArabic = GetExecOpArabic(srv.Operator);
-                                        var opBadgeClass = GetExecOpBadgeClass(srv.Operator);
-                                        var catArabic = GetExecCatArabic(srv.Category);
-                                        var borderClass = GetExecBorderClass(srv.Operator);
-                                        var searchStr = $"{srv.NameAr} {srv.NameEn} {srv.ServiceCode} {opArabic} {catArabic} {opStr}".ToLower();
-                                        var paramsJson = BuildParamsJson(srv);
-
-                                        <div class="col-12 col-md-6 exec-service-item" 
-                                             data-op="@opStr" 
-                                             data-cat="Other" 
-                                             data-search="@searchStr">
-                                            <div class="p-3 border h-100 exec-service-card @borderClass bg-white position-relative" 
-                                                 id="card_srv_@srv.ServiceCode"
-                                                 data-params='@paramsJson'
-                                                 onclick="selectExecuteCard('@srv.ServiceCode', 'Other')">
-                                                <input type="radio" 
-                                                       class="btn-check" 
-                                                       name="serviceCode" 
-                                                       id="srv_@srv.ServiceCode" 
-                                                       value="@srv.ServiceCode" 
-                                                       data-cat="Other"
-                                                       required />
-                                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                                    <div class="d-flex align-items-center gap-2">
-                                                        <div class="p-2 rounded-3 bg-secondary bg-opacity-10 text-secondary fs-5" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                                                            <i class="bi @(string.IsNullOrEmpty(srv.IconClass) ? "bi-gear" : srv.IconClass)"></i>
-                                                        </div>
-                                                        <div>
-                                                            <h6 class="fw-bold mb-0 text-main">@srv.NameAr</h6>
-                                                            @if (!string.IsNullOrEmpty(srv.NameEn))
-                                                            {
-                                                                <small class="text-muted" style="font-size: 0.78rem;">@srv.NameEn</small>
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                    <span class="badge @opBadgeClass px-2 py-1 rounded-pill fs-8">
-                                                        @opArabic
-                                                    </span>
-                                                </div>
-
-                                                <div class="d-flex justify-content-between align-items-center pt-2 border-top fs-8 text-muted">
-                                                    <span class="badge bg-light text-dark font-monospace border">@srv.ServiceCode</span>
-                                                    <span class="badge bg-secondary bg-opacity-10 text-main border">@catArabic</span>
-                                                    <span>الرسوم: <strong class="text-primary font-monospace">@srv.BaseCost.ToString("N2") ج.م</strong></span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        }
-
-                        <!-- No Matches Card -->
-                        <div id="noExecMatches" class="text-center py-4 text-muted border rounded-3 bg-light d-none">
-                            <i class="bi bi-funnel fs-2 d-block mb-2 text-warning"></i>
-                            لا توجد عمليات مطابقة لخيارات البحث أو التصفية الحالية.
-                        </div>
-                    }
+            @if (!servicesList.Any())
+            {
+                <div class="text-center py-5 text-muted border rounded-3 bg-light">
+                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                    لا توجد خدمات مفعلة لحساب شركتك حالياً. يرجى مراجعة إدارة النظام لتفعيل الخدمات المطلوبة.
                 </div>
+            }
+            else
+            {
+                <!-- Helper Local Functions -->
+                @functions {
+                    string GetExecOpArabic(GoIPGateway.Domain.Enums.OperatorType? op) => op switch
+                    {
+                        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "فودافون كاش",
+                        GoIPGateway.Domain.Enums.OperatorType.Orange => "أورانج كاش",
+                        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "اتصالات كاش",
+                        GoIPGateway.Domain.Enums.OperatorType.WE => "وي باي WE",
+                        _ => "عامة / كافة الشبكات"
+                    };
 
-                <!-- Step 2: Line / SIM Selection -->
+                    string GetExecOpBadgeClass(GoIPGateway.Domain.Enums.OperatorType? op) => op switch
+                    {
+                        GoIPGateway.Domain.Enums.OperatorType.Vodafone => "badge-op-vodafone",
+                        GoIPGateway.Domain.Enums.OperatorType.Orange => "badge-op-orange",
+                        GoIPGateway.Domain.Enums.OperatorType.Etisalat => "badge-op-etisalat",
+                        GoIPGateway.Domain.Enums.OperatorType.WE => "badge-op-we",
+                        _ => "bg-secondary"
+                    };
+
+                    string GetExecCatArabic(GoIPGateway.Domain.Enums.ServiceCategory cat) => cat switch
+                    {
+                        GoIPGateway.Domain.Enums.ServiceCategory.Payment => "دفع تاجر",
+                        GoIPGateway.Domain.Enums.ServiceCategory.Transfer => "تحويل كاش",
+                        GoIPGateway.Domain.Enums.ServiceCategory.Inquiry => "استعلام رصيد",
+                        GoIPGateway.Domain.Enums.ServiceCategory.NumberInquiry => "استعلام رقم",
+                        _ => cat.ToString()
+                    };
+                }
+
+                <!-- Clean JSON Data Store without HTML encoding bugs -->
+                <script>
+                    window.GOIP_SERVICES = {
+                        @foreach (var s in servicesList)
+                        {
+                            var sParams = s.Parameters?.Where(p => p.IsActive).OrderBy(p => p.SortOrder).Select(p => new
+                            {
+                                key = p.ParameterKey,
+                                name = string.IsNullOrWhiteSpace(p.DisplayNameAr) ? p.ParameterName : p.DisplayNameAr,
+                                type = p.DataType.ToString(),
+                                required = p.IsRequired,
+                                defaultValue = p.DefaultValue ?? ""
+                            }).ToList() ?? new();
+
+                            <text>
+                            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(s.ServiceCode)): {
+                                id: @s.Id,
+                                code: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(s.ServiceCode)),
+                                nameAr: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(s.NameAr)),
+                                nameEn: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(s.NameEn ?? "")),
+                                op: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(s.Operator?.ToString() ?? "ALL")),
+                                opArabic: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(GetExecOpArabic(s.Operator))),
+                                opBadgeClass: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(GetExecOpBadgeClass(s.Operator))),
+                                category: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(s.Category.ToString())),
+                                categoryArabic: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(GetExecCatArabic(s.Category))),
+                                cost: @s.BaseCost.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+                                icon: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(string.IsNullOrEmpty(s.IconClass) ? "bi-lightning-charge" : s.IconClass)),
+                                description: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(s.Description ?? "")),
+                                parameters: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(sParams))
+                            },
+                            </text>
+                        }
+                    };
+                </script>
+
+                <!-- 1. SEARCHABLE COMBOBOX DROPDOWN (مدمج به بحث فوري بدون كروت خارجية) -->
                 <div class="mb-4">
-                    <label class="form-label fw-bold fs-5 mb-2 d-flex align-items-center gap-2">
-                        <span class="badge bg-primary rounded-pill px-2.5 py-1">2</span>
-                        <span>خط التنفيذ (الشريحة أو المنفذ):</span>
+                    <label class="form-label fw-bold mb-1.5 d-flex align-items-center gap-2">
+                        <span class="badge bg-primary rounded-pill px-2.5 py-1">1</span>
+                        <span class="fs-5">اختر الخدمة المطلوبة للتنفيذ:</span>
+                        <span class="text-muted fw-normal fs-8">(@totalServices خدمة مفعلة - اضغط للبحث والاختيار)</span>
                     </label>
-                    <select name="simCardId" id="simCardIdSelect" class="form-select fs-6 py-3 rounded-3">
-                        <option value="">⚡ توجيه تلقائي ذكي (أسرع خط متاح وفيه رصيد كافي)</option>
-                        @foreach (var sim in Model.AvailableSims)
-                        {
-                            <option value="@sim.Id">
-                                @sim.Operator (@sim.PhoneNumber) - منفذ #@(sim.DevicePort?.PortNumber) - رصيد الخط: @sim.CurrentBalance.ToString("N2") ج.م
-                            </option>
-                        }
-                    </select>
-                    <small class="text-muted mt-1 d-block">نوصي بترك الاختيار التلقائي لتوزيع الحمل وسرعة التنفيذ بين الخطوط الشاغرة.</small>
-                </div>
 
-                <!-- Step 3: Dynamic Parameters ("موضوع الحقول") -->
-                <div id="dynamicParamsSection" class="p-4 rounded-4 mb-4 d-none" style="background: var(--bg-app); border: 2px dashed var(--card-border);">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-primary rounded-pill px-2.5 py-1">3</span>
-                            <h5 class="fw-bold mb-0 text-primary">بيانات وحقول العملية المطلوبة:</h5>
+                    <div class="searchable-combobox" id="serviceSearchableCombobox">
+                        <!-- Trigger Box -->
+                        <div class="combobox-trigger d-flex align-items-center justify-content-between" onclick="toggleServiceCombobox(event)">
+                            <div class="d-flex align-items-center gap-2.5 overflow-hidden text-truncate">
+                                <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary fs-5 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                    <i class="bi @(string.IsNullOrEmpty(initialSelectedService?.IconClass) ? "bi-lightning-charge" : initialSelectedService?.IconClass)" id="triggerIcon"></i>
+                                </span>
+                                <div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-main fs-6 text-truncate" id="triggerTitle">
+                                            @(initialSelectedService?.NameAr ?? "اختر إحدى الخدمات...")
+                                        </span>
+                                        <span class="badge bg-light text-dark font-monospace border fs-9" id="triggerCode">
+                                            @(initialSelectedService?.ServiceCode ?? "")
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mt-0.5">
+                                        <span class="badge @(GetExecOpBadgeClass(initialSelectedService?.Operator)) px-2 py-0.5 rounded-pill fs-9" id="triggerOp">
+                                            @GetExecOpArabic(initialSelectedService?.Operator)
+                                        </span>
+                                        <span class="text-muted fs-8" id="triggerCost">
+                                            الرسوم: <strong class="text-primary font-monospace">@(initialSelectedService?.BaseCost.ToString("N2") ?? "0.00") ج.م</strong>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <i class="bi bi-chevron-down text-muted fs-5 combobox-caret ms-2"></i>
                         </div>
-                        <span class="badge bg-light text-muted border fs-8" id="paramsCountBadge">0 حقول</span>
-                    </div>
 
-                    <!-- Dynamic Fields Injected Here via JavaScript -->
-                    <div id="dynamicFieldsContainer"></div>
+                        <!-- Dropdown Menu / Flyout -->
+                        <div class="combobox-menu shadow-lg p-2" id="serviceComboboxMenu">
+                            <!-- Search Bar (Sticky at top) -->
+                            <div class="p-2 mb-2 sticky-top bg-white border-bottom">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="comboboxSearchInput" class="form-control border-start-0 fs-6" 
+                                           placeholder="ابحث باسم الخدمة، الكود (مثل VF_PAY أو QR)، أو الشبكة..." 
+                                           onkeyup="filterComboboxServices(this.value)" 
+                                           onclick="event.stopPropagation()" />
+                                    <button type="button" class="btn btn-outline-secondary border-start-0" onclick="clearComboboxSearch(event)" title="مسح">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Options List by Category -->
+                            <div id="comboboxOptionsContainer">
+                                @if (paymentServices.Any())
+                                {
+                                    <div class="combobox-group" data-group="Payment">
+                                        <div class="combobox-group-header">💳 عمليات الدفع والتحويل المالي (@paymentServices.Count)</div>
+                                        @foreach (var s in paymentServices)
+                                        {
+                                            var isSel = (s.ServiceCode == initialSelectedCode);
+                                            var searchData = $"{s.NameAr} {s.NameEn} {s.ServiceCode} {GetExecOpArabic(s.Operator)} {s.Operator}".ToLower();
+                                            <div class="combobox-item @(isSel ? "selected" : "")" 
+                                                 data-code="@s.ServiceCode" 
+                                                 data-search="@searchData"
+                                                 onclick="selectComboboxOption('@s.ServiceCode')">
+                                                <div class="d-flex align-items-center gap-2.5">
+                                                    <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary fs-6">
+                                                        <i class="bi @(string.IsNullOrEmpty(s.IconClass) ? "bi-credit-card" : s.IconClass)"></i>
+                                                    </span>
+                                                    <div>
+                                                        <div class="fw-bold text-main fs-6">@s.NameAr</div>
+                                                        <small class="text-muted font-monospace fs-9">@s.ServiceCode @(!string.IsNullOrEmpty(s.NameEn) ? $"• {s.NameEn}" : "")</small>
+                                                    </div>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge @GetExecOpBadgeClass(s.Operator) px-2 py-0.5 rounded-pill fs-9 mb-1 d-inline-block">
+                                                        @GetExecOpArabic(s.Operator)
+                                                    </span>
+                                                    <div class="font-monospace fs-9 text-primary fw-bold">@s.BaseCost.ToString("N2") ج.م</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                @if (balanceServices.Any())
+                                {
+                                    <div class="combobox-group" data-group="Inquiry">
+                                        <div class="combobox-group-header">🔍 عمليات استعلام الرصيد (@balanceServices.Count)</div>
+                                        @foreach (var s in balanceServices)
+                                        {
+                                            var isSel = (s.ServiceCode == initialSelectedCode);
+                                            var searchData = $"{s.NameAr} {s.NameEn} {s.ServiceCode} {GetExecOpArabic(s.Operator)} {s.Operator}".ToLower();
+                                            <div class="combobox-item @(isSel ? "selected" : "")" 
+                                                 data-code="@s.ServiceCode" 
+                                                 data-search="@searchData"
+                                                 onclick="selectComboboxOption('@s.ServiceCode')">
+                                                <div class="d-flex align-items-center gap-2.5">
+                                                    <span class="p-2 rounded-3 bg-info bg-opacity-10 text-info fs-6">
+                                                        <i class="bi @(string.IsNullOrEmpty(s.IconClass) ? "bi-search" : s.IconClass)"></i>
+                                                    </span>
+                                                    <div>
+                                                        <div class="fw-bold text-main fs-6">@s.NameAr</div>
+                                                        <small class="text-muted font-monospace fs-9">@s.ServiceCode @(!string.IsNullOrEmpty(s.NameEn) ? $"• {s.NameEn}" : "")</small>
+                                                    </div>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge @GetExecOpBadgeClass(s.Operator) px-2 py-0.5 rounded-pill fs-9 mb-1 d-inline-block">
+                                                        @GetExecOpArabic(s.Operator)
+                                                    </span>
+                                                    <div class="font-monospace fs-9 text-primary fw-bold">@s.BaseCost.ToString("N2") ج.م</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                @if (numberServices.Any())
+                                {
+                                    <div class="combobox-group" data-group="NumberInquiry">
+                                        <div class="combobox-group-header">📱 استعلام وتأكيد الرقم (@numberServices.Count)</div>
+                                        @foreach (var s in numberServices)
+                                        {
+                                            var isSel = (s.ServiceCode == initialSelectedCode);
+                                            var searchData = $"{s.NameAr} {s.NameEn} {s.ServiceCode} {GetExecOpArabic(s.Operator)} {s.Operator}".ToLower();
+                                            <div class="combobox-item @(isSel ? "selected" : "")" 
+                                                 data-code="@s.ServiceCode" 
+                                                 data-search="@searchData"
+                                                 onclick="selectComboboxOption('@s.ServiceCode')">
+                                                <div class="d-flex align-items-center gap-2.5">
+                                                    <span class="p-2 rounded-3 bg-warning bg-opacity-10 text-warning fs-6">
+                                                        <i class="bi @(string.IsNullOrEmpty(s.IconClass) ? "bi-phone" : s.IconClass)"></i>
+                                                    </span>
+                                                    <div>
+                                                        <div class="fw-bold text-main fs-6">@s.NameAr</div>
+                                                        <small class="text-muted font-monospace fs-9">@s.ServiceCode @(!string.IsNullOrEmpty(s.NameEn) ? $"• {s.NameEn}" : "")</small>
+                                                    </div>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge @GetExecOpBadgeClass(s.Operator) px-2 py-0.5 rounded-pill fs-9 mb-1 d-inline-block">
+                                                        @GetExecOpArabic(s.Operator)
+                                                    </span>
+                                                    <div class="font-monospace fs-9 text-primary fw-bold">@s.BaseCost.ToString("N2") ج.م</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                @if (otherServices.Any())
+                                {
+                                    <div class="combobox-group" data-group="Other">
+                                        <div class="combobox-group-header">⚙️ خدمات أخرى (@otherServices.Count)</div>
+                                        @foreach (var s in otherServices)
+                                        {
+                                            var isSel = (s.ServiceCode == initialSelectedCode);
+                                            var searchData = $"{s.NameAr} {s.NameEn} {s.ServiceCode} {GetExecOpArabic(s.Operator)} {s.Operator}".ToLower();
+                                            <div class="combobox-item @(isSel ? "selected" : "")" 
+                                                 data-code="@s.ServiceCode" 
+                                                 data-search="@searchData"
+                                                 onclick="selectComboboxOption('@s.ServiceCode')">
+                                                <div class="d-flex align-items-center gap-2.5">
+                                                    <span class="p-2 rounded-3 bg-secondary bg-opacity-10 text-secondary fs-6">
+                                                        <i class="bi @(string.IsNullOrEmpty(s.IconClass) ? "bi-gear" : s.IconClass)"></i>
+                                                    </span>
+                                                    <div>
+                                                        <div class="fw-bold text-main fs-6">@s.NameAr</div>
+                                                        <small class="text-muted font-monospace fs-9">@s.ServiceCode @(!string.IsNullOrEmpty(s.NameEn) ? $"• {s.NameEn}" : "")</small>
+                                                    </div>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="badge @GetExecOpBadgeClass(s.Operator) px-2 py-0.5 rounded-pill fs-9 mb-1 d-inline-block">
+                                                        @GetExecOpArabic(s.Operator)
+                                                    </span>
+                                                    <div class="font-monospace fs-9 text-primary fw-bold">@s.BaseCost.ToString("N2") ج.م</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- No Results Notice -->
+                            <div id="comboboxNoResults" class="text-center py-4 text-muted small d-none">
+                                <i class="bi bi-search fs-3 d-block mb-1 text-secondary opacity-50"></i>
+                                لا توجد خدمات مطابقة لكلمة البحث الحالية.
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- External Ref (Optional) -->
-                <div class="mb-4">
-                    <label class="form-label small text-muted">رقم مرجع خارجي خاص بك في نظامك (External Reference - اختياري):</label>
-                    <input type="text" name="externalRef" id="externalRefInput" class="form-control form-control-sm" placeholder="مثال: ORDER-987654" />
-                </div>
+                <!-- 2. DEDICATED SERVICE EXECUTION WORKSPACE (شاشة مخصصة بالكامل للخدمة المحددة وحقولها) -->
+                <form asp-action="Execute" method="post" id="executeForm" onsubmit="return handleFormSubmit(event)">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="serviceCode" id="hiddenSelectedServiceCode" value="@initialSelectedCode" />
 
-                <!-- Action Buttons: Standard Submit + Live AJAX Instant Test -->
-                <div class="row g-3 mt-4">
-                    <div class="col-md-7">
-                        <button type="submit" id="submitBtn" class="btn btn-success py-3 fw-bold fs-5 shadow rounded-4 w-100">
-                            <i class="bi bi-play-circle-fill me-2"></i> تأكيد وتنفيذ العملية الآن
-                        </button>
+                    <!-- Selected Service Identity Card -->
+                    <div class="selected-service-banner mb-4 shadow-xs" id="selectedServiceBanner">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="p-3 rounded-4 bg-primary text-white fs-2 shadow-xs" id="bannerServiceIconBox" style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi @(string.IsNullOrEmpty(initialSelectedService?.IconClass) ? "bi-lightning-charge" : initialSelectedService?.IconClass)" id="bannerServiceIcon"></i>
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                        <h4 class="fw-bold mb-0 text-main" id="bannerServiceNameAr">@(initialSelectedService?.NameAr ?? "الخدمة المحددة")</h4>
+                                        <span class="badge bg-light text-dark font-monospace border fs-7 px-2.5 py-1" id="bannerServiceCodeBadge">
+                                            @(initialSelectedService?.ServiceCode ?? "")
+                                        </span>
+                                        <span class="badge @(GetExecOpBadgeClass(initialSelectedService?.Operator)) px-2.5 py-1 rounded-pill fs-8" id="bannerServiceOpBadge">
+                                            @GetExecOpArabic(initialSelectedService?.Operator)
+                                        </span>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 fs-8" id="bannerServiceCatBadge">
+                                            @(initialSelectedService != null ? GetExecCatArabic(initialSelectedService.Category) : "")
+                                        </span>
+                                    </div>
+                                    <p class="text-muted small mb-0" id="bannerServiceDescription">
+                                        @(initialSelectedService?.Description ?? "تنفيذ فوري عبر بوابات GoIP وسيرفر الـ Gateway")
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-md-end border-start-md ps-md-4">
+                                <div class="text-muted small mb-0.5">تكلفة تنفيذ العملية:</div>
+                                <div class="fs-4 fw-bold text-primary font-monospace" id="bannerServiceCost">
+                                    @(initialSelectedService?.BaseCost.ToString("N2") ?? "0.00") ج.م
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-5">
-                        <button type="button" id="ajaxTestBtn" class="btn btn-outline-primary py-3 fw-bold fs-5 shadow-sm rounded-4 w-100" onclick="runLiveQuickTest()">
-                            <i class="bi bi-cpu-fill me-2"></i> تجربة واختبار مباشر (Live Test)
-                        </button>
+
+                    <!-- Step 2: Line / SIM Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold fs-5 mb-2 d-flex align-items-center gap-2">
+                            <span class="badge bg-primary rounded-pill px-2.5 py-1">2</span>
+                            <span>خط التنفيذ (الشريحة أو المنفذ):</span>
+                        </label>
+
+                        <!-- Hidden select keeping value for form POST & AJAX runner -->
+                        <select name="simCardId" id="simCardIdSelect" class="d-none">
+                            <option value="">⚡ توجيه تلقائي ذكي (أسرع خط متاح وفيه رصيد كافي)</option>
+                            @foreach (var sim in Model.AvailableSims)
+                            {
+                                <option value="@sim.Id" data-op="@sim.Operator">
+                                    @sim.Operator (@sim.PhoneNumber) - منفذ #@(sim.DevicePort?.PortNumber) - رصيد الخط: @sim.CurrentBalance.ToString("N2") ج.م
+                                </option>
+                            }
+                        </select>
+
+                        <!-- Custom Searchable SIM Combobox -->
+                        <div class="searchable-combobox" id="simSearchableCombobox">
+                            <div class="combobox-trigger d-flex align-items-center justify-content-between p-3 rounded-4" id="simComboboxTrigger" onclick="toggleSimCombobox(event)">
+                                <div class="d-flex align-items-center gap-3 overflow-hidden text-truncate" id="simTriggerDisplay">
+                                    <span class="p-2 rounded-3 bg-warning bg-opacity-15 text-warning fs-5 flex-shrink-0" id="simTriggerIconBox">
+                                        <i class="bi bi-lightning-charge-fill"></i>
+                                    </span>
+                                    <div class="overflow-hidden text-truncate">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="fw-bold text-main fs-6" id="simTriggerTitle">⚡ توجيه تلقائي ذكي</span>
+                                            <span class="badge bg-light text-muted border fs-9" id="simTriggerBadge">موصى به</span>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary fs-9 d-none" id="simTriggerPort"></span>
+                                        </div>
+                                        <small class="text-muted d-block text-truncate fs-9" id="simTriggerSub">أسرع خط شاغر متاح وفيه رصيد كافي</small>
+                                    </div>
+                                </div>
+                                <i class="bi bi-chevron-down text-muted fs-6 combobox-caret ms-2 flex-shrink-0"></i>
+                            </div>
+
+                            <div class="combobox-menu shadow-lg p-2" id="simComboboxMenu">
+                                <!-- Sticky Search & Quick Filter Pills -->
+                                <div class="p-2 mb-2 sticky-top bg-white border-bottom">
+                                    <div class="input-group input-group-sm mb-2">
+                                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                        <input type="text" id="simComboboxSearch" class="form-control border-start-0" 
+                                               placeholder="ابحث برقم الهاتف، رقم المنفذ (مثل #12 أو 1A)، أو الشبكة..." 
+                                               onkeyup="filterSimCombobox(this.value)" 
+                                               onclick="event.stopPropagation()" />
+                                        <button type="button" class="btn btn-outline-secondary border-start-0" onclick="clearSimComboboxSearch(event)">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        <button type="button" class="btn btn-xs btn-outline-secondary sim-op-pill active" onclick="filterSimByOp('ALL', event)">الكل (@(Model.AvailableSims.Count + 1))</button>
+                                        <button type="button" class="btn btn-xs btn-outline-danger sim-op-pill" onclick="filterSimByOp('Vodafone', event)">فودافون</button>
+                                        <button type="button" class="btn btn-xs btn-outline-warning sim-op-pill" onclick="filterSimByOp('Orange', event)">أورانج</button>
+                                        <button type="button" class="btn btn-xs btn-outline-success sim-op-pill" onclick="filterSimByOp('Etisalat', event)">اتصالات</button>
+                                        <button type="button" class="btn btn-xs btn-outline-primary sim-op-pill" onclick="filterSimByOp('WE', event)">وي</button>
+                                    </div>
+                                </div>
+
+                                <!-- SIM Items List -->
+                                <div id="simComboboxItems" style="max-height: 280px; overflow-y: auto;">
+                                    <!-- Default Auto Routing Option -->
+                                    <div class="combobox-item selected" data-id="" data-op="ALL" data-search="تلقائي ذكي auto default"
+                                         onclick="selectSimOption('', '⚡ توجيه تلقائي ذكي', 'أسرع خط شاغر متاح وفيه رصيد كافي', 'موصى به', 'bg-light text-muted border', '')">
+                                        <div class="d-flex align-items-center gap-2.5">
+                                            <span class="p-2 rounded-3 bg-warning bg-opacity-15 text-warning fs-5">
+                                                <i class="bi bi-lightning-charge-fill"></i>
+                                            </span>
+                                            <div>
+                                                <div class="fw-bold text-main fs-6">⚡ توجيه تلقائي ذكي</div>
+                                                <small class="text-muted fs-9">أسرع خط شاغر متاح وفيه رصيد كافي</small>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-light text-muted border fs-9">موصى به</span>
+                                    </div>
+
+                                    @foreach (var sim in Model.AvailableSims)
+                                    {
+                                        var portNum = sim.DevicePort?.PortNumber.ToString() ?? "--";
+                                        var portLbl = !string.IsNullOrEmpty(sim.DevicePort?.PortLabel) ? sim.DevicePort.PortLabel : $"بورت {portNum}";
+                                        var portFull = $"منفذ #{portNum} ({portLbl})";
+                                        var opStr = sim.Operator.ToString();
+                                        var opArabic = GetExecOpArabic(sim.Operator);
+                                        var opBadge = GetExecOpBadgeClass(sim.Operator);
+                                        var simSearch = $"{sim.PhoneNumber} {sim.Operator} {opArabic} {portNum} {portLbl} {sim.DevicePort?.Device?.DeviceName} {sim.CurrentBalance}".ToLower();
+
+                                        <div class="combobox-item" data-id="@sim.Id" data-op="@opStr" data-search="@simSearch"
+                                             onclick="selectSimOption('@sim.Id', '@sim.PhoneNumber', 'رصيد: @sim.CurrentBalance.ToString("N2") ج.م', '@opArabic', '@opBadge', '@portFull')">
+                                            <div class="d-flex align-items-center gap-2.5">
+                                                <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary fs-6">
+                                                    <i class="bi bi-sim"></i>
+                                                </span>
+                                                <div>
+                                                    <div class="fw-bold text-main font-monospace fs-6">@sim.PhoneNumber</div>
+                                                    <small class="text-muted fs-9 font-monospace">@portFull</small>
+                                                </div>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge @opBadge px-2 py-0.5 rounded-pill fs-9 mb-1 d-inline-block">@opArabic</span>
+                                                <div class="font-monospace fs-9 fw-bold @(sim.CurrentBalance > 0 ? "text-success" : "text-danger")">
+                                                    @sim.CurrentBalance.ToString("N2") ج.م
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                <div id="simComboboxNoResults" class="text-center py-3 text-muted small d-none">
+                                    <i class="bi bi-search d-block mb-1 text-secondary opacity-50"></i>
+                                    لا توجد شرائح مطابقة لكلمة البحث
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted mt-1 d-block">نوصي بترك الاختيار التلقائي لتوزيع الحمل وسرعة التنفيذ بين الخطوط الشاغرة، أو تحديد شريحة معينة.</small>
                     </div>
-                </div>
-            </form>
+
+                    <!-- Step 3: Dynamic Parameters ("الحقول المعرفة والمضافة للخدمة") -->
+                    <div class="p-4 rounded-4 mb-4" id="dynamicParamsSection" style="background: var(--bg-app); border: 2px dashed var(--card-border);">
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-primary rounded-pill px-2.5 py-1">3</span>
+                                <h5 class="fw-bold mb-0 text-primary">حقول وبيانات العملية المطلوبة:</h5>
+                            </div>
+                            <span class="badge bg-light text-primary border fs-8 fw-bold" id="paramsCountBadge">0 حقول</span>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            الحقول والمتغيرات المعرفة في النظام لهذه الخدمة (يتم إرسالها واستبدالها في مسار USSD المحدد للعملية):
+                        </p>
+
+                        <!-- Dynamic Fields Injected Here via JavaScript -->
+                        <div id="dynamicFieldsContainer" class="row g-3"></div>
+                    </div>
+
+                    <!-- External Ref (Optional) -->
+                    <div class="mb-4">
+                        <label class="form-label small text-muted">رقم مرجع خارجي خاص بك في نظامك (External Reference - اختياري):</label>
+                        <input type="text" name="externalRef" id="externalRefInput" class="form-control" placeholder="مثال: ORDER-987654" />
+                    </div>
+
+                    <!-- Action Buttons: Standard Submit + Live AJAX Instant Test -->
+                    <div class="row g-3 mt-4">
+                        <div class="col-md-7">
+                            <button type="submit" id="submitBtn" class="btn btn-success py-3 fw-bold fs-5 shadow rounded-4 w-100">
+                                <i class="bi bi-play-circle-fill me-2"></i> تأكيد وتنفيذ العملية الآن
+                            </button>
+                        </div>
+                        <div class="col-md-5">
+                            <button type="button" id="ajaxTestBtn" class="btn btn-outline-primary py-3 fw-bold fs-5 shadow-sm rounded-4 w-100" onclick="runLiveQuickTest()">
+                                <i class="bi bi-cpu-fill me-2"></i> تجربة واختبار مباشر (Live Test)
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            }
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        let currentExecOp = 'ALL';
-        let currentExecCat = 'ALL';
-        let currentSelectedCode = '';
-        let currentSelectedCat = '';
+        let currentSelectedCode = '@initialSelectedCode';
 
-        function filterExecByOp(btn, op) {
-            document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
-            btn.classList.add("active");
-            currentExecOp = op;
-            filterExecServices();
-        }
+        document.addEventListener("DOMContentLoaded", function () {
+            if (currentSelectedCode && window.GOIP_SERVICES && window.GOIP_SERVICES[currentSelectedCode]) {
+                selectService(currentSelectedCode);
+            } else {
+                const firstKey = Object.keys(window.GOIP_SERVICES || {})[0];
+                if (firstKey) selectService(firstKey);
+            }
 
-        function filterExecByCat(btn, cat) {
-            document.querySelectorAll(".filter-cat-pill").forEach(p => p.classList.remove("active"));
-            btn.classList.add("active");
-            currentExecCat = cat;
-            filterExecServices();
-        }
-
-        function filterExecServices() {
-            const query = (document.getElementById('execSearchInput')?.value || '').trim().toLowerCase();
-            const items = document.querySelectorAll('.exec-service-item');
-            let visibleCount = 0;
-
-            items.forEach(el => {
-                const itemOp = el.getAttribute('data-op') || 'ALL';
-                const itemCat = el.getAttribute('data-cat') || '';
-                const itemSearch = el.getAttribute('data-search') || '';
-
-                const matchesOp = (currentExecOp === 'ALL' || itemOp === currentExecOp);
-                const matchesCat = (currentExecCat === 'ALL' || itemCat === currentExecCat);
-                const matchesQuery = (!query || itemSearch.includes(query));
-
-                if (matchesOp && matchesCat && matchesQuery) {
-                    el.style.display = '';
-                    visibleCount++;
-                } else {
-                    el.style.display = 'none';
+            // Close combobox when clicking outside
+            document.addEventListener("click", function (e) {
+                const srvCombobox = document.getElementById("serviceSearchableCombobox");
+                if (srvCombobox && !srvCombobox.contains(e.target)) {
+                    closeServiceCombobox();
+                }
+                const simCombobox = document.getElementById("simSearchableCombobox");
+                if (simCombobox && !simCombobox.contains(e.target)) {
+                    closeSimCombobox();
                 }
             });
 
-            const counter = document.getElementById('execVisibleCount');
-            if (counter) counter.innerText = visibleCount;
+            // Close combobox on Escape key
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape") {
+                    closeServiceCombobox();
+                    closeSimCombobox();
+                }
+            });
+        });
 
-            document.querySelectorAll('.exec-category-group').forEach(group => {
-                const visibleInGroup = group.querySelectorAll('.exec-service-item:not([style*="display: none"])');
-                group.style.display = visibleInGroup.length > 0 ? '' : 'none';
+        // ==========================================
+        // SIM Combobox Handlers
+        // ==========================================
+        let simCurrentOpFilter = 'ALL';
+
+        function toggleSimCombobox(e) {
+            e.stopPropagation();
+            const menu = document.getElementById("simComboboxMenu");
+            const trigger = document.getElementById("simComboboxTrigger");
+            const isShown = menu && menu.classList.contains("show");
+
+            if (isShown) {
+                closeSimCombobox();
+            } else {
+                closeServiceCombobox();
+                if (menu) menu.classList.add("show");
+                if (trigger) trigger.classList.add("active");
+                const searchInput = document.getElementById("simComboboxSearch");
+                if (searchInput) {
+                    searchInput.value = '';
+                    filterSimCombobox('');
+                    setTimeout(() => searchInput.focus(), 50);
+                }
+            }
+        }
+
+        function closeSimCombobox() {
+            const menu = document.getElementById("simComboboxMenu");
+            const trigger = document.getElementById("simComboboxTrigger");
+            if (menu) menu.classList.remove("show");
+            if (trigger) trigger.classList.remove("active");
+        }
+
+        function selectSimOption(simId, title, sub, badgeText, badgeClass, portText) {
+            const selectEl = document.getElementById("simCardIdSelect");
+            if (selectEl) {
+                selectEl.value = simId;
+                selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const titleEl = document.getElementById("simTriggerTitle");
+            const subEl = document.getElementById("simTriggerSub");
+            const badgeEl = document.getElementById("simTriggerBadge");
+            const portEl = document.getElementById("simTriggerPort");
+            const iconBox = document.getElementById("simTriggerIconBox");
+
+            if (!simId) {
+                if (titleEl) titleEl.innerText = "⚡ توجيه تلقائي ذكي";
+                if (subEl) subEl.innerText = "أسرع خط شاغر متاح وفيه رصيد كافي";
+                if (badgeEl) {
+                    badgeEl.innerText = "موصى به";
+                    badgeEl.className = "badge bg-light text-muted border fs-9";
+                }
+                if (portEl) portEl.classList.add("d-none");
+                if (iconBox) {
+                    iconBox.className = "p-2 rounded-3 bg-warning bg-opacity-15 text-warning fs-5 flex-shrink-0";
+                    iconBox.innerHTML = '<i class="bi bi-lightning-charge-fill"></i>';
+                }
+            } else {
+                if (titleEl) titleEl.innerHTML = `<span class="font-monospace">${title}</span>`;
+                if (subEl) subEl.innerText = sub;
+                if (badgeEl) {
+                    badgeEl.innerText = badgeText;
+                    badgeEl.className = `badge ${badgeClass} fs-9`;
+                }
+                if (portEl && portText) {
+                    portEl.innerText = portText;
+                    portEl.classList.remove("d-none");
+                }
+                if (iconBox) {
+                    iconBox.className = "p-2 rounded-3 bg-primary bg-opacity-10 text-primary fs-5 flex-shrink-0";
+                    iconBox.innerHTML = '<i class="bi bi-sim"></i>';
+                }
+            }
+
+            document.querySelectorAll("#simComboboxItems .combobox-item").forEach(it => {
+                it.classList.toggle("selected", it.getAttribute("data-id") === simId);
             });
 
-            const noMatches = document.getElementById('noExecMatches');
-            if (noMatches) {
-                noMatches.classList.toggle('d-none', visibleCount > 0);
+            closeSimCombobox();
+        }
+
+        function filterSimCombobox(query) {
+            const q = (query || '').trim().toLowerCase();
+            const items = document.querySelectorAll("#simComboboxItems .combobox-item");
+            let visibleCount = 0;
+
+            items.forEach(it => {
+                const searchData = it.getAttribute("data-search") || "";
+                const op = it.getAttribute("data-op") || "ALL";
+                const matchesSearch = !q || searchData.includes(q);
+                const matchesOp = (simCurrentOpFilter === 'ALL' || op === simCurrentOpFilter || it.getAttribute("data-id") === "");
+
+                if (matchesSearch && matchesOp) {
+                    it.style.display = "";
+                    visibleCount++;
+                } else {
+                    it.style.display = "none";
+                }
+            });
+
+            const noRes = document.getElementById("simComboboxNoResults");
+            if (noRes) noRes.classList.toggle("d-none", visibleCount > 0);
+        }
+
+        function clearSimComboboxSearch(e) {
+            e.stopPropagation();
+            const input = document.getElementById("simComboboxSearch");
+            if (input) {
+                input.value = '';
+                filterSimCombobox('');
+                input.focus();
             }
         }
 
-        function selectExecuteCard(code, category) {
-            currentSelectedCode = code;
-            currentSelectedCat = category;
-
-            document.querySelectorAll('.exec-service-card').forEach(c => c.classList.remove('card-selected'));
-
-            const radio = document.getElementById('srv_' + code);
-            if (radio) radio.checked = true;
-
-            const card = document.getElementById('card_srv_' + code);
-            if (card) card.classList.add('card-selected');
-
-            // Render Dynamic Parameters
-            renderDynamicParameters(card, code, category);
+        function filterSimByOp(op, e) {
+            if (e) e.stopPropagation();
+            simCurrentOpFilter = op;
+            document.querySelectorAll(".sim-op-pill").forEach(btn => btn.classList.remove("active"));
+            if (e && e.target) e.target.classList.add("active");
+            const searchVal = document.getElementById("simComboboxSearch")?.value || '';
+            filterSimCombobox(searchVal);
         }
 
-        function renderDynamicParameters(card, code, category) {
-            const section = document.getElementById("dynamicParamsSection");
+        // ==========================================
+        // Service Combobox Handlers
+        // ==========================================
+        function toggleServiceCombobox(e) {
+            e.stopPropagation();
+            const menu = document.getElementById("serviceComboboxMenu");
+            const trigger = document.querySelector("#serviceSearchableCombobox .combobox-trigger");
+            const isShown = menu && menu.classList.contains("show");
+
+            if (isShown) {
+                closeServiceCombobox();
+            } else {
+                closeSimCombobox();
+                if (menu) menu.classList.add("show");
+                if (trigger) trigger.classList.add("active");
+                const searchInput = document.getElementById("comboboxSearchInput");
+                if (searchInput) {
+                    searchInput.value = '';
+                    filterComboboxServices('');
+                    setTimeout(() => searchInput.focus(), 50);
+                }
+            }
+        }
+
+        function closeServiceCombobox() {
+            const menu = document.getElementById("serviceComboboxMenu");
+            const trigger = document.querySelector("#serviceSearchableCombobox .combobox-trigger");
+            if (menu) menu.classList.remove("show");
+            if (trigger) trigger.classList.remove("active");
+        }
+
+        function filterComboboxServices(query) {
+            const q = (query || '').trim().toLowerCase();
+            const items = document.querySelectorAll("#comboboxOptionsContainer .combobox-item");
+            let visibleCount = 0;
+
+            items.forEach(item => {
+                const searchStr = item.getAttribute("data-search") || "";
+                if (!q || searchStr.includes(q)) {
+                    item.style.display = "";
+                    visibleCount++;
+                } else {
+                    item.style.display = "none";
+                }
+            });
+
+            // Hide empty groups
+            document.querySelectorAll("#comboboxOptionsContainer .combobox-group").forEach(group => {
+                const hasVisible = group.querySelectorAll('.combobox-item:not([style*="display: none"])').length > 0;
+                group.style.display = hasVisible ? "" : "none";
+            });
+
+            // No results notice
+            const noRes = document.getElementById("comboboxNoResults");
+            if (noRes) {
+                noRes.classList.toggle("d-none", visibleCount > 0);
+            }
+        }
+
+        function clearComboboxSearch(e) {
+            e.stopPropagation();
+            const input = document.getElementById("comboboxSearchInput");
+            if (input) {
+                input.value = '';
+                filterComboboxServices('');
+                input.focus();
+            }
+        }
+
+        function selectComboboxOption(code) {
+            selectService(code);
+            closeServiceCombobox();
+        }
+
+        function selectService(code) {
+            if (!code || !window.GOIP_SERVICES || !window.GOIP_SERVICES[code]) return;
+
+            currentSelectedCode = code;
+            const srv = window.GOIP_SERVICES[code];
+
+            // 1. Update Hidden Input
+            const hiddenCode = document.getElementById('hiddenSelectedServiceCode');
+            if (hiddenCode) hiddenCode.value = code;
+
+            // 2. Update Combobox Trigger Display
+            document.getElementById('triggerTitle').innerText = srv.nameAr;
+            document.getElementById('triggerCode').innerText = srv.code;
+            document.getElementById('triggerOp').innerText = srv.opArabic;
+            document.getElementById('triggerOp').className = `badge ${srv.opBadgeClass} px-2 py-0.5 rounded-pill fs-9`;
+            document.getElementById('triggerCost').innerHTML = `الرسوم: <strong class="text-primary font-monospace">${srv.cost.toFixed(2)} ج.م</strong>`;
+
+            const triggerIcon = document.getElementById('triggerIcon');
+            if (triggerIcon) triggerIcon.className = `bi ${srv.icon || 'bi-lightning-charge'}`;
+
+            // Highlight selected in menu
+            document.querySelectorAll("#comboboxOptionsContainer .combobox-item").forEach(el => {
+                el.classList.toggle("selected", el.getAttribute("data-code") === code);
+            });
+
+            // 3. Update Selected Service Identity Banner
+            document.getElementById('bannerServiceNameAr').innerText = srv.nameAr;
+            document.getElementById('bannerServiceCodeBadge').innerText = srv.code;
+            document.getElementById('bannerServiceOpBadge').innerText = srv.opArabic;
+            document.getElementById('bannerServiceOpBadge').className = `badge ${srv.opBadgeClass} px-2.5 py-1 rounded-pill fs-8`;
+            document.getElementById('bannerServiceCatBadge').innerText = srv.categoryArabic;
+            document.getElementById('bannerServiceDescription').innerText = srv.description || 'تنفيذ فوري عبر بوابات GoIP وسيرفر الـ Gateway';
+            document.getElementById('bannerServiceCost').innerText = `${srv.cost.toFixed(2)} ج.م`;
+
+            const iconEl = document.getElementById('bannerServiceIcon');
+            if (iconEl) iconEl.className = `bi ${srv.icon || 'bi-lightning-charge'}`;
+
+            // 4. Render Dynamic Parameters for Selected Service
+            renderServiceParameters(srv);
+        }
+
+        function renderServiceParameters(srv) {
             const container = document.getElementById("dynamicFieldsContainer");
             const countBadge = document.getElementById("paramsCountBadge");
+            if (!container) return;
+
             container.innerHTML = '';
+            const rawParams = srv.parameters || [];
+            const upperCode = (srv.code || '').toUpperCase();
+            const category = srv.category || '';
 
-            let rawParams = [];
-            try {
-                const attr = card.getAttribute('data-params');
-                if (attr) rawParams = JSON.parse(attr);
-            } catch (e) {
-                console.error("Error parsing params json", e);
-            }
-
-            const upperCode = (code || '').toUpperCase();
-
-            // Scenario 1: Service has explicit parameters defined in DB
+            // Scenario 1: Service has explicit parameters configured in DB
             if (rawParams && rawParams.length > 0) {
-                section.classList.remove("d-none");
                 countBadge.innerText = `${rawParams.length} حقول مطلوبة`;
 
                 rawParams.forEach(param => {
-                    const fieldDiv = document.createElement("div");
-                    fieldDiv.className = "mb-3";
+                    const colDiv = document.createElement("div");
+                    colDiv.className = "col-12 col-md-6";
 
                     const isReq = param.required;
-                    const reqStar = isReq ? `<span class="text-danger">*</span>` : `<span class="text-muted small fs-8">(اختياري)</span>`;
-                    const inputType = param.type === 'Decimal' || param.type === 'Number' ? 'number' : (param.type === 'Phone' ? 'tel' : 'text');
-                    const stepAttr = param.type === 'Decimal' ? 'step="0.01"' : '';
-                    const defVal = param.defaultValue || '';
+                    const reqBadge = isReq ? `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fs-9">مطلوب *</span>` : `<span class="badge bg-light text-muted border fs-9">اختياري</span>`;
+                    
+                    let inputType = 'text';
+                    let stepAttr = '';
+                    let inputIcon = 'bi-pencil-square';
 
+                    if (param.type === 'Decimal' || param.type === 'Number' || param.type === '3' || param.type === '2') {
+                        inputType = 'number';
+                        inputIcon = 'bi-currency-exchange';
+                        if (param.type === 'Decimal' || param.type === '3') stepAttr = 'step="0.01"';
+                    } else if (param.type === 'Phone' || param.type === '4') {
+                        inputType = 'tel';
+                        inputIcon = 'bi-telephone';
+                    } else if (param.type === 'Boolean' || param.type === '5') {
+                        inputType = 'checkbox';
+                    }
+
+                    const defVal = param.defaultValue || '';
                     let placeholder = `أدخل ${param.name}`;
-                    if (param.key.toLowerCase().includes('amount')) placeholder = "مثال: 500";
+                    if (param.key.toLowerCase().includes('amount')) placeholder = "مثال: 500.00";
                     else if (param.key.toLowerCase().includes('merchant')) placeholder = "مثال: 123456";
                     else if (param.key.toLowerCase().includes('phone')) placeholder = "مثال: 01012345678";
 
-                    fieldDiv.innerHTML = `
-                        <label class="form-label fw-bold mb-1">${param.name} (${param.key}) ${reqStar}</label>
-                        <div class="input-group">
-                            <input type="${inputType}" ${stepAttr} name="param_${param.key}" id="dyn_${param.key}" 
-                                   class="form-control fs-5 ${param.key.toLowerCase().includes('amount') ? 'fw-bold text-success' : ''}" 
-                                   value="${defVal}" placeholder="${placeholder}" ${isReq ? 'required' : ''} />
-                            ${param.key.toLowerCase().includes('amount') ? '<span class="input-group-text fw-bold">ج.م</span>' : ''}
-                        </div>
-                    `;
-                    container.appendChild(fieldDiv);
+                    if (inputType === 'checkbox') {
+                        colDiv.innerHTML = `
+                            <div class="param-field-box h-100 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <label class="form-check-label fw-bold d-block text-main mb-0" for="dyn_${param.key}">
+                                        ${param.name}
+                                    </label>
+                                    <small class="text-muted font-monospace fs-9">{${param.key}}</small>
+                                </div>
+                                <div class="form-check form-switch fs-4 mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="param_${param.key}" id="dyn_${param.key}" ${defVal === 'true' ? 'checked' : ''} />
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        colDiv.innerHTML = `
+                            <div class="param-field-box h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                    <label class="form-label fw-bold text-main mb-0" for="dyn_${param.key}">
+                                        ${param.name}
+                                    </label>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <code class="text-muted font-monospace fs-9">{${param.key}}</code>
+                                        ${reqBadge}
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted border-end-0"><i class="bi ${inputIcon}"></i></span>
+                                    <input type="${inputType}" ${stepAttr} name="param_${param.key}" id="dyn_${param.key}" 
+                                           class="form-control border-start-0 fs-6 ${param.key.toLowerCase().includes('amount') ? 'fw-bold text-success' : ''}" 
+                                           value="${defVal}" placeholder="${placeholder}" ${isReq ? 'required' : ''} />
+                                    ${param.key.toLowerCase().includes('amount') ? '<span class="input-group-text fw-bold">ج.م</span>' : ''}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    container.appendChild(colDiv);
                 });
                 return;
             }
 
             // Scenario 2: Standard Fallbacks if no explicit parameters in DB
             if (category === 'Payment' || upperCode.includes('PAY') || upperCode.includes('QR')) {
-                section.classList.remove("d-none");
-                countBadge.innerText = "2 حقول (دفع تاجر)";
+                countBadge.innerText = "2 حقول مطلوبة (دفع تاجر)";
                 container.innerHTML = `
-                    <div class="mb-3">
-                        <label class="form-label fw-bold mb-1">كود التاجر أو الماكينة (Merchant Code) <span class="text-danger">*</span></label>
-                        <input type="text" name="param_merchantCode" id="dyn_merchantCode" class="form-control fs-5" placeholder="مثال: 123456" required />
-                        <small class="text-muted">الرقم المكتوب تحت كود الـ QR الخاص بالتاجر أو على شاشة ماكينة POS</small>
+                    <div class="col-12 col-md-6">
+                        <div class="param-field-box h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                <label class="form-label fw-bold text-main mb-0" for="dyn_merchantCode">كود التاجر أو الماكينة (Merchant Code)</label>
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fs-9">مطلوب *</span>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-qr-code"></i></span>
+                                <input type="text" name="param_merchantCode" id="dyn_merchantCode" class="form-control border-start-0 fs-6 font-monospace" placeholder="مثال: 123456" required />
+                            </div>
+                            <small class="text-muted fs-8 mt-1 d-block">الرقم المكتوب تحت كود QR أو على شاشة ماكينة POS</small>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold mb-1">المبلغ المطلوب تنفيذه (Amount) <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <input type="number" step="0.01" min="1" name="param_amount" id="dyn_amount" class="form-control fs-4 fw-bold text-success" placeholder="مثال: 500" required />
-                            <span class="input-group-text fw-bold fs-6">جنيه مصري (ج.م)</span>
+                    <div class="col-12 col-md-6">
+                        <div class="param-field-box h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                <label class="form-label fw-bold text-main mb-0" for="dyn_amount">المبلغ المطلوب تنفيذه (Amount)</label>
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fs-9">مطلوب *</span>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-currency-exchange"></i></span>
+                                <input type="number" step="0.01" min="1" name="param_amount" id="dyn_amount" class="form-control border-start-0 fs-6 fw-bold text-success" placeholder="مثال: 500.00" required />
+                                <span class="input-group-text fw-bold">ج.م</span>
+                            </div>
+                            <small class="text-muted fs-8 mt-1 d-block">المبلغ الإجمالي لخصمه من المحفظة</small>
                         </div>
                     </div>
                 `;
             } else if (category === 'Transfer' || upperCode.includes('TRANS')) {
-                section.classList.remove("d-none");
-                countBadge.innerText = "2 حقول (تحويل كاش)";
+                countBadge.innerText = "2 حقول مطلوبة (تحويل كاش)";
                 container.innerHTML = `
-                    <div class="mb-3">
-                        <label class="form-label fw-bold mb-1">رقم محفظة المستلم (Phone Number) <span class="text-danger">*</span></label>
-                        <input type="tel" name="param_phoneNumber" id="dyn_phoneNumber" class="form-control fs-5" placeholder="مثال: 01012345678" required />
-                        <small class="text-muted">رقم محفظة فودافون كاش، أورانج كاش، اتصالات كاش، أو وي باي</small>
+                    <div class="col-12 col-md-6">
+                        <div class="param-field-box h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                <label class="form-label fw-bold text-main mb-0" for="dyn_phoneNumber">رقم محفظة المستلم (Phone Number)</label>
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fs-9">مطلوب *</span>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-phone"></i></span>
+                                <input type="tel" name="param_phoneNumber" id="dyn_phoneNumber" class="form-control border-start-0 fs-6 font-monospace" placeholder="مثال: 01012345678" required />
+                            </div>
+                            <small class="text-muted fs-8 mt-1 d-block">رقم محفظة فودافون، أورانج، اتصالات أو وي</small>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold mb-1">المبلغ المراد تحويله (Amount) <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <input type="number" step="0.01" min="1" name="param_amount" id="dyn_amount" class="form-control fs-4 fw-bold text-success" placeholder="مثال: 250" required />
-                            <span class="input-group-text fw-bold fs-6">جنيه مصري (ج.م)</span>
+                    <div class="col-12 col-md-6">
+                        <div class="param-field-box h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                <label class="form-label fw-bold text-main mb-0" for="dyn_amount">المبلغ المراد تحويله (Amount)</label>
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fs-9">مطلوب *</span>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-currency-exchange"></i></span>
+                                <input type="number" step="0.01" min="1" name="param_amount" id="dyn_amount" class="form-control border-start-0 fs-6 fw-bold text-success" placeholder="مثال: 250.00" required />
+                                <span class="input-group-text fw-bold">ج.م</span>
+                            </div>
+                            <small class="text-muted fs-8 mt-1 d-block">مبلغ الحوالة</small>
                         </div>
                     </div>
                 `;
             } else if (category === 'Inquiry' || category === 'NumberInquiry' || upperCode.includes('INQ')) {
-                section.classList.remove("d-none");
-                countBadge.innerText = "خدمة تلقائية";
+                countBadge.innerText = "خدمة مؤتمتة";
                 container.innerHTML = `
-                    <div class="alert alert-info border-0 rounded-3 mb-0 d-flex align-items-center gap-2">
-                        <i class="bi bi-info-circle-fill fs-5"></i>
-                        <span>هذه الخدمة استعلامية مؤتمتة بالكامل عبر USSD، ولا تتطلب إدخال أي حقول إضافية. يمكنك الضغط مباشرة على زر التنفيذ أو التجربة الحية.</span>
+                    <div class="col-12">
+                        <div class="alert alert-info border-0 rounded-3 mb-0 d-flex align-items-center gap-3 p-3">
+                            <i class="bi bi-info-circle-fill fs-3 text-info"></i>
+                            <div>
+                                <strong class="d-block mb-1 text-main">خدمة استعلامية مؤتمتة بالكامل عبر USSD</strong>
+                                <span class="text-muted fs-8">هذه الخدمة لا تتطلب إدخال أي حقول أو بيانات إضافية. يمكنك الضغط مباشرة على زر التنفيذ أو التجربة الحية أدناه وسيتم قراءة الرد لحظياً من الشبكة.</span>
+                            </div>
+                        </div>
                     </div>
                 `;
             } else {
-                section.classList.add("d-none");
+                countBadge.innerText = "لا توجد حقول مطلوبة";
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="text-center py-3 text-muted small">
+                            لا توجد بارامترات مطلوبة محددة لهذه الخدمة. يمكنك المتابعة مباشرة للتنفيذ.
+                        </div>
+                    </div>
+                `;
             }
         }
 
-        function showExecutingState() {
-            const btn = document.getElementById("submitBtn");
-            btn.disabled = true;
-            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> جاري إرسال الأمر لبوابة GoIP والتنفيذ...`;
+        function handleFormSubmit(e) {
+            if (!currentSelectedCode) {
+                showAlertModal({
+                    title: 'يرجى اختيار خدمة',
+                    message: 'يرجى اختيار إحدى الخدمات من القائمة أولاً لتنفيذها.',
+                    type: 'warning'
+                });
+                return false;
+            }
+
+            const form = document.getElementById("executeForm");
+            if (form && form.dataset.confirmed !== 'true') {
+                e.preventDefault();
+                const srv = window.GOIP_SERVICES ? window.GOIP_SERVICES[currentSelectedCode] : null;
+                const sName = srv ? srv.nameAr : 'الخدمة المختارة';
+                const sCost = srv ? `${srv.cost.toFixed(2)} ج.م` : '0.00 ج.م';
+
+                showConfirmModal({
+                    title: 'تأكيد تنفيذ العملية الفورية',
+                    message: `هل أنت متأكد من تنفيذ هذه العملية فوراً عبر بوابات GoIP وسيرفر النظام؟`,
+                    detail: `${sName} (كود: ${currentSelectedCode}) - التكلفة: ${sCost}`,
+                    detailLabel: 'بيانات العملية:',
+                    btnText: 'نعم، تأكيد وتنفيذ الآن',
+                    type: 'primary',
+                    onConfirm: function () {
+                        form.dataset.confirmed = 'true';
+                        const btn = document.getElementById("submitBtn");
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> جاري إرسال الأمر لبوابة GoIP والتنفيذ...`;
+                        }
+                        form.submit();
+                    }
+                });
+                return false;
+            }
+            return true;
         }
 
-        // Live AJAX Instant Test Runner ("نقدر نعمل تجربه ونشوف الدنيا هتطلع معانا ايه")
+        // Live AJAX Instant Test Runner
         async function runLiveQuickTest() {
             if (!currentSelectedCode) {
-                alert("يرجى اختيار إحدى الخدمات أولاً لتنفيذ التجربة.");
+                showAlertModal({
+                    title: 'يرجى اختيار خدمة',
+                    message: 'يرجى اختيار إحدى الخدمات أولاً لتنفيذ التجربة المباشرة.',
+                    type: 'warning'
+                });
                 return;
             }
 
@@ -872,13 +1237,21 @@
             const parameters = {};
             const dynInputs = document.querySelectorAll('#dynamicFieldsContainer input');
             for (let input of dynInputs) {
-                if (input.required && !input.value.trim()) {
-                    input.focus();
-                    alert(`الحقل مطلوب: يرجى ملء كافة البيانات المطلوبة قبل التجربة.`);
-                    return;
+                if (input.type === 'checkbox') {
+                    parameters[input.name.replace('param_', '')] = input.checked ? 'true' : 'false';
+                } else {
+                    if (input.required && !input.value.trim()) {
+                        input.focus();
+                        showAlertModal({
+                            title: 'حقل مطلوب',
+                            message: 'يرجى ملء كافة البيانات والحقول المطلوبة للخدمة قبل إجراء التجربة.',
+                            type: 'warning'
+                        });
+                        return;
+                    }
+                    const name = input.name.replace('param_', '');
+                    parameters[name] = input.value.trim();
                 }
-                const name = input.name.replace('param_', '');
-                parameters[name] = input.value.trim();
             }
 
             const payload = {
@@ -908,7 +1281,11 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } catch (err) {
                 console.error("QuickTest error", err);
-                alert("حدث خطأ أثناء إجراء الاختبار المباشر: " + err.message);
+                showAlertModal({
+                    title: 'فشل الاختبار المباشر',
+                    message: 'حدث خطأ أثناء إجراء الاختبار المباشر: ' + err.message,
+                    type: 'danger'
+                });
             } finally {
                 ajaxBtn.disabled = false;
                 ajaxBtn.innerHTML = originalHtml;

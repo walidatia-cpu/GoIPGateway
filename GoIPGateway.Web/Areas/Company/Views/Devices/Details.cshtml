@@ -1,42 +1,117 @@
 @model GoIPGateway.Domain.Entities.Device
+@using GoIPGateway.Domain.Enums
 @{
-    ViewData["Title"] = $"خريطة ومنافذ الجهاز: {Model.DeviceName}";
+    ViewData["Title"] = $"خريطة وبلوكات الجهاز: {Model.DeviceName}";
     var totalPorts = Model.TotalPorts;
     var activePorts = Model.Ports.Count(p => p.SimCard != null && p.SimCard.IsActive && !p.SimCard.IsDelete);
     var busyPorts = Model.Ports.Count(p => p.IsBusy);
     var emptyPorts = totalPorts - activePorts;
     var totalSimBalance = Model.Ports.Where(p => p.SimCard != null).Sum(p => p.SimCard!.CurrentBalance);
 
-    var vfCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == GoIPGateway.Domain.Enums.OperatorType.Vodafone);
-    var orCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == GoIPGateway.Domain.Enums.OperatorType.Orange);
-    var etCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == GoIPGateway.Domain.Enums.OperatorType.Etisalat);
-    var weCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == GoIPGateway.Domain.Enums.OperatorType.WE);
+    var vfCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == OperatorType.Vodafone);
+    var orCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == OperatorType.Orange);
+    var etCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == OperatorType.Etisalat);
+    var weCount = Model.Ports.Count(p => p.SimCard != null && p.SimCard.Operator == OperatorType.WE);
+
+    var is512 = (Model.DeviceType == DeviceType.GoIP512 || Model.TotalPorts == 512);
+    int slotsPerBlock = is512 ? 8 : 4;
+    int expectedBlocks = is512 ? 64 : 32;
+
+    // Group Ports into Blocks (8 Slots for 512, 4 Slots for 128)
+    var blocks = Model.Ports
+        .OrderBy(p => p.PortNumber)
+        .GroupBy(p => ((p.PortNumber - 1) / slotsPerBlock) + 1)
+        .ToList();
+
+    var groupDefs = new[]
+    {
+        new { Letter = 'A', Number = 1, Code = "01", Color = "danger", BgClass = "bg-danger", TextClass = "text-danger" },
+        new { Letter = 'B', Number = 2, Code = "02", Color = "warning", BgClass = "bg-warning", TextClass = "text-warning" },
+        new { Letter = 'C', Number = 3, Code = "03", Color = "success", BgClass = "bg-success", TextClass = "text-success" },
+        new { Letter = 'D', Number = 4, Code = "04", Color = "info", BgClass = "bg-info", TextClass = "text-info" },
+        new { Letter = 'E', Number = 5, Code = "05", Color = "primary", BgClass = "bg-primary", TextClass = "text-primary" },
+        new { Letter = 'F', Number = 6, Code = "06", Color = "secondary", BgClass = "bg-secondary", TextClass = "text-secondary" },
+        new { Letter = 'G', Number = 7, Code = "07", Color = "dark", BgClass = "bg-dark", TextClass = "text-dark" },
+        new { Letter = 'H', Number = 8, Code = "08", Color = "danger", BgClass = "bg-danger", TextClass = "text-danger" }
+    }.Take(slotsPerBlock).ToList();
 }
 
 <style>
-    .port-legend-box {
+    /* GoIP Channel Block Cards Styling */
+    .block-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 18px;
+        box-shadow: var(--stat-shadow);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        overflow: hidden;
+    }
+    .block-card:hover {
+        border-color: rgba(37, 99, 235, 0.4);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    }
+    .block-header {
+        padding: 12px 18px;
+        background: rgba(100, 116, 139, 0.05);
+        border-bottom: 1px solid var(--card-border);
         display: flex;
-        flex-wrap: wrap;
         align-items: center;
-        gap: 16px;
+        justify-content: space-between;
     }
-    .legend-item {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.85rem;
-        font-weight: 600;
+    .block-body {
+        padding: 14px;
     }
-    .legend-chip {
-        width: 16px;
-        height: 16px;
-        border-radius: 5px;
-        display: inline-block;
+
+    /* Slot Card Cell inside Block */
+    .slot-cell {
+        background: rgba(248, 250, 252, 0.6);
+        border: 1.5px solid var(--card-border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        cursor: pointer;
+        transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
     }
-    .legend-chip.active { background: rgba(34, 197, 94, 0.2); border: 1.5px solid #22c55e; }
-    .legend-chip.busy { background: rgba(234, 179, 8, 0.25); border: 1.5px solid #eab308; }
-    .legend-chip.empty { background: var(--port-empty-bg); border: 1.5px solid var(--port-empty-border); }
-    .legend-chip.error { background: rgba(239, 68, 68, 0.2); border: 1.5px solid #ef4444; }
+    [data-theme="dark"] .slot-cell {
+        background: rgba(15, 23, 42, 0.45);
+    }
+    .slot-cell:hover {
+        border-color: rgba(37, 99, 235, 0.6);
+        transform: translateY(-2px);
+    }
+    .slot-cell.active-slot {
+        background: rgba(34, 197, 94, 0.06) !important;
+        border-color: #22c55e !important;
+        box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    }
+    .slot-cell.standby-slot {
+        opacity: 0.65;
+    }
+    .slot-cell.standby-slot:hover {
+        opacity: 0.95;
+    }
+
+    /* Group Action Cards at top */
+    .group-action-card {
+        background: var(--card-bg);
+        border: 1.5px solid var(--card-border);
+        border-radius: 18px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .group-action-card:hover {
+        border-color: var(--primary-accent);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.2);
+    }
+    .group-action-card.active-group {
+        border-color: var(--primary-accent);
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%);
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+    }
 
     .pulse-online {
         width: 9px;
@@ -53,9 +128,72 @@
         100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
     }
 
+    /* Auto Save Toast */
+    .save-toast-indicator {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        opacity: 0;
+        visibility: hidden;
+        background: #0f172a;
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+        border: 1.5px solid #22c55e;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .save-toast-indicator.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+        visibility: visible;
+    }
+
     .row-highlighted {
         background-color: rgba(37, 99, 235, 0.12) !important;
         transition: background-color 0.8s ease;
+    }
+
+    /* Custom Main Tabs */
+    .custom-main-tabs {
+        background: var(--card-bg, #ffffff);
+        border: 1px solid var(--card-border, #e2e8f0);
+    }
+    .custom-main-tabs .nav-link {
+        color: var(--text-muted, #64748b);
+        border: 1px solid transparent;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .custom-main-tabs .nav-link:hover {
+        color: var(--primary-accent, #2563eb);
+        background: rgba(37, 99, 235, 0.05);
+    }
+    .custom-main-tabs .nav-link.active {
+        background: var(--primary-accent, #2563eb) !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    }
+    .custom-main-tabs .nav-link.active .badge {
+        background: rgba(255, 255, 255, 0.25) !important;
+        color: #ffffff !important;
+    }
+
+    .filter-pill {
+        transition: all 0.2s ease;
+    }
+    .filter-pill.active {
+        background-color: var(--primary-accent, #2563eb) !important;
+        color: #ffffff !important;
+        border-color: var(--primary-accent, #2563eb) !important;
+        font-weight: 700;
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
     }
 </style>
 
@@ -65,7 +203,7 @@
         <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item"><a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة المتابعة</a></li>
             <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">أجهزة GoIP</a></li>
-            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">خريطة بورتات @Model.DeviceName</li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">خريطة وبلوكات @Model.DeviceName</li>
         </ol>
     </nav>
 
@@ -93,11 +231,19 @@
             <p class="text-muted small mb-0">
                 <span class="font-monospace">@Model.DeviceType</span> • 
                 <code class="text-primary font-monospace">@Model.IpAddress:@Model.Port</code> • 
-                سعة الجهاز: <strong>@Model.TotalPorts بورت</strong> • 
+                السعة: <strong>@Model.TotalPorts بورت (@blocks.Count بلوك × @slotsPerBlock منافذ)</strong> • 
                 الشرائح النشطة: <strong class="text-success">@activePorts</strong>
+                @if (!string.IsNullOrWhiteSpace(Model.MerchantCode))
+                {
+                    <span> • كود التاجر: <strong class="font-monospace text-primary bg-primary bg-opacity-10 px-2 py-0.5 rounded border border-primary border-opacity-25"><i class="bi bi-shop me-1"></i>@Model.MerchantCode</strong></span>
+                }
             </p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-warning px-3 py-2 rounded-3 fw-bold d-flex align-items-center gap-1.5">
+                <i class="bi bi-pencil-square"></i>
+                <span>تعديل الجهاز</span>
+            </a>
             <a asp-area="Company" asp-controller="SimCards" asp-action="Create" class="btn btn-primary px-4 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center gap-2">
                 <i class="bi bi-plus-circle-fill fs-5"></i>
                 <span>تركيب شريحة جديدة</span>
@@ -115,12 +261,12 @@
             <div class="card-stat p-3">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-muted small fw-bold">سعة المنافذ الكلية</div>
-                        <div class="fs-4 fw-black text-main my-1 font-monospace">@totalPorts</div>
-                        <div class="text-muted fs-8">إجمالي منافذ الجهاز</div>
+                        <div class="text-muted small fw-bold">إجمالي قنوات البلوكات</div>
+                        <div class="fs-4 fw-black text-main my-1 font-monospace">@blocks.Count <small class="text-muted fs-8">بلوك</small></div>
+                        <div class="text-muted fs-8">@slotsPerBlock شرائح لكل قناة اتصال</div>
                     </div>
                     <div class="icon-box bg-primary bg-opacity-10 text-primary">
-                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                        <i class="bi bi-layers-fill"></i>
                     </div>
                 </div>
             </div>
@@ -130,9 +276,9 @@
             <div class="card-stat p-3">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-muted small fw-bold">الشرائح النشطة</div>
-                        <div class="fs-4 fw-black text-success my-1 font-monospace">@activePorts <span class="fs-7 text-muted fw-normal">جاهزة</span></div>
-                        <div class="text-muted fs-8">خطوط مركبة بالبوابات</div>
+                        <div class="text-muted small fw-bold">المنافذ العاملة بالبوابات</div>
+                        <div class="fs-4 fw-black text-success my-1 font-monospace">@activePorts <span class="fs-8 text-muted">/ @totalPorts</span></div>
+                        <div class="text-muted fs-8">بورت واحد نشط لكل بلوك</div>
                     </div>
                     <div class="icon-box bg-success bg-opacity-10 text-success">
                         <i class="bi bi-sim-fill"></i>
@@ -147,7 +293,7 @@
                     <div>
                         <div class="text-muted small fw-bold">إجمالي أرصدة المحافظ</div>
                         <div class="fs-4 fw-black text-primary font-monospace my-1">@totalSimBalance.ToString("N0") <span class="fs-8 text-muted">ج.م</span></div>
-                        <div class="text-muted fs-8">رصيد كاش متاح بالخطوط</div>
+                        <div class="text-muted fs-8">رصيد كاش متاح بالجهاز</div>
                     </div>
                     <div class="icon-box bg-info bg-opacity-10 text-info">
                         <i class="bi bi-wallet2"></i>
@@ -162,7 +308,7 @@
                     <div>
                         <div class="text-muted small fw-bold">المنافذ الشاغرة</div>
                         <div class="fs-4 fw-black text-warning font-monospace my-1">@emptyPorts</div>
-                        <div class="text-muted fs-8">بورت متاح لتركيب خطوط</div>
+                        <div class="text-muted fs-8">فتحات متاحة لتركيب شرائح</div>
                     </div>
                     <div class="icon-box bg-warning bg-opacity-10 text-warning">
                         <i class="bi bi-inbox"></i>
@@ -172,328 +318,835 @@
         </div>
     </div>
 
-    <!-- Interactive Visual Port Grid (128 / 512 Ports) -->
-    <div class="portal-card p-4 shadow-sm mb-4">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+    <!-- GoIP Multi-SIM Channel Bank & Group Controller (لوحة تحكم وتفعيل المجموعات - Collapsible) -->
+    <div class="portal-card p-3 p-lg-4 shadow-sm mb-4">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
             <div>
                 <h5 class="fw-black mb-1 text-main d-flex align-items-center gap-2">
-                    <i class="bi bi-grid-3x3-gap-fill text-primary"></i>
-                    <span>مصفوفة وخريطة البورتات اللحظية (GoIP Port Matrix)</span>
-                </h5>
-                <span class="text-muted small">اضغط على أي منفذ لعرض كارت الشريحة أو القفز لبياناته في الجدول أدناه</span>
-            </div>
-            <div class="port-legend-box bg-light px-3 py-2 rounded-3 border">
-                <span class="legend-item"><span class="legend-chip active"></span> نشطة (@activePorts)</span>
-                <span class="legend-item"><span class="legend-chip busy"></span> جاري التنفيذ (<span id="busy-count" class="text-warning fw-bold">@busyPorts</span>)</span>
-                <span class="legend-item"><span class="legend-chip empty"></span> شاغر (@emptyPorts)</span>
-            </div>
-        </div>
-
-        <div class="port-grid">
-            @foreach (var port in Model.Ports.OrderBy(p => p.PortNumber))
-            {
-                var cellClass = "empty";
-                if (port.IsBusy) cellClass = "busy";
-                else if (port.SimCard != null && port.SimCard.IsActive && !port.SimCard.IsDelete) cellClass = "active";
-
-                <div class="port-cell @cellClass"
-                     id="port-cell-@port.Id"
-                     data-port-id="@port.Id"
-                     data-port-label="@port.PortLabel"
-                     data-port-num="@port.PortNumber"
-                     data-has-sim="@(port.SimCard != null ? "true" : "false")"
-                     data-sim-id="@(port.SimCard?.Id ?? 0)"
-                     data-sim-phone="@(port.SimCard?.PhoneNumber ?? "لا توجد شريحة")"
-                     data-sim-balance="@(port.SimCard?.CurrentBalance.ToString("N2") ?? "0.00")"
-                     data-operator="@(port.SimCard?.Operator.ToString() ?? "-")"
-                     onclick="handlePortClick(this)"
-                     title="بورت @port.PortLabel: @(port.SimCard?.PhoneNumber ?? "منفذ فارغ")">
-                    <span>@port.PortNumber</span>
-                </div>
-            }
-        </div>
-    </div>
-
-    <!-- Toolbar: Search & Network Filter Pills -->
-    <div class="portal-card p-3 mb-4 shadow-sm">
-        <div class="row g-3 align-items-center">
-            <div class="col-12 col-md-5">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0 text-muted">
-                        <i class="bi bi-search"></i>
+                    <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-cpu-fill fs-5"></i>
                     </span>
-                    <input type="text" id="portSearchInput" class="form-control border-start-0" 
-                           placeholder="ابحث برقم المنفذ (مثل 1 أو L001)، رقم الهاتف، أو الشبكة..." 
-                           onkeyup="filterPortsTable()" />
-                </div>
+                    <span>لوحة تحكم وتفعيل المجموعات (Bulk Group Activation)</span>
+                </h5>
+                <p class="text-muted small mb-0">
+                    الجهاز مقسم إلى <strong>@blocks.Count بلوك</strong>، كل بلوك يحتوي على <strong>@slotsPerBlock بورتات (@(is512 ? "A-H أو 01-08" : "A-D أو 01-04"))</strong>. 
+                    يعمل <span class="text-success fw-bold">بورت واحد فقط</span> داخل كل بلوك والباقي احتياطي (Standby).
+                </p>
             </div>
 
-            <div class="col-12 col-md-7 d-flex align-items-center justify-content-md-between flex-wrap gap-2">
-                <div class="d-flex flex-wrap gap-1.5">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-filter="ALL" onclick="setPortFilter(this, 'ALL')">
-                        الكل (@totalPorts)
+            <!-- Collapse Toggle Button & Notation Mode Selector -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Notation Mode Selector -->
+                <div class="btn-group btn-group-sm p-1 bg-light rounded-3 border" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary active fw-bold px-2.5 py-1" id="btnNotationDual" onclick="setPortNotationMode('dual')">
+                        1.01 (1A)
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="HAS_SIM" onclick="setPortFilter(this, 'HAS_SIM')">
-                        بها خط (@activePorts)
+                    <button type="button" class="btn btn-sm btn-outline-secondary fw-bold px-2.5 py-1" id="btnNotationLetter" onclick="setPortNotationMode('letter')">
+                        1A أحرف
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="EMPTY" onclick="setPortFilter(this, 'EMPTY')">
-                        شاغرة (@emptyPorts)
+                    <button type="button" class="btn btn-sm btn-outline-secondary fw-bold px-2.5 py-1" id="btnNotationDot" onclick="setPortNotationMode('dot')">
+                        1.01 أرقام
                     </button>
-                    @if (vfCount > 0)
-                    {
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="Vodafone" onclick="setPortFilter(this, 'Vodafone')">
-                            فودافون (@vfCount)
-                        </button>
-                    }
-                    @if (orCount > 0)
-                    {
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="Orange" onclick="setPortFilter(this, 'Orange')">
-                            أورانج (@orCount)
-                        </button>
-                    }
-                    @if (etCount > 0)
-                    {
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="Etisalat" onclick="setPortFilter(this, 'Etisalat')">
-                            اتصالات (@etCount)
-                        </button>
-                    }
-                    @if (weCount > 0)
-                    {
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="WE" onclick="setPortFilter(this, 'WE')">
-                            WE (@weCount)
-                        </button>
-                    }
                 </div>
-                <div class="text-muted small">
-                    عرض <strong class="text-primary font-monospace" id="visiblePortsCount">@totalPorts</strong> من أصل @totalPorts
-                </div>
+
+                <!-- Collapse / Expand Toggle Button -->
+                <button class="btn btn-sm btn-outline-secondary rounded-3 px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5" 
+                        type="button" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#groupsCollapseSection" 
+                        aria-expanded="true" 
+                        aria-controls="groupsCollapseSection"
+                        id="btnToggleGroupsCollapse" 
+                        onclick="toggleCollapseText(this)">
+                    <i class="bi bi-chevron-up"></i>
+                    <span>طي لوحة المجموعات</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Collapsible Content -->
+        <div class="collapse show mt-3 pt-3 border-top" id="groupsCollapseSection">
+            <div class="row g-3">
+                @foreach (var grp in groupDefs)
+                {
+                    int grpSlotIndex = grp.Number - 1;
+                    int grpActiveCount = Model.Ports.Count(p => ((p.PortNumber - 1) % slotsPerBlock) == grpSlotIndex && p.IsActive);
+                    bool isMajority = grpActiveCount >= (blocks.Count * 0.7);
+
+                    <div class="@(is512 ? "col-6 col-md-3 col-xl-3" : "col-6 col-lg-3")">
+                        <div class="group-action-card @(isMajority ? "active-group" : "")" onclick="triggerSwitchGroup('@grp.Letter')">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="p-2.5 rounded-3 @grp.BgClass bg-opacity-10 @grp.TextClass fw-black fs-4 font-monospace" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
+                                    @grp.Letter
+                                </div>
+                                <div>
+                                    <div class="fw-black text-main">مجموعة @grp.Letter (@grp.Code)</div>
+                                    <small class="text-muted font-monospace fs-9">1.@grp.Code, 2.@grp.Code...</small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fs-5 fw-black text-primary font-monospace" id="lblGroup@(grp.Letter)Count">@grpActiveCount</div>
+                                <span class="badge bg-light text-muted border fs-9">نشط بالجهاز</span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-@grp.Color w-100 mt-2 fw-bold rounded-3 py-1.5" onclick="triggerSwitchGroup('@grp.Letter')">
+                            <i class="bi bi-lightning-charge-fill me-1"></i> تفعيل مجموعة @grp.Letter بالكامل
+                        </button>
+                    </div>
+                }
             </div>
         </div>
     </div>
 
-    <!-- Ports Detailed Table Card -->
-    <div class="portal-card shadow-sm table-card-container mb-4">
-        <div class="table-responsive table-responsive-custom">
-            <table class="table table-custom align-middle mb-0" id="portsMasterTable">
-                <thead>
-                    <tr>
-                        <th style="min-width: 90px;" class="text-center">المنفذ</th>
-                        <th style="min-width: 120px;">التسمية</th>
-                        <th style="min-width: 140px;">حالة المنفذ</th>
-                        <th style="min-width: 170px;">الشريحة المركبة</th>
-                        <th style="min-width: 130px;">الشبكة</th>
-                        <th style="min-width: 140px;">الرصيد اللحظي</th>
-                        <th class="text-center" style="min-width: 140px;">الإجراءات السريعة</th>
-                    </tr>
-                </thead>
-                <tbody id="portsTableBody">
+    <!-- Main 2 Tabs Header -->
+    <ul class="nav nav-pills custom-main-tabs mb-4 p-1.5 rounded-4 shadow-sm" id="deviceDetailsTabs" role="tablist">
+        <li class="nav-item flex-fill" role="presentation">
+            <button class="nav-link active w-100 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2" 
+                    id="tab-channels-btn" 
+                    data-bs-toggle="pill" 
+                    data-bs-target="#tab-channels-pane" 
+                    type="button" 
+                    role="tab" 
+                    aria-controls="tab-channels-pane" 
+                    aria-selected="true">
+                <i class="bi bi-grid-3x2-gap-fill fs-5"></i>
+                <span class="fs-6">خريطة البلوكات وقنوات الاتصال</span>
+                <span class="badge bg-primary bg-opacity-20 text-primary ms-1 font-monospace">@blocks.Count بلوك</span>
+            </button>
+        </li>
+        <li class="nav-item flex-fill" role="presentation">
+            <button class="nav-link w-100 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2" 
+                    id="tab-table-btn" 
+                    data-bs-toggle="pill" 
+                    data-bs-target="#tab-table-pane" 
+                    type="button" 
+                    role="tab" 
+                    aria-controls="tab-table-pane" 
+                    aria-selected="false">
+                <i class="bi bi-table fs-5"></i>
+                <span class="fs-6">جدول إدارة وتخصيص المنافذ والشرائح</span>
+                <span class="badge bg-success bg-opacity-20 text-success ms-1 font-monospace">@totalPorts منفذ</span>
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tabs Content Container -->
+    <div class="tab-content" id="deviceDetailsTabsContent">
+        <!-- TAB 1: Visual Block Channels & Matrix -->
+        <div class="tab-pane fade show active" id="tab-channels-pane" role="tabpanel" aria-labelledby="tab-channels-btn" tabindex="0">
+            <!-- Toolbar for Tab 1: Block Search & Quick Jumper + Matrix Toggle -->
+            <div class="portal-card p-3 mb-4 shadow-sm">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 520px;">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0 text-muted">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" id="blockSearchInput" class="form-control border-start-0" 
+                                   placeholder="ابحث برقم البلوك (مثال: 5 أو 32) أو هاتف الشريحة..." 
+                                   onkeyup="filterBlockCardsByQuery(this.value)" />
+                        </div>
+                        <select id="jumpToBlockSelect" class="form-select font-monospace" style="max-width: 180px;" onchange="onBlockSelectChanged(this.value)">
+                            <option value="ALL">📦 كل البلوكات (@blocks.Count)</option>
+                            @foreach (var b in blocks)
+                            {
+                                <option value="@b.Key">بلوك #@b.Key</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- View Switcher (Block Cards vs Compact Matrix) -->
+                    <div class="btn-group btn-group-sm p-1 bg-light rounded-3 border" role="group">
+                        <button type="button" class="btn btn-sm btn-primary active fw-bold px-3 py-1.5" id="btnViewBlocks" onclick="switchMainView('blocks')">
+                            <i class="bi bi-grid-3x2-gap-fill me-1"></i> كروت البلوكات
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary fw-bold px-3 py-1.5" id="btnViewMatrix" onclick="switchMainView('matrix')">
+                            <i class="bi bi-grid-3x3-gap-fill me-1"></i> مصفوفة مدمجة
+                        </button>
+                    </div>
+                </div>
+                <div class="text-muted small mt-2 d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="bi bi-info-circle me-1"></i> انقر على أي منفذ داخل البلوك لتحويل قناة الاتصال إليه مباشرة، أو انقر على رمز المنفذ بالمصفوفة لعرض التفاصيل.
+                    </span>
+                    <span>معروض: <strong class="text-primary font-monospace" id="visibleBlocksCount">@blocks.Count</strong> من أصل @blocks.Count بلوك</span>
+                </div>
+            </div>
+
+            <!-- View 1: GoIP Block Channels Cards (عرض البلوكات وقنوات الاتصال) -->
+            <div id="containerBlockCardsView">
+                <div class="row g-3">
+                    @foreach (var block in blocks)
+                    {
+                        var blockNum = block.Key;
+                        var portList = block.OrderBy(p => p.PortNumber).ToList();
+                        var activePort = portList.FirstOrDefault(p => p.IsActive) ?? portList.First();
+
+                        <div class="col-12 col-md-6 @(is512 ? "col-xl-6" : "col-xl-4") block-unit-col" id="block-unit-@blockNum">
+                            <div class="block-card">
+                                <div class="block-header">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-primary bg-opacity-15 text-primary font-monospace fw-bold fs-7">
+                                            بلوك #@blockNum
+                                        </span>
+                                        <span class="text-muted fs-8 font-monospace">قناة GSM #@blockNum</span>
+                                    </div>
+                                    <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 fs-8 py-1 px-2 rounded-pill font-monospace" id="block-active-badge-@blockNum">
+                                        <i class="bi bi-check-circle-fill me-1"></i>النشط: @activePort.DisplayPortLabel
+                                    </span>
+                                </div>
+
+                                <div class="block-body">
+                                    <div class="row g-2">
+                                        @for (int s = 0; s < portList.Count; s++)
+                                        {
+                                            var port = portList[s];
+                                            var sim = port.SimCard;
+                                            var hasSim = (sim != null && !sim.IsDelete);
+                                            var isSlotActive = port.IsActive;
+
+                                            int slotNum = s + 1;
+                                            char slotLetter = (char)('A' + s);
+                                            string dotLabel = $"{blockNum}.{slotNum:D2}";
+                                            string letterLabel = $"{blockNum}{slotLetter}";
+                                            string dualLabel = $"{dotLabel} ({letterLabel})";
+
+                                            <div class="@(slotsPerBlock == 8 ? "col-6 col-sm-3" : "col-6")">
+                                                <div class="slot-cell @(isSlotActive ? "active-slot" : "standby-slot")" 
+                                                     id="slot-cell-@port.Id"
+                                                     data-port-id="@port.Id"
+                                                     data-block="@blockNum"
+                                                     data-slot="@slotNum"
+                                                     data-group="@slotLetter"
+                                                     data-is-active="@(isSlotActive ? "true" : "false")"
+                                                     onclick="triggerSwitchBlockSlot(@Model.Id, @port.Id, @blockNum, '@dualLabel')">
+                                                    
+                                                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                                                        <div class="d-flex align-items-center gap-1.5">
+                                                            <input type="radio" name="block_radio_@blockNum" class="form-check-input m-0 block-slot-radio" 
+                                                                   id="radio-port-@port.Id" 
+                                                                   value="@port.Id" 
+                                                                   @(isSlotActive ? "checked" : "") />
+                                                            
+                                                            <span class="font-monospace fw-bold text-main fs-8 port-notation-label" 
+                                                                  data-dual="@dualLabel" 
+                                                                  data-letter="@letterLabel" 
+                                                                  data-dot="@dotLabel">
+                                                                @dualLabel
+                                                            </span>
+                                                        </div>
+
+                                                        <span class="badge @(isSlotActive ? "bg-success text-white" : "bg-light text-muted border") fs-9 py-0.5 px-1.5 rounded" id="slot-status-badge-@port.Id">
+                                                            @(isSlotActive ? "نشط" : "احتياطي")
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="pt-1 border-top border-opacity-10">
+                                                        @if (hasSim)
+                                                        {
+                                                            <div class="d-flex align-items-center justify-content-between">
+                                                                <span class="font-monospace fw-bold text-main fs-8">@sim!.PhoneNumber</span>
+                                                                <span class="badge bg-light text-primary border fs-9">@sim.Operator</span>
+                                                            </div>
+                                                            <small class="text-success font-monospace fs-9 d-block mt-0.5">@sim.CurrentBalance.ToString("N2") ج.م</small>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted fs-9 fst-italic">
+                                                                <i class="bi bi-inbox me-1"></i>منفذ فارغ
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- View 2: Compact Port Matrix View (المصفوفة المدمجة) -->
+            <div id="containerMatrixView" class="d-none">
+                <div class="port-grid">
                     @foreach (var port in Model.Ports.OrderBy(p => p.PortNumber))
                     {
-                        var sim = port.SimCard;
-                        var hasSim = sim != null && !sim.IsDelete;
-                        var opKey = sim?.Operator.ToString() ?? "NONE";
-                        var filterStatus = hasSim ? (sim!.IsActive ? "HAS_SIM" : "INACTIVE") : "EMPTY";
-                        var searchKeywords = $"{port.PortNumber} {port.PortLabel} {sim?.PhoneNumber} {sim?.Operator}".ToLower();
+                        var cellClass = "empty";
+                        if (port.IsBusy) cellClass = "busy";
+                        else if (port.SimCard != null && port.SimCard.IsActive && !port.SimCard.IsDelete) cellClass = "active";
 
-                        <tr class="port-row" 
-                            id="port-row-@port.PortNumber"
-                            data-filter="@filterStatus"
-                            data-op="@opKey"
-                            data-search="@searchKeywords">
-                            <td class="text-center fw-bold">
-                                <span class="badge bg-light text-primary border font-monospace fs-7">#@port.PortNumber</span>
-                            </td>
-                            <td class="font-monospace fw-bold text-main">@port.PortLabel</td>
-                            <td>
-                                @if (hasSim && sim!.IsActive)
-                                {
-                                    <span class="pill-badge pill-badge-success">
-                                        <span class="dot-indicator"></span>شريحة نشطة
-                                    </span>
-                                }
-                                else if (hasSim)
-                                {
-                                    <span class="pill-badge pill-badge-danger">
-                                        <span class="dot-indicator"></span>معطلة
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="pill-badge pill-badge-neutral">
-                                        <span class="dot-indicator"></span>منفذ فارغ
-                                    </span>
-                                }
-                            </td>
-                            <td>
-                                @if (hasSim)
-                                {
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="bi bi-phone text-primary"></i>
-                                        <span class="fw-bold font-monospace text-main fs-6">@sim!.PhoneNumber</span>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="text-muted small">لا توجد شريحة</span>
-                                }
-                            </td>
-                            <td>
-                                @if (hasSim)
-                                {
-                                    switch (sim!.Operator)
-                                    {
-                                        case GoIPGateway.Domain.Enums.OperatorType.Vodafone:
-                                            <span class="pill-badge pill-badge-danger">
-                                                <span class="dot-indicator"></span>فودافون
-                                            </span>
-                                            break;
-                                        case GoIPGateway.Domain.Enums.OperatorType.Orange:
-                                            <span class="pill-badge pill-badge-warning">
-                                                <span class="dot-indicator"></span>أورانج
-                                            </span>
-                                            break;
-                                        case GoIPGateway.Domain.Enums.OperatorType.Etisalat:
-                                            <span class="pill-badge pill-badge-success">
-                                                <span class="dot-indicator"></span>اتصالات
-                                            </span>
-                                            break;
-                                        default:
-                                            <span class="pill-badge pill-badge-primary">
-                                                <span class="dot-indicator"></span>WE
-                                            </span>
-                                            break;
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="text-muted fs-8">-</span>
-                                }
-                            </td>
-                            <td>
-                                @if (hasSim)
-                                {
-                                    <span class="fw-bold text-success font-monospace fs-6">@sim!.CurrentBalance.ToString("N2") <small class="text-muted fs-8">ج.م</small></span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted fs-8">-</span>
-                                }
-                            </td>
-                            <td class="text-center">
-                                @if (hasSim)
-                                {
-                                    <div class="actions-btn-group justify-content-center">
-                                        <!-- Edit SIM -->
-                                        <a asp-area="Company" asp-controller="SimCards" asp-action="Edit" asp-route-id="@sim!.Id" class="btn-action-icon btn-action-view" title="تعديل بيانات الشريحة والباسورد">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </a>
+                        int bNum = ((port.PortNumber - 1) / slotsPerBlock) + 1;
+                        int sNum = ((port.PortNumber - 1) % slotsPerBlock) + 1;
+                        char sLet = (char)('A' + (sNum - 1));
+                        string dLabel = $"{bNum}.{sNum:D2}";
+                        string lLabel = $"{bNum}{sLet}";
+                        string fullLbl = $"{dLabel} ({lLabel})";
 
-                                        <!-- Execute Manual USSD -->
-                                        <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="btn-action-icon" style="color: #d97706;" title="تنفيذ عملية فورية على الخط">
-                                            <i class="bi bi-lightning-charge"></i>
-                                        </a>
-
-                                        <!-- Quick Info Modal -->
-                                        <button type="button" class="btn-action-icon" onclick="openPortDetailsByRow('@port.PortLabel', '@sim.PhoneNumber', '@sim.Operator', '@sim.CurrentBalance.ToString("N2")', @sim.Id)" title="عرض كارت الشريحة">
-                                            <i class="bi bi-info-circle"></i>
-                                        </button>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <a asp-area="Company" asp-controller="SimCards" asp-action="Create" asp-route-portId="@port.Id" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-1">
-                                        <i class="bi bi-plus-lg"></i>
-                                        <span>تركيب شريحة</span>
-                                    </a>
-                                }
-                            </td>
-                        </tr>
+                        <div class="port-cell @cellClass @(port.IsActive ? "border-success border-2" : "opacity-50")"
+                             id="matrix-port-cell-@port.Id"
+                             data-port-id="@port.Id"
+                             data-port-num="@port.PortNumber"
+                             data-has-sim="@(port.SimCard != null ? "true" : "false")"
+                             data-sim-id="@(port.SimCard?.Id ?? 0)"
+                             data-sim-phone="@(port.SimCard?.PhoneNumber ?? "لا توجد شريحة")"
+                             data-sim-balance="@(port.SimCard?.CurrentBalance.ToString("N2") ?? "0.00")"
+                             data-operator="@(port.SimCard?.Operator.ToString() ?? "-")"
+                             onclick="handlePortClick(this)"
+                             title="بورت @fullLbl: @(port.SimCard?.PhoneNumber ?? "منفذ فارغ") - @(port.IsActive ? "نشط" : "احتياطي")">
+                            <span class="port-notation-label" data-dual="@fullLbl" data-letter="@lLabel" data-dot="@dLabel">@lLabel</span>
+                        </div>
                     }
-                </tbody>
-            </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Master Ports Table with Multi-Filter Toolbar -->
+        <div class="tab-pane fade" id="tab-table-pane" role="tabpanel" aria-labelledby="tab-table-btn" tabindex="0">
+            <!-- Advanced Multi-Filter Toolbar -->
+            <div class="portal-card p-3 p-lg-4 mb-4 shadow-sm">
+                <!-- Row 1: Search, Dropdowns, Reset -->
+                <div class="row g-2.5 align-items-center mb-3">
+                    <!-- Text Search -->
+                    <div class="col-12 col-md-4 col-xl-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0 text-muted">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" id="portSearchInput" class="form-control border-start-0" 
+                                   placeholder="ابحث بالبورت (1A, 1.01)، الهاتف..." 
+                                   onkeyup="onTableFilterChanged()" />
+                        </div>
+                    </div>
+
+                    <!-- Filter by Block -->
+                    <div class="col-6 col-md-3 col-xl-2">
+                        <select id="filterBlockSelect" class="form-select font-monospace" onchange="onTableFilterChanged()">
+                            <option value="ALL">📦 كل البلوكات</option>
+                            @foreach (var b in blocks)
+                            {
+                                <option value="@b.Key">بلوك #@b.Key</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Filter by Group -->
+                    <div class="col-6 col-md-3 col-xl-2">
+                        <select id="filterGroupSelect" class="form-select font-monospace" onchange="onTableFilterChanged()">
+                            <option value="ALL">🔤 كل المجموعات</option>
+                            @foreach (var grp in groupDefs)
+                            {
+                                <option value="@grp.Letter">مجموعة @grp.Letter (@grp.Code)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Filter by Operator -->
+                    <div class="col-6 col-md-3 col-xl-2">
+                        <select id="filterOperatorSelect" class="form-select font-monospace" onchange="onTableFilterChanged()">
+                            <option value="ALL">🌐 كل الشبكات</option>
+                            <option value="Vodafone">Vodafone (@vfCount)</option>
+                            <option value="Orange">Orange (@orCount)</option>
+                            <option value="Etisalat">Etisalat (@etCount)</option>
+                            <option value="WE">WE (@weCount)</option>
+                        </select>
+                    </div>
+
+                    <!-- Reset Button -->
+                    <div class="col-6 col-md-3 col-xl-3 text-md-end">
+                        <button type="button" class="btn btn-outline-secondary w-100 w-md-auto px-3 rounded-3 fw-bold d-inline-flex align-items-center justify-content-center gap-1.5" onclick="resetAllTableFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                            <span>إعادة تعيين الفلاتر</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 2: Status Pills & Counter -->
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 pt-2 border-top">
+                    <div class="d-flex flex-wrap gap-1.5">
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-filter="ALL" onclick="setPortFilter(this, 'ALL')">
+                            الكل (@totalPorts)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="ACTIVE_IN_BLOCK" onclick="setPortFilter(this, 'ACTIVE_IN_BLOCK')">
+                            <i class="bi bi-broadcast me-1"></i>النشطة بالقناة (@blocks.Count)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="STANDBY" onclick="setPortFilter(this, 'STANDBY')">
+                            احتياطية Standby
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="HAS_SIM" onclick="setPortFilter(this, 'HAS_SIM')">
+                            <i class="bi bi-sim-fill me-1"></i>بها خط (@activePorts)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="EMPTY" onclick="setPortFilter(this, 'EMPTY')">
+                            شاغرة (@emptyPorts)
+                        </button>
+                    </div>
+                    <div class="text-muted small">
+                        عرض <strong class="text-primary font-monospace fs-7" id="visiblePortsCount">@totalPorts</strong> من إجمالي @totalPorts بورت
+                    </div>
+                </div>
+            </div>
+
+            <!-- Master Ports Table Card -->
+            <div class="portal-card shadow-sm table-card-container mb-4">
+                <div class="table-responsive table-responsive-custom">
+                    <table class="table table-custom align-middle mb-0" id="portsMasterTable">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 90px;" class="text-center">البلوك والقناة</th>
+                                <th style="min-width: 140px;">رمز وتسمية المنفذ</th>
+                                <th style="min-width: 100px;">المجموعة</th>
+                                <th style="min-width: 130px;">حالة القناة</th>
+                                <th style="min-width: 170px;">الشريحة المركبة</th>
+                                <th style="min-width: 120px;">الشبكة</th>
+                                <th style="min-width: 130px;">الرصيد اللحظي</th>
+                                <th class="text-center" style="min-width: 150px;">الإجراء والتبديل</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portsTableBody">
+                            @foreach (var port in Model.Ports.OrderBy(p => p.PortNumber))
+                            {
+                                var sim = port.SimCard;
+                                var hasSim = sim != null && !sim.IsDelete;
+                                var opKey = sim?.Operator.ToString() ?? "NONE";
+                                var isPortActiveInBlock = port.IsActive;
+
+                                int bNumber = ((port.PortNumber - 1) / slotsPerBlock) + 1;
+                                int sNumber = ((port.PortNumber - 1) % slotsPerBlock) + 1;
+                                char sLetter = (char)('A' + (sNumber - 1));
+                                string dotL = $"{bNumber}.{sNumber:D2}";
+                                string letterL = $"{bNumber}{sLetter}";
+                                string dualL = $"{dotL} ({letterL})";
+
+                                var filterStatus = isPortActiveInBlock ? "ACTIVE_IN_BLOCK" : "STANDBY";
+                                if (!hasSim) filterStatus += " EMPTY";
+                                else filterStatus += " HAS_SIM";
+
+                                var searchKeywords = $"{port.PortNumber} {dotL} {letterL} {dualL} {sim?.PhoneNumber} {sim?.Operator} بلوك {bNumber}".ToLower();
+
+                                string groupBadgeClass = sLetter switch {
+                                    'A' => "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25",
+                                    'B' => "bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25",
+                                    'C' => "bg-success bg-opacity-10 text-success border border-success border-opacity-25",
+                                    'D' => "bg-info bg-opacity-10 text-info border border-info border-opacity-25",
+                                    'E' => "bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25",
+                                    'F' => "bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25",
+                                    'G' => "bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25",
+                                    'H' => "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25",
+                                    _ => "bg-light text-main border"
+                                };
+
+                                <tr class="port-row" 
+                                    id="port-row-@port.PortNumber"
+                                    data-filter="@filterStatus"
+                                    data-op="@opKey"
+                                    data-group="@sLetter"
+                                    data-block="@bNumber"
+                                    data-port-id="@port.Id"
+                                    data-slot-label="@dualL"
+                                    data-search="@searchKeywords">
+                                    <td class="text-center">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary font-monospace fw-bold fs-8">
+                                            بلوك #@bNumber
+                                        </span>
+                                    </td>
+                                    <td class="font-monospace fw-bold text-main fs-7">
+                                        <span class="port-notation-label" data-dual="@dualL" data-letter="@letterL" data-dot="@dotL">@dualL</span>
+                                        <small class="text-muted fs-9 d-block font-monospace">بورت فيزيائي #@port.PortNumber</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge @groupBadgeClass font-monospace fw-bold fs-8">
+                                            مجموعة @sLetter (@sNumber.ToString("D2"))
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (isPortActiveInBlock)
+                                        {
+                                            <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 fs-8 py-1 px-2.5 rounded-pill fw-bold" id="table-status-@port.Id">
+                                                <i class="bi bi-broadcast me-1"></i>نشط بالقناة
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-muted border fs-8 py-1 px-2.5 rounded-pill" id="table-status-@port.Id">
+                                                احتياطي Standby
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (hasSim)
+                                        {
+                                            <div class="fw-bold font-monospace text-main fs-7">@sim!.PhoneNumber</div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fs-8 font-monospace">فارغ</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (hasSim)
+                                        {
+                                            <span class="badge bg-light text-primary border font-monospace fs-8">@sim!.Operator</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fs-8">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (hasSim)
+                                        {
+                                            <span class="fw-bold text-success font-monospace fs-7">@sim!.CurrentBalance.ToString("N2") ج.م</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fs-8">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-center action-cell-container" id="action-cell-@port.Id">
+                                        @if (isPortActiveInBlock)
+                                        {
+                                            <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-30 rounded-pill px-3 py-1.5 fw-bold fs-8 d-inline-flex align-items-center gap-1.5" id="active-indicator-@port.Id">
+                                                <i class="bi bi-check-circle-fill"></i> القناة متصلة بهذا البورت
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold fs-8 d-inline-flex align-items-center gap-1.5" 
+                                                    id="btn-table-activate-@port.Id"
+                                                    onclick="triggerSwitchBlockSlot(@Model.Id, @port.Id, @bNumber, '@dualL')">
+                                                <i class="bi bi-arrow-repeat"></i> تحويل القناة لهذا البورت
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Port Quick Actions Modal -->
+<!-- Modal for Port/SIM Quick Info -->
 <div class="modal fade" id="portModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content shadow-lg border-0 rounded-4 p-2">
-            <div class="modal-header border-bottom py-3">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
-                        <i class="bi bi-grid-fill fs-5"></i>
-                    </div>
-                    <h5 class="modal-title fw-bold" id="modalPortTitle">تفاصيل البورت</h5>
-                </div>
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-black" id="modalPortTitle">تفاصيل البورت</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body py-4">
+            <div class="modal-body p-4 text-center">
                 <div id="modalSimInfo">
-                    <div class="mb-3">
-                        <label class="text-muted small fw-bold">رقم الشريحة (Phone Number)</label>
-                        <h4 id="modalSimPhone" class="fw-black text-primary font-monospace mt-1"></h4>
+                    <div class="p-3 bg-light rounded-4 mb-3">
+                        <div class="text-muted small">رقم الشريحة المركبة</div>
+                        <div class="fs-4 fw-black font-monospace text-main my-1" id="modalSimPhone">010xxxxxxxx</div>
+                        <span class="badge bg-primary bg-opacity-15 text-primary font-monospace" id="modalSimOperator">Vodafone</span>
                     </div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-6">
-                            <label class="text-muted small fw-bold">شركة المحمول</label>
-                            <div id="modalSimOperator" class="fw-bold mt-1"></div>
-                        </div>
-                        <div class="col-6">
-                            <label class="text-muted small fw-bold">الرصيد اللحظي</label>
-                            <h4 id="modalSimBalance" class="fw-black text-success font-monospace mt-1"></h4>
-                        </div>
+                    <div class="p-3 bg-light rounded-4 mb-3">
+                        <div class="text-muted small">الرصيد المتاح</div>
+                        <div class="fs-4 fw-black font-monospace text-success my-1" id="modalSimBalance">0.00 ج.م</div>
                     </div>
                 </div>
-                <div id="modalEmptyInfo" class="text-center py-4 d-none">
-                    <i class="bi bi-sim text-muted opacity-50 fs-1 d-block mb-2"></i>
-                    <h6 class="fw-bold text-main">هذا المنفذ فارغ حالياً</h6>
-                    <p class="text-muted small mb-0">يمكنك تركيب شريحة SIM جديدة في هذا البورت فوراً.</p>
+                <div id="modalEmptyInfo" class="d-none">
+                    <i class="bi bi-inbox fs-1 text-muted mb-2 d-block opacity-50"></i>
+                    <h5 class="fw-bold">هذا المنفذ شاغر</h5>
+                    <p class="text-muted small">لا توجد شريحة SIM مركبة في هذا البورت حالياً.</p>
                 </div>
             </div>
-            <div class="modal-footer border-top py-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm px-3 rounded-3" data-bs-dismiss="modal">إغلاق</button>
-                <a href="#" id="modalEditSimBtn" class="btn btn-primary btn-sm px-3 fw-bold rounded-3">
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary rounded-3 px-3 py-2 fw-semibold" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-outline-primary rounded-3 px-3 py-2 fw-bold" id="modalGoToTableBtn" onclick="navigateToTableRow(currentModalPortNum)">
+                    <i class="bi bi-table me-1"></i> عرض في جدول المنافذ
+                </button>
+                <a href="#" id="modalEditSimBtn" class="btn btn-warning rounded-3 px-3 py-2 fw-bold text-dark">
                     <i class="bi bi-pencil-square me-1"></i> تعديل الشريحة
                 </a>
-                <a href="#" id="modalAddSimBtn" class="btn btn-success btn-sm px-3 fw-bold rounded-3 d-none">
-                    <i class="bi bi-plus-circle-fill me-1"></i> تركيب شريحة الآن
+                <a href="#" id="modalAddSimBtn" class="btn btn-primary rounded-3 px-3 py-2 fw-bold d-none">
+                    <i class="bi bi-plus-circle-fill me-1"></i> تركيب شريحة بالمنفذ
                 </a>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Floating Auto-Save Toast Feedback -->
+<div class="save-toast-indicator" id="saveToast">
+    <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+    <span id="saveToastText">تم الحفظ بنجاح</span>
 </div>
 
 @section Scripts {
     <script>
+        const deviceId = @Model.Id;
         let currentFilter = 'ALL';
+        let currentNotation = 'dual'; // 'dual', 'letter', 'dot'
+        let currentModalPortNum = null;
 
+        // Toggle Collapse Text for Group Controller
+        function toggleCollapseText(btn) {
+            const icon = btn.querySelector('i');
+            const label = btn.querySelector('span');
+            const collapseEl = document.getElementById('groupsCollapseSection');
+            const isShown = collapseEl && collapseEl.classList.contains('show');
+            if (isShown) {
+                if (icon) icon.className = 'bi bi-chevron-down';
+                if (label) label.innerText = 'إظهار لوحة المجموعات';
+            } else {
+                if (icon) icon.className = 'bi bi-chevron-up';
+                if (label) label.innerText = 'طي لوحة المجموعات';
+            }
+        }
+
+        // Switch Notation Mode: 1.01 (1A) vs 1A vs 1.01
+        function setPortNotationMode(mode) {
+            currentNotation = mode;
+
+            document.querySelectorAll('#btnNotationDual, #btnNotationLetter, #btnNotationDot').forEach(b => b.classList.remove('active'));
+            if (mode === 'dual') document.getElementById('btnNotationDual').classList.add('active');
+            else if (mode === 'letter') document.getElementById('btnNotationLetter').classList.add('active');
+            else if (mode === 'dot') document.getElementById('btnNotationDot').classList.add('active');
+
+            const labels = document.querySelectorAll('.port-notation-label');
+            labels.forEach(lbl => {
+                if (mode === 'dual') {
+                    lbl.innerText = lbl.getAttribute('data-dual') || lbl.innerText;
+                } else if (mode === 'letter') {
+                    lbl.innerText = lbl.getAttribute('data-letter') || lbl.innerText;
+                } else if (mode === 'dot') {
+                    lbl.innerText = lbl.getAttribute('data-dot') || lbl.innerText;
+                }
+            });
+        }
+
+        // Switch Main View in Tab 1 (Block Cards View vs Compact Matrix)
+        function switchMainView(view) {
+            const btnBlocks = document.getElementById('btnViewBlocks');
+            const btnMatrix = document.getElementById('btnViewMatrix');
+            const containerBlocks = document.getElementById('containerBlockCardsView');
+            const containerMatrix = document.getElementById('containerMatrixView');
+
+            if (view === 'blocks') {
+                btnBlocks.className = 'btn btn-sm btn-primary active fw-bold px-3 py-1.5';
+                btnMatrix.className = 'btn btn-sm btn-outline-secondary fw-bold px-3 py-1.5';
+                containerBlocks.classList.remove('d-none');
+                containerMatrix.classList.add('d-none');
+            } else {
+                btnMatrix.className = 'btn btn-sm btn-primary active fw-bold px-3 py-1.5';
+                btnBlocks.className = 'btn btn-sm btn-outline-secondary fw-bold px-3 py-1.5';
+                containerMatrix.classList.remove('d-none');
+                containerBlocks.classList.add('d-none');
+            }
+        }
+
+        // Tab 1: Block Search & Filtering
+        function filterBlockCardsByQuery(val) {
+            val = (val || '').trim().toLowerCase();
+            const blockUnits = document.querySelectorAll('.block-unit-col');
+            let visible = 0;
+            blockUnits.forEach(col => {
+                const text = col.innerText.toLowerCase();
+                const blockId = col.id.replace('block-unit-', '');
+                const match = !val || blockId === val || text.includes(val);
+                if (match) {
+                    col.style.display = '';
+                    visible++;
+                } else {
+                    col.style.display = 'none';
+                }
+            });
+            const countEl = document.getElementById('visibleBlocksCount');
+            if (countEl) countEl.innerText = visible;
+        }
+
+        function onBlockSelectChanged(val) {
+            const searchInput = document.getElementById('blockSearchInput');
+            if (val === 'ALL') {
+                if (searchInput) searchInput.value = '';
+                filterBlockCardsByQuery('');
+            } else {
+                if (searchInput) searchInput.value = '';
+                const blockUnits = document.querySelectorAll('.block-unit-col');
+                let visible = 0;
+                blockUnits.forEach(col => {
+                    const blockId = col.id.replace('block-unit-', '');
+                    if (blockId === val) {
+                        col.style.display = '';
+                        visible++;
+                        col.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        col.style.display = 'none';
+                    }
+                });
+                const countEl = document.getElementById('visibleBlocksCount');
+                if (countEl) countEl.innerText = visible;
+            }
+        }
+
+        // Global Group Activation via AJAX (A, B, C, D...)
+        async function triggerSwitchGroup(groupLetter) {
+            showInlineToast(`جاري تفعيل مجموعة ${groupLetter} في كافة بلوكات الجهاز...`);
+
+            try {
+                const res = await fetch('/Company/Devices/SwitchActiveGroupAjax', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        deviceId: deviceId,
+                        group: groupLetter
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    showInlineToast(data.message, true);
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    showInlineToast(data.message || 'فشل تبديل المجموعة', false);
+                }
+            } catch (err) {
+                console.error(err);
+                showInlineToast('تعذر الاتصال بالخادم', false);
+            }
+        }
+
+        // Single Block Slot Switch via AJAX
+        async function triggerSwitchBlockSlot(devId, portId, blockNum, slotLabel) {
+            try {
+                const res = await fetch('/Company/Devices/SwitchBlockSlotAjax', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        deviceId: devId,
+                        portId: portId
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    showInlineToast(`تم بنجاح تفعيل البورت ${slotLabel} في البلوك #${blockNum}`, true);
+
+                    // Update UI optimistically in Block Card
+                    const blockUnit = document.getElementById('block-unit-' + blockNum);
+                    if (blockUnit) {
+                        blockUnit.querySelectorAll('.slot-cell').forEach(cell => {
+                            cell.className = 'slot-cell standby-slot';
+                            const badge = cell.querySelector('[id^="slot-status-badge-"]');
+                            if (badge) {
+                                badge.className = 'badge bg-light text-muted border fs-9 py-0.5 px-1.5 rounded';
+                                badge.innerText = 'احتياطي';
+                            }
+                        });
+
+                        const activeCell = document.getElementById('slot-cell-' + portId);
+                        if (activeCell) {
+                            activeCell.className = 'slot-cell active-slot';
+                            const radio = activeCell.querySelector('.block-slot-radio');
+                            if (radio) radio.checked = true;
+
+                            const badge = activeCell.querySelector('[id^="slot-status-badge-"]');
+                            if (badge) {
+                                badge.className = 'badge bg-success text-white fs-9 py-0.5 px-1.5 rounded';
+                                badge.innerText = 'نشط';
+                            }
+                        }
+
+                        const blockActiveBadge = document.getElementById('block-active-badge-' + blockNum);
+                        if (blockActiveBadge) {
+                            blockActiveBadge.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>النشط: ${slotLabel}`;
+                        }
+                    }
+
+                    // Update table row buttons and badges for all ports in this block
+                    document.querySelectorAll(`.port-row[data-block="${blockNum}"]`).forEach(row => {
+                        const rowPortId = row.getAttribute('data-port-id');
+                        const statusBadge = document.getElementById('table-status-' + rowPortId);
+                        const actionCell = document.getElementById('action-cell-' + rowPortId);
+                        const rowLabel = row.getAttribute('data-slot-label') || '';
+
+                        if (rowPortId == portId) {
+                            if (statusBadge) {
+                                statusBadge.className = 'badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 fs-8 py-1 px-2.5 rounded-pill fw-bold';
+                                statusBadge.innerHTML = '<i class="bi bi-broadcast me-1"></i>نشط بالقناة';
+                            }
+                            if (actionCell) {
+                                actionCell.innerHTML = `
+                                    <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-30 rounded-pill px-3 py-1.5 fw-bold fs-8 d-inline-flex align-items-center gap-1.5">
+                                        <i class="bi bi-check-circle-fill"></i> القناة متصلة بهذا البورت
+                                    </span>`;
+                            }
+                            row.setAttribute('data-filter', row.getAttribute('data-filter').replace('STANDBY', 'ACTIVE_IN_BLOCK'));
+                        } else {
+                            if (statusBadge) {
+                                statusBadge.className = 'badge bg-light text-muted border fs-8 py-1 px-2.5 rounded-pill';
+                                statusBadge.innerText = 'احتياطي Standby';
+                            }
+                            if (actionCell) {
+                                actionCell.innerHTML = `
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold fs-8 d-inline-flex align-items-center gap-1.5" 
+                                            id="btn-table-activate-${rowPortId}"
+                                            onclick="triggerSwitchBlockSlot(${devId}, ${rowPortId}, ${blockNum}, '${rowLabel}')">
+                                        <i class="bi bi-arrow-repeat"></i> تحويل القناة لهذا البورت
+                                    </button>`;
+                            }
+                            row.setAttribute('data-filter', row.getAttribute('data-filter').replace('ACTIVE_IN_BLOCK', 'STANDBY'));
+                        }
+                    });
+                } else {
+                    showInlineToast(data.message || 'فشل تبديل المنفذ', false);
+                }
+            } catch (err) {
+                console.error(err);
+                showInlineToast('تعذر الاتصال بالخادم', false);
+            }
+        }
+
+        // Tab 2: Advanced Multi-Filter Engine
         function setPortFilter(btn, filter) {
             document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentFilter = filter;
-            filterPortsTable();
+            onTableFilterChanged();
         }
 
-        function filterPortsTable() {
+        function onTableFilterChanged() {
             const query = (document.getElementById('portSearchInput')?.value || '').trim().toLowerCase();
+            const selectedBlock = document.getElementById('filterBlockSelect')?.value || 'ALL';
+            const selectedGroup = document.getElementById('filterGroupSelect')?.value || 'ALL';
+            const selectedOperator = document.getElementById('filterOperatorSelect')?.value || 'ALL';
+
             const rows = document.querySelectorAll('.port-row');
             let visible = 0;
 
             rows.forEach(row => {
-                const rowFilter = row.getAttribute('data-filter');
-                const rowOp = row.getAttribute('data-op');
+                const rowFilter = row.getAttribute('data-filter') || '';
+                const rowOp = row.getAttribute('data-op') || '';
+                const rowGroup = row.getAttribute('data-group') || '';
+                const rowBlock = row.getAttribute('data-block') || '';
                 const rowSearch = row.getAttribute('data-search') || '';
 
-                let matchesFilter = false;
-                if (currentFilter === 'ALL') matchesFilter = true;
-                else if (currentFilter === 'HAS_SIM') matchesFilter = (rowFilter === 'HAS_SIM' || rowFilter === 'INACTIVE');
-                else if (currentFilter === 'EMPTY') matchesFilter = (rowFilter === 'EMPTY');
-                else matchesFilter = (rowOp === currentFilter);
+                // Status pill check
+                let matchesStatus = false;
+                if (currentFilter === 'ALL') matchesStatus = true;
+                else if (currentFilter === 'ACTIVE_IN_BLOCK') matchesStatus = rowFilter.includes('ACTIVE_IN_BLOCK');
+                else if (currentFilter === 'STANDBY') matchesStatus = rowFilter.includes('STANDBY');
+                else if (currentFilter === 'HAS_SIM') matchesStatus = rowFilter.includes('HAS_SIM');
+                else if (currentFilter === 'EMPTY') matchesStatus = rowFilter.includes('EMPTY');
 
+                // Block dropdown check
+                const matchesBlock = (selectedBlock === 'ALL' || rowBlock === selectedBlock);
+
+                // Group dropdown check
+                const matchesGroup = (selectedGroup === 'ALL' || rowGroup === selectedGroup);
+
+                // Operator dropdown check
+                const matchesOperator = (selectedOperator === 'ALL' || rowOp.toLowerCase() === selectedOperator.toLowerCase());
+
+                // Text query check
                 const matchesQuery = !query || rowSearch.includes(query);
 
-                if (matchesFilter && matchesQuery) {
+                if (matchesStatus && matchesBlock && matchesGroup && matchesOperator && matchesQuery) {
                     row.style.display = '';
                     visible++;
                 } else {
@@ -505,34 +1158,31 @@
             if (countEl) countEl.innerText = visible;
         }
 
+        function resetAllTableFilters() {
+            const searchInput = document.getElementById('portSearchInput');
+            if (searchInput) searchInput.value = '';
+            const blockSelect = document.getElementById('filterBlockSelect');
+            if (blockSelect) blockSelect.value = 'ALL';
+            const groupSelect = document.getElementById('filterGroupSelect');
+            if (groupSelect) groupSelect.value = 'ALL';
+            const opSelect = document.getElementById('filterOperatorSelect');
+            if (opSelect) opSelect.value = 'ALL';
+
+            document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+            const defaultPill = document.querySelector('.filter-pill[data-filter="ALL"]');
+            if (defaultPill) defaultPill.classList.add('active');
+            currentFilter = 'ALL';
+
+            onTableFilterChanged();
+        }
+
         function handlePortClick(cell) {
-            const portNum = cell.getAttribute('data-port-num');
-            const targetRow = document.getElementById('port-row-' + portNum);
-            if (targetRow) {
-                targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                targetRow.classList.add('row-highlighted');
-                setTimeout(() => targetRow.classList.remove('row-highlighted'), 2000);
-            }
             openPortModal(cell);
         }
 
-        function openPortDetailsByRow(portLabel, phone, op, balance, simId) {
-            document.getElementById('modalPortTitle').innerText = 'تفاصيل بورت: ' + portLabel;
-            document.getElementById('modalSimInfo').classList.remove('d-none');
-            document.getElementById('modalEmptyInfo').classList.add('d-none');
-            document.getElementById('modalEditSimBtn').classList.remove('d-none');
-            document.getElementById('modalAddSimBtn').classList.add('d-none');
-
-            document.getElementById('modalSimPhone').innerText = phone;
-            document.getElementById('modalSimOperator').innerText = op;
-            document.getElementById('modalSimBalance').innerText = balance + ' ج.م';
-            document.getElementById('modalEditSimBtn').href = '/Company/SimCards/Edit/' + simId;
-
-            new bootstrap.Modal(document.getElementById('portModal')).show();
-        }
-
         function openPortModal(cell) {
-            const portLabel = cell.getAttribute('data-port-label');
+            const portNum = cell.getAttribute('data-port-num');
+            currentModalPortNum = portNum;
             const portId = cell.getAttribute('data-port-id');
             const hasSim = cell.getAttribute('data-has-sim') === 'true';
             const simId = cell.getAttribute('data-sim-id');
@@ -540,7 +1190,7 @@
             const simOperator = cell.getAttribute('data-operator');
             const simBalance = cell.getAttribute('data-sim-balance');
 
-            document.getElementById('modalPortTitle').innerText = 'تفاصيل بورت: ' + portLabel;
+            document.getElementById('modalPortTitle').innerText = 'تفاصيل بورت رقم #' + portNum;
 
             const simInfoEl = document.getElementById('modalSimInfo');
             const emptyInfoEl = document.getElementById('modalEmptyInfo');
@@ -568,19 +1218,66 @@
             new bootstrap.Modal(document.getElementById('portModal')).show();
         }
 
-        // Live SignalR Realtime Updates for Ports
-        window.addEventListener("goip:portStatusChanged", function (e) {
-            const port = e.detail;
-            const cell = document.getElementById("port-cell-" + port.id);
-            if (cell) {
-                cell.className = "port-cell";
-                if (port.isBusy) {
-                    cell.classList.add("busy");
-                } else if (port.status === 1) {
-                    cell.classList.add("active");
-                } else {
-                    cell.classList.add("empty");
+        function navigateToTableRow(portNum) {
+            if (!portNum) return;
+
+            // Switch to Tab 2
+            const tableTabBtn = document.getElementById('tab-table-btn');
+            if (tableTabBtn) {
+                bootstrap.Tab.getOrCreateInstance(tableTabBtn).show();
+            }
+
+            // Hide Modal
+            const modalEl = document.getElementById('portModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) modalInstance.hide();
+
+            // Reset table filters so the row is visible
+            resetAllTableFilters();
+
+            setTimeout(() => {
+                const targetRow = document.getElementById('port-row-' + portNum);
+                if (targetRow) {
+                    targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetRow.classList.add('row-highlighted');
+                    setTimeout(() => targetRow.classList.remove('row-highlighted'), 2200);
                 }
+            }, 250);
+        }
+
+        // Floating Toast Notification
+        let toastTimeout = null;
+        function showInlineToast(text, isSuccess = true) {
+            const toast = document.getElementById('saveToast');
+            const textEl = document.getElementById('saveToastText');
+            if (!toast || !textEl) return;
+
+            textEl.innerText = text;
+            toast.className = 'save-toast-indicator show ' + (isSuccess ? '' : 'border-danger text-danger');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
+        }
+
+        // Sync Collapse Event
+        document.addEventListener('DOMContentLoaded', function() {
+            const collapseEl = document.getElementById('groupsCollapseSection');
+            const btn = document.getElementById('btnToggleGroupsCollapse');
+            if (collapseEl && btn) {
+                collapseEl.addEventListener('hidden.bs.collapse', function () {
+                    const icon = btn.querySelector('i');
+                    const label = btn.querySelector('span');
+                    if (icon) icon.className = 'bi bi-chevron-down';
+                    if (label) label.innerText = 'إظهار لوحة المجموعات';
+                });
+                collapseEl.addEventListener('shown.bs.collapse', function () {
+                    const icon = btn.querySelector('i');
+                    const label = btn.querySelector('span');
+                    if (icon) icon.className = 'bi bi-chevron-up';
+                    if (label) label.innerText = 'طي لوحة المجموعات';
+                });
             }
         });
     </script>

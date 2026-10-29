@@ -43,13 +43,22 @@ public class TenantRepository : GenericRepository<Tenant, int>, ITenantRepositor
         return key?.Tenant;
     }
 
-    public async Task<IReadOnlyList<Tenant>> GetActiveTenantsWithStatsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Tenant>> GetActiveTenantsWithStatsAsync(bool includeDeleted = false, CancellationToken cancellationToken = default)
     {
         var today = DateTime.UtcNow.Date;
-        return await _dbSet
+        var query = _dbSet.AsQueryable();
+        if (includeDeleted)
+        {
+            query = query.IgnoreQueryFilters();
+        }
+        else
+        {
+            query = query.Where(t => !t.IsDelete);
+        }
+
+        return await query
             .Include(t => t.ApiKeys)
             .Include(t => t.Transactions.Where(tx => tx.RequestedAt >= today))
-            .Where(t => !t.IsDelete)
             .OrderByDescending(t => t.CreatedDate)
             .ToListAsync(cancellationToken);
     }

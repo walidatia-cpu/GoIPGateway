@@ -304,9 +304,22 @@ public class UssdMultiStepExecutor : IServiceExecutor
             result = result.Replace("{PhoneNumber}", sim.PhoneNumber);
         }
 
-        // Merchant Code replacement
-        if (parameters.TryGetValue("merchantCode", out var merchant) ||
-            parameters.TryGetValue("MerchantCode", out merchant))
+        // Merchant Code replacement (from parameters or device settings)
+        string? merchant = null;
+        if (parameters.TryGetValue("merchantCode", out merchant) ||
+            parameters.TryGetValue("MerchantCode", out merchant) ||
+            parameters.TryGetValue("merchant", out merchant) ||
+            parameters.TryGetValue("merchantId", out merchant) ||
+            parameters.TryGetValue("vendorCode", out merchant))
+        {
+            // Merchant code found in request parameters
+        }
+        else if (!string.IsNullOrWhiteSpace(sim.DevicePort?.Device?.MerchantCode))
+        {
+            merchant = sim.DevicePort.Device.MerchantCode.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(merchant))
         {
             result = result.Replace("{MerchantCode}", merchant)
                            .Replace("MerchantCode", merchant);

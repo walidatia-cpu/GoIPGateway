@@ -2,12 +2,14 @@
 @{
     ViewData["Title"] = "إدارة الشركات والتجار";
     var tenantsList = Model.ToList();
-    var totalTenants = tenantsList.Count;
-    var activeTenants = tenantsList.Count(t => t.IsActive && !t.IsBlocked);
-    var blockedTenants = tenantsList.Count(t => t.IsBlocked || !t.IsActive);
-    var totalBalance = tenantsList.Sum(t => t.Balance);
-    var totalAssignedDevices = tenantsList.Sum(t => t.AssignedDevices.Count);
-    var totalMaxDevices = tenantsList.Sum(t => t.MaxDevices);
+    var nonDeletedTenants = tenantsList.Where(t => !t.IsDelete).ToList();
+    var totalTenants = nonDeletedTenants.Count;
+    var activeTenants = nonDeletedTenants.Count(t => t.IsActive && !t.IsBlocked);
+    var blockedTenants = nonDeletedTenants.Count(t => t.IsBlocked || !t.IsActive);
+    var deletedTenants = tenantsList.Count(t => t.IsDelete);
+    var totalBalance = nonDeletedTenants.Sum(t => t.Balance);
+    var totalAssignedDevices = nonDeletedTenants.Sum(t => t.AssignedDevices.Count);
+    var totalMaxDevices = nonDeletedTenants.Sum(t => t.MaxDevices);
 }
 
 <style>
@@ -68,51 +70,114 @@
         min-height: 280px;
         padding-bottom: 90px;
     }
-    .actions-btn-group {
+    /* Modern Segmented Action Toolbar */
+    .actions-pill-group {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        background: rgba(148, 163, 184, 0.08);
+        padding: 3px 6px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
     }
-    .btn-action-icon {
-        width: 34px;
-        height: 34px;
+    [data-bs-theme="dark"] .actions-pill-group {
+        background: rgba(30, 41, 59, 0.7);
+        border-color: rgba(51, 65, 85, 0.6);
+    }
+    .action-pill-btn {
+        height: 30px;
+        padding: 0 10px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 9px;
-        border: 1px solid #cbd5e1;
-        background-color: #ffffff;
-        color: #475569;
-        transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        gap: 5px;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        border: 1px solid transparent;
         text-decoration: none;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        cursor: pointer;
     }
-    .btn-action-icon:hover {
-        background-color: rgba(37, 99, 235, 0.08);
-        border-color: #2563eb;
+    .action-pill-primary {
+        background-color: #ffffff;
         color: #2563eb;
-        transform: translateY(-1px);
-        box-shadow: 0 3px 6px rgba(37, 99, 235, 0.15);
+        border-color: rgba(37, 99, 235, 0.25);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
-    .btn-action-icon.btn-action-view {
-        color: #2563eb;
-        border-color: rgba(37, 99, 235, 0.3);
-        background-color: rgba(37, 99, 235, 0.04);
-    }
-    .btn-action-icon.btn-action-view:hover {
+    .action-pill-primary:hover {
         background-color: #2563eb;
+        color: #ffffff;
         border-color: #2563eb;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+    }
+    .action-pill-warning {
+        background-color: #ffffff;
+        color: #d97706;
+        border-color: rgba(245, 158, 11, 0.25);
+        width: 30px;
+        padding: 0;
+    }
+    .action-pill-warning:hover {
+        background-color: #f59e0b;
+        color: #ffffff;
+        border-color: #f59e0b;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25);
+    }
+    .action-pill-more {
+        background-color: #ffffff;
+        color: #64748b;
+        border-color: rgba(100, 116, 139, 0.25);
+        width: 30px;
+        padding: 0;
+    }
+    .action-pill-more:hover, .action-pill-more[aria-expanded="true"] {
+        background-color: #475569;
+        color: #ffffff;
+        border-color: #475569;
+        transform: translateY(-1px);
+    }
+    [data-bs-theme="dark"] .action-pill-primary {
+        background-color: #1e293b;
+        color: #60a5fa;
+        border-color: rgba(96, 165, 250, 0.3);
+    }
+    [data-bs-theme="dark"] .action-pill-primary:hover {
+        background-color: #2563eb;
         color: #ffffff;
     }
-    [data-bs-theme="dark"] .btn-action-icon {
+    [data-bs-theme="dark"] .action-pill-warning {
         background-color: #1e293b;
-        border-color: #334155;
-        color: #94a3b8;
+        color: #fbbf24;
+        border-color: rgba(251, 191, 36, 0.3);
     }
-    [data-bs-theme="dark"] .btn-action-icon:hover {
+    [data-bs-theme="dark"] .action-pill-warning:hover {
+        background-color: #d97706;
+        color: #ffffff;
+    }
+    [data-bs-theme="dark"] .action-pill-more {
+        background-color: #1e293b;
+        color: #94a3b8;
+        border-color: rgba(148, 163, 184, 0.3);
+    }
+    [data-bs-theme="dark"] .action-pill-more:hover, [data-bs-theme="dark"] .action-pill-more[aria-expanded="true"] {
         background-color: #334155;
-        color: #60a5fa;
-        border-color: #60a5fa;
+        color: #ffffff;
+    }
+
+    .btn-restore-tenant {
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        color: #ffffff !important;
+        border: none;
+        box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+        transition: all 0.2s ease;
+    }
+    .btn-restore-tenant:hover {
+        background: linear-gradient(135deg, #15803d, #166534);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4);
     }
     .dropdown-menu-actions {
         border-radius: 12px;
@@ -241,10 +306,10 @@
                 </div>
             </div>
 
-            <div class="col-12 col-md-4">
-                <div class="d-flex gap-2">
+            <div class="col-12 col-md-5">
+                <div class="d-flex flex-wrap gap-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-filter="ALL" onclick="setStatusFilter(this, 'ALL')">
-                        الكل (@totalTenants)
+                        الشركات القائمة (@totalTenants)
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="ACTIVE" onclick="setStatusFilter(this, 'ACTIVE')">
                         النشطة (@activeTenants)
@@ -252,12 +317,15 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="BLOCKED" onclick="setStatusFilter(this, 'BLOCKED')">
                         المحظورة (@blockedTenants)
                     </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 filter-pill" data-filter="DELETED" onclick="setStatusFilter(this, 'DELETED')">
+                        <i class="bi bi-trash3 me-1"></i> المحذوفة مؤقتاً (@deletedTenants)
+                    </button>
                 </div>
             </div>
 
-            <div class="col-12 col-md-3 text-md-end">
+            <div class="col-12 col-md-2 text-md-end">
                 <span class="text-muted small">
-                    عرض <strong class="text-primary font-monospace" id="visibleTenantsCount">@totalTenants</strong> من أصل @totalTenants شركة
+                    عرض <strong class="text-primary font-monospace" id="visibleTenantsCount">@totalTenants</strong> شركة
                 </span>
             </div>
         </div>
@@ -276,7 +344,7 @@
                         <th style="min-width: 120px;">الحد اليومي</th>
                         <th style="min-width: 110px;">مفاتيح API</th>
                         <th style="min-width: 90px;">الحالة</th>
-                        <th class="text-center" style="min-width: 120px;">الإجراءات</th>
+                        <th class="text-center" style="min-width: 160px;">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody id="tenantsTableBody">
@@ -295,16 +363,17 @@
                         {
                             var activeKeys = tenant.ApiKeys.Count(k => k.IsActive);
                             var isBlocked = tenant.IsBlocked || !tenant.IsActive;
+                            var rowStatus = tenant.IsDelete ? "DELETED" : (isBlocked ? "BLOCKED" : "ACTIVE");
                             var searchKeywords = $"{tenant.CompanyName} {tenant.CompanyNameEn} {tenant.ContactPerson} {tenant.ContactEmail} {tenant.ContactPhone}".ToLower();
                             var devPercent = tenant.MaxDevices > 0 ? (tenant.AssignedDevices.Count * 100 / tenant.MaxDevices) : 0;
                             var firstLetter = !string.IsNullOrWhiteSpace(tenant.CompanyName) ? tenant.CompanyName.Substring(0, 1) : "🏢";
 
-                            <tr class="tenant-row" 
-                                data-status="@(isBlocked ? "BLOCKED" : "ACTIVE")" 
+                            <tr class="tenant-row @(tenant.IsDelete ? "opacity-75 bg-danger bg-opacity-10" : "")" 
+                                data-status="@rowStatus" 
                                 data-search="@searchKeywords">
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="tenant-avatar">
+                                        <div class="tenant-avatar @(tenant.IsDelete ? "border-danger text-danger bg-danger bg-opacity-10" : "")">
                                             @firstLetter
                                         </div>
                                         <div>
@@ -362,13 +431,29 @@
                                     <div class="text-muted fs-8">عملية / يوم</div>
                                 </td>
                                 <td>
-                                    <a asp-action="ManageTokens" asp-route-id="@tenant.Id" class="badge badge-key-pill px-2.5 py-1.5 rounded-pill text-decoration-none d-inline-flex align-items-center gap-1" title="إدارة مفاتيح الـ API">
-                                        <i class="bi bi-key-fill"></i>
-                                        <span>@activeKeys مفاتيح</span>
-                                    </a>
+                                    @if (!tenant.IsDelete)
+                                    {
+                                        <a asp-action="ManageTokens" asp-route-id="@tenant.Id" class="badge badge-key-pill px-2.5 py-1.5 rounded-pill text-decoration-none d-inline-flex align-items-center gap-1" title="إدارة مفاتيح الـ API">
+                                            <i class="bi bi-key-fill"></i>
+                                            <span>@activeKeys مفاتيح</span>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-25 text-muted px-2.5 py-1.5 rounded-pill d-inline-flex align-items-center gap-1" title="مفاتيح الـ API معطلة للشركة المحذوفة">
+                                            <i class="bi bi-key-fill"></i>
+                                            <span>معطل</span>
+                                        </span>
+                                    }
                                 </td>
                                 <td>
-                                    @if (!isBlocked)
+                                    @if (tenant.IsDelete)
+                                    {
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-1" title="تم حذف الشركة ناعماً ولن تتمكن من دخول المنصة">
+                                            <i class="bi bi-trash3-fill me-1"></i> محذوفة (موقوفة)
+                                        </span>
+                                    }
+                                    else if (!isBlocked)
                                     {
                                         <span class="badge badge-status-active rounded-pill px-2.5 py-1">
                                             <i class="bi bi-check-circle-fill me-1"></i> نشط
@@ -382,42 +467,60 @@
                                     }
                                 </td>
                                 <td class="text-center">
-                                    <div class="actions-btn-group">
-                                        <!-- Primary Details View -->
-                                        <a asp-action="Details" asp-route-id="@tenant.Id" class="btn-action-icon btn-action-view" title="عرض الملف الكامل">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
+                                    @if (tenant.IsDelete)
+                                    {
+                                        <!-- For deleted tenant: ONLY Show Restore button directly -->
+                                        <button type="button" class="btn btn-sm btn-restore-tenant rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5" onclick="openRestoreModal(@tenant.Id, '@tenant.CompanyName')" title="استعادة الشركة وإلغاء الحذف">
+                                            <i class="bi bi-arrow-counterclockwise fs-6"></i>
+                                            <span>استعادة الشركة</span>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <div class="actions-pill-group">
+                                            <!-- زر عرض الملف السريع -->
+                                            <a asp-action="Details" asp-route-id="@tenant.Id" class="action-pill-btn action-pill-primary" title="عرض تفاصيل الشركة">
+                                                <i class="bi bi-eye-fill"></i>
+                                                <span>عرض</span>
+                                            </a>
 
-                                        <!-- Dropdown Menu for secondary actions -->
-                                        <div class="dropdown">
-                                            <button class="btn-action-icon" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" title="خيارات إضافية">
-                                                <i class="bi bi-three-dots-vertical"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-actions">
-                                                <li>
-                                                    <a class="dropdown-item" asp-action="Edit" asp-route-id="@tenant.Id">
-                                                        <i class="bi bi-pencil-square text-warning"></i>تعديل البيانات والكوتة
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item" asp-action="ManageServices" asp-route-id="@tenant.Id">
-                                                        <i class="bi bi-gear-wide-connected text-info"></i>الخدمات المصرح بها
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item" asp-action="ManageTokens" asp-route-id="@tenant.Id">
-                                                        <i class="bi bi-key text-primary"></i>مفاتيح الـ API والتوكنات
-                                                    </a>
-                                                </li>
-                                                <li><hr class="dropdown-divider my-1"></li>
-                                                <li>
-                                                    <a class="dropdown-item" href="javascript:void(0)" onclick="openKeyModal(@tenant.Id, '@tenant.CompanyName')">
-                                                        <i class="bi bi-plus-circle text-success"></i>توليد مفتاح API سريع
-                                                    </a>
-                                                </li>
-                                            </ul>
+                                            <!-- زر تعديل البيانات السريع -->
+                                            <a asp-action="Edit" asp-route-id="@tenant.Id" class="action-pill-btn action-pill-warning" title="تعديل البيانات والكوتة">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+
+                                            <!-- قائمة الخيارات والمزيد -->
+                                            <div class="dropdown d-inline-block">
+                                                <button class="action-pill-btn action-pill-more dropdown-toggle-no-caret" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" title="المزيد من الإجراءات">
+                                                    <i class="bi bi-three-dots"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-actions shadow-lg border-0 rounded-3 p-2">
+                                                    <li>
+                                                        <a class="dropdown-item py-2 rounded-2 fw-semibold" asp-action="ManageServices" asp-route-id="@tenant.Id">
+                                                            <i class="bi bi-gear-wide-connected text-info me-2 fs-6"></i>الخدمات المصرح بها
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item py-2 rounded-2 fw-semibold" asp-action="ManageTokens" asp-route-id="@tenant.Id">
+                                                            <i class="bi bi-key-fill text-primary me-2 fs-6"></i>مفاتيح الـ API والتوكنات
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider my-1"></li>
+                                                    <li>
+                                                        <a class="dropdown-item py-2 rounded-2 fw-semibold" href="javascript:void(0)" onclick="openKeyModal(@tenant.Id, '@tenant.CompanyName')">
+                                                            <i class="bi bi-plus-circle text-success me-2 fs-6"></i>توليد مفتاح API سريع
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider my-1"></li>
+                                                    <li>
+                                                        <button type="button" class="dropdown-item py-2 rounded-2 fw-semibold text-danger" onclick="openDeleteModal(@tenant.Id, '@tenant.CompanyName')">
+                                                            <i class="bi bi-trash3 text-danger me-2 fs-6"></i>حذف مؤقت (نقل للأرشيف)
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
                                         </div>
-                                    </div>
+                                    }
                                 </td>
                             </tr>
                         }
@@ -435,6 +538,68 @@
                 إعادة ضبط الفلاتر
             </button>
         </div>
+    </div>
+</div>
+
+<!-- Modal Soft Delete Tenant -->
+<div class="modal fade" id="deleteTenantModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form asp-action="Delete" method="post" class="modal-content shadow-lg border-0 rounded-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="deleteTenantId" />
+            <div class="modal-header border-bottom py-3 bg-danger bg-opacity-10">
+                <div class="d-flex align-items-center gap-2 text-danger">
+                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    <h5 class="modal-title fw-bold">تأكيد حذف الشركة (Soft Delete)</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-3 fs-6">هل أنت متأكد من رغبتك في حذف شركة <strong id="deleteTenantName" class="text-danger"></strong>؟</p>
+                <div class="alert alert-warning small mb-0 rounded-3">
+                    <i class="bi bi-shield-lock-fill me-1"></i>
+                    <strong>إجراءات الحماية التلقائية بعد الحذف:</strong>
+                    <ul class="mb-0 mt-2 ps-3">
+                        <li><strong>منع تسجيل الدخول:</strong> لن يتمكن أي مستخدم أو تاجر تابع للشركة من دخول المنصة.</li>
+                        <li><strong>إيقاف مفاتيح API:</strong> سيتم تعطيل مفاتيح الربط وتوقف استقبال طلبات الـ USSD للشركة.</li>
+                        <li><strong>حفظ البيانات التاريخية:</strong> لن تُحذف المعاملات أو الأرصدة، ويمكنك استعادة الشركة في أي وقت.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-danger btn-sm px-4 fw-bold shadow-sm">
+                    <i class="bi bi-trash3-fill me-1"></i> تأكيد الحذف والإيقاف
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Restore Tenant -->
+<div class="modal fade" id="restoreTenantModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form asp-action="Restore" method="post" class="modal-content shadow-lg border-0 rounded-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="restoreTenantId" />
+            <div class="modal-header border-bottom py-3 bg-success bg-opacity-10">
+                <div class="d-flex align-items-center gap-2 text-success">
+                    <i class="bi bi-arrow-counterclockwise fs-5"></i>
+                    <h5 class="modal-title fw-bold">استعادة الشركة المحذوفة</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-2 fs-6">هل أنت متأكد من رغبتك في استعادة شركة <strong id="restoreTenantName" class="text-success"></strong>؟</p>
+                <p class="text-muted small mb-0">سيتم إلغاء الحذف وإعادة تفعيل الشركة والسماح لمستخدميها بالدخول إلى المنصة مرة أخرى.</p>
+            </div>
+            <div class="modal-footer border-top py-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-success btn-sm px-4 fw-bold shadow-sm">
+                    <i class="bi bi-check2-circle me-1"></i> تأكيد الاستعادة الآن
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -490,7 +655,15 @@
                 const rowStatus = r.getAttribute('data-status') || 'ACTIVE';
                 const rowSearch = (r.getAttribute('data-search') || '').toLowerCase();
 
-                const matchesStatus = (currentStatusFilter === 'ALL' || rowStatus === currentStatusFilter);
+                let matchesStatus = false;
+                if (currentStatusFilter === 'ALL') {
+                    matchesStatus = (rowStatus !== 'DELETED');
+                } else if (currentStatusFilter === 'DELETED') {
+                    matchesStatus = (rowStatus === 'DELETED');
+                } else {
+                    matchesStatus = (rowStatus === currentStatusFilter);
+                }
+
                 const matchesQuery = (!query || rowSearch.includes(query));
 
                 if (matchesStatus && matchesQuery) {
@@ -524,5 +697,22 @@
             document.getElementById('modalTenantName').innerText = 'توليد مفتاح API لـ ' + name;
             new bootstrap.Modal(document.getElementById('apiKeyModal')).show();
         }
+
+        function openDeleteModal(tenantId, name) {
+            document.getElementById('deleteTenantId').value = tenantId;
+            document.getElementById('deleteTenantName').innerText = name;
+            new bootstrap.Modal(document.getElementById('deleteTenantModal')).show();
+        }
+
+        function openRestoreModal(tenantId, name) {
+            document.getElementById('restoreTenantId').value = tenantId;
+            document.getElementById('restoreTenantName').innerText = name;
+            new bootstrap.Modal(document.getElementById('restoreTenantModal')).show();
+        }
+
+        // Initialize table filtering to show active/non-deleted by default
+        document.addEventListener("DOMContentLoaded", function () {
+            filterTenants();
+        });
     </script>
 }
