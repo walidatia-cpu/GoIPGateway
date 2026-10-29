@@ -187,6 +187,16 @@ public class RoutingController : Controller
         var result = await _mediator.Send(new UpdateRoutingBySimCommand(tenantId.Value, req.SimId, allowedServiceIds.ToArray()), cancellationToken);
         return Json(new { success = result.Succeeded, count = allowedServiceIds.Count, message = result.Succeeded ? "تم الحفظ تلقائياً" : result.Error?.Message });
     }
+
+    [HttpPost]
+    public async Task<IActionResult> SetSimServicesAjax([FromBody] SetSimServicesRequest req, CancellationToken cancellationToken)
+    {
+        var tenantId = await ResolveTenantIdAsync(cancellationToken);
+        if (!tenantId.HasValue) return Json(new { success = false, message = "غير مصرح" });
+
+        var result = await _mediator.Send(new UpdateRoutingBySimCommand(tenantId.Value, req.SimId, req.ServiceIds), cancellationToken);
+        return Json(new { success = result.Succeeded, count = req.ServiceIds?.Length ?? 0, message = result.Succeeded ? "تم تحديث الخدمات المسندة للخط بنجاح" : result.Error?.Message });
+    }
 }
 
 public class ToggleServiceSimRequest
@@ -207,5 +217,11 @@ public class ToggleSimServiceRequest
     public int SimId { get; set; }
     public int ServiceId { get; set; }
     public bool Assign { get; set; }
+}
+
+public class SetSimServicesRequest
+{
+    public int SimId { get; set; }
+    public int[] ServiceIds { get; set; } = Array.Empty<int>();
 }
 

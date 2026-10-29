@@ -222,11 +222,11 @@
             else
             {
                 <div class="table-responsive">
-                    <table class="table table-custom align-middle mb-0">
+                    <table class="table table-custom table-sticky-dual align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>#</th>
-                                <th>الشركة / التاجر</th>
+                                <th style="width: 38px;" class="text-center sticky-col-1">#</th>
+                                <th style="min-width: 125px;" class="sticky-col-2"><span class="d-none d-sm-inline">الشركة / التاجر</span><span class="d-sm-none">الشركة</span></th>
                                 <th>حجم المبالغ المنفذة</th>
                                 <th>رسوم المنصة</th>
                                 <th>العمليات والنجاح</th>
@@ -242,17 +242,17 @@
                             {
                                 var t = Model.Tenants[i];
                                 <tr>
-                                    <td>
+                                    <td class="text-center sticky-col-1">
                                         <span class="text-muted fs-8 fw-bold font-monospace">@(i + 1)</span>
                                     </td>
-                                    <td>
+                                    <td class="sticky-col-2">
                                         <div class="d-flex align-items-center gap-2">
-                                            <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 text-primary fs-6">
+                                            <div class="p-2.5 rounded-3 bg-primary bg-opacity-10 text-primary fs-6 d-none d-md-flex">
                                                 <i class="bi bi-building"></i>
                                             </div>
-                                            <div>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <span class="fw-bold text-main fs-7">@t.CompanyName</span>
+                                            <div class="min-w-0">
+                                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                    <span class="fw-bold text-main fs-7 text-truncate" style="max-width: 115px;" title="@t.CompanyName">@t.CompanyName</span>
                                                     @if (t.IsBlocked)
                                                     {
                                                         <span class="badge bg-danger bg-opacity-15 text-danger rounded-pill px-2 py-0.5 fs-9">محظور</span>
@@ -263,10 +263,10 @@
                                                     }
                                                     else
                                                     {
-                                                        <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2 py-0.5 fs-9">نشط</span>
+                                                        <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2 py-0.5 fs-9 d-none d-md-inline-block">نشط</span>
                                                     }
                                                 </div>
-                                                <div class="text-muted fs-8">
+                                                <div class="text-muted fs-8 d-none d-md-block text-truncate" style="max-width: 140px;">
                                                     @(t.ContactPerson ?? "بدون مسؤول") • <span class="font-monospace">@(t.ContactPhone ?? "-")</span>
                                                 </div>
                                             </div>

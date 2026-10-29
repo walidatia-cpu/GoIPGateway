@@ -100,49 +100,47 @@
         </div>
     </div>
 
-    <!-- Toolbar: Search & Filter Pills -->
-    <div class="portal-card p-3 mb-4 shadow-sm">
-        <div class="row g-3 align-items-center">
-            <div class="col-12 col-md-5">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0 text-muted">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" id="txSearchInput" class="form-control border-start-0" 
-                           placeholder="ابحث برقم المرجع UUID، المرجع الخارجي، أو الرسالة..." 
-                           onkeyup="filterTransactions()" />
-                </div>
-            </div>
+    @{
+        var txFilterBar = new SearchFilterBarModel
+        {
+            SearchInputId = "txSearchInput",
+            SearchPlaceholder = "ابحث برقم المرجع UUID، المرجع الخارجي، أو الرسالة...",
+            OnSearchInput = "filterTransactions()",
+            CounterId = "visibleTxCount",
+            CounterLabel = "العمليات الظاهرة:",
+            InitialCount = pageCount,
+            ResetFiltersFunction = "resetTxFilters()",
+            Filters = new List<FilterDropdownModel>
+            {
+                new FilterDropdownModel
+                {
+                    Id = "txStatusFilter",
+                    Label = "معيار الحالة:",
+                    Icon = "bi-funnel-fill",
+                    OnChange = "onTxStatusChange(this.value)",
+                    Options = new List<FilterOptionModel>
+                    {
+                        new FilterOptionModel("ALL", "كل الحالات", badge: pageCount.ToString(), color: "primary", isSelected: true),
+                        new FilterOptionModel("COMPLETED", "المكتملة بنجاح", badge: completedCount.ToString(), color: "success"),
+                        new FilterOptionModel("FAILED", "المتعثرة أو الفاشلة", badge: failedCount.ToString(), color: "danger")
+                    }
+                }
+            }
+        };
+    }
 
-            <div class="col-12 col-md-4">
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-status="ALL" onclick="setStatusFilter(this, 'ALL')">
-                        الكل (@pageCount)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-status="COMPLETED" onclick="setStatusFilter(this, 'COMPLETED')">
-                        الناجحة (@completedCount)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-status="FAILED" onclick="setStatusFilter(this, 'FAILED')">
-                        المتعثرة (@failedCount)
-                    </button>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-3 text-md-end">
-                <span class="text-muted small">
-                    عرض <strong class="text-primary font-monospace" id="visibleTxCount">@pageCount</strong> من أصل @totalCount عملية
-                </span>
-            </div>
-        </div>
+    <!-- Toolbar: Search & Filter Microcomponent -->
+    <div class="portal-card mb-4 shadow-sm">
+        <partial name="Partials/_SearchFilterBar" model="txFilterBar" />
     </div>
 
     <!-- Master Transactions Table Card -->
     <div class="portal-card shadow-sm table-card-container mb-4">
         <div class="table-responsive table-responsive-custom">
-            <table class="table table-custom align-middle mb-0" id="txMasterTable">
+            <table class="table table-custom table-sticky-col align-middle mb-0" id="txMasterTable">
                 <thead>
                     <tr>
-                        <th style="min-width: 220px;">رقم المرجع (UUID)</th>
+                        <th style="min-width: 125px;"><span class="d-none d-sm-inline">رقم المرجع (UUID)</span><span class="d-sm-none">المرجع</span></th>
                         <th style="min-width: 140px;">المرجع الخارجي</th>
                         <th style="min-width: 130px;">الحالة</th>
                         <th style="min-width: 240px;">الرسالة / النتيجة</th>
@@ -172,14 +170,14 @@
                             <tr class="tx-row" data-status="@statusKey" data-search="@searchKeywords">
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="p-2 rounded-3 bg-light border text-primary font-monospace fs-8" style="background: rgba(37, 99, 235, 0.05) !important;">
+                                        <div class="p-2 rounded-3 bg-light border text-primary font-monospace fs-8 d-none d-md-block" style="background: rgba(37, 99, 235, 0.05) !important;">
                                             <i class="bi bi-hash"></i>
                                         </div>
-                                        <div>
-                                            <code class="fw-bold fs-7 text-primary">@tx.TransactionRef</code>
+                                        <div class="min-w-0">
+                                            <code class="fw-bold fs-7 text-primary text-truncate d-inline-block" style="max-width: 115px;" title="@tx.TransactionRef">@tx.TransactionRef</code>
                                             @if (!string.IsNullOrEmpty(tx.ErrorCode))
                                             {
-                                                <small class="text-danger d-block fs-8 font-monospace">كود الخطأ: @tx.ErrorCode</small>
+                                                <small class="text-danger d-none d-md-block fs-8 font-monospace">كود الخطأ: @tx.ErrorCode</small>
                                             }
                                         </div>
                                     </div>
@@ -299,10 +297,33 @@
     <script>
         let currentStatusFilter = 'ALL';
 
+        function onTxStatusChange(status) {
+            currentStatusFilter = status || 'ALL';
+            filterTransactions();
+        }
+
+        function resetTxFilters() {
+            const sInp = document.getElementById('txSearchInput');
+            if (sInp) {
+                sInp.value = '';
+                sInp.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            currentStatusFilter = 'ALL';
+            const sel = document.getElementById('txStatusFilter');
+            if (sel) {
+                sel.value = 'ALL';
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            filterTransactions();
+        }
+
         function setStatusFilter(btn, status) {
-            document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
             currentStatusFilter = status;
+            const sel = document.getElementById('txStatusFilter');
+            if (sel) {
+                sel.value = status;
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
             filterTransactions();
         }
 

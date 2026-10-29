@@ -1,0 +1,88 @@
+@model GoIPGateway.Web.Models.Components.SearchFilterBarModel
+
+@if (Model != null)
+{
+    <div class="card-header bg-transparent border-bottom border-light-subtle py-3 px-3 px-md-4">
+        <div class="d-flex flex-column flex-md-row gap-3 justify-content-between align-items-md-center">
+            
+            <!-- Right: Search Input & Filter Dropdowns -->
+            <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+                
+                <!-- Quick Search Input -->
+                <div class="position-relative flex-grow-1" style="min-width: 200px; max-width: 320px;">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted opacity-75"></i>
+                    <input type="text"
+                           id="@Model.SearchInputId"
+                           class="form-control form-control-sm ps-5 rounded-pill bg-body-tertiary border-0 shadow-none text-truncate"
+                           placeholder="@Model.SearchPlaceholder"
+                           @(!string.IsNullOrEmpty(Model.OnSearchInput) ? $"oninput=\"{Model.OnSearchInput}\"" : "") />
+                    <button type="button"
+                            class="btn btn-link position-absolute top-50 end-0 translate-middle-y text-muted p-0 me-2 text-decoration-none d-none"
+                            id="@(Model.SearchInputId)_clear"
+                            onclick="const inp=document.getElementById('@Model.SearchInputId'); if(inp){ inp.value=''; inp.dispatchEvent(new Event('input', {bubbles:true})); } this.classList.add('d-none');">
+                        <i class="bi bi-x-circle-fill fs-7"></i>
+                    </button>
+                </div>
+
+                <!-- Reusable Searchable Filter Dropdowns -->
+                @if (Model.Filters != null && Model.Filters.Any())
+                {
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        @foreach (var filter in Model.Filters)
+                        {
+                            <partial name="Partials/_FilterDropdown" model="filter" />
+                        }
+                    </div>
+                }
+
+                <!-- Reset Filters Button -->
+                @if (!string.IsNullOrEmpty(Model.ResetFiltersFunction))
+                {
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 fs-8"
+                            onclick="@Model.ResetFiltersFunction"
+                            title="إعادة ضبط الفلاتر">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        <span class="d-none d-lg-inline">إعادة ضبط</span>
+                    </button>
+                }
+            </div>
+
+            <!-- Left: Counter & Primary Action Button -->
+            <div class="d-flex align-items-center justify-content-between justify-content-md-end gap-2 flex-shrink-0">
+                @if (!string.IsNullOrEmpty(Model.CounterId))
+                {
+                    <span class="badge bg-body-secondary text-body border px-2.5 py-1.5 rounded-pill fs-8 fw-semibold d-inline-flex align-items-center gap-1">
+                        <span>@Model.CounterLabel</span>
+                        <span id="@Model.CounterId" class="fw-bold text-primary">@(Model.InitialCount.HasValue ? Model.InitialCount.Value.ToString() : "0")</span>
+                    </span>
+                }
+
+                @if (Model.PrimaryAction != null)
+                {
+                    @if (!string.IsNullOrEmpty(Model.PrimaryAction.Url))
+                    {
+                        <a href="@Model.PrimaryAction.Url" class="btn btn-sm @Model.PrimaryAction.ColorClass rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm">
+                            @if (!string.IsNullOrEmpty(Model.PrimaryAction.Icon))
+                            {
+                                <i class="bi @Model.PrimaryAction.Icon"></i>
+                            }
+                            <span>@Model.PrimaryAction.Text</span>
+                        </a>
+                    }
+                    else if (!string.IsNullOrEmpty(Model.PrimaryAction.OnClick))
+                    {
+                        <button type="button" onclick="@Model.PrimaryAction.OnClick" class="btn btn-sm @Model.PrimaryAction.ColorClass rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm">
+                            @if (!string.IsNullOrEmpty(Model.PrimaryAction.Icon))
+                            {
+                                <i class="bi @Model.PrimaryAction.Icon"></i>
+                            }
+                            <span>@Model.PrimaryAction.Text</span>
+                        </button>
+                    }
+                }
+            </div>
+
+        </div>
+    </div>
+}

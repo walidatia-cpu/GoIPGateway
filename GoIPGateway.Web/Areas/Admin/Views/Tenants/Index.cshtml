@@ -292,59 +292,55 @@
         </div>
     </div>
 
-    <!-- Toolbar: Search & Filter -->
-    <div class="portal-card p-3 mb-4 shadow-sm">
-        <div class="row g-3 align-items-center">
-            <div class="col-12 col-md-5">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0 text-muted">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" id="tenantSearchInput" class="form-control border-start-0" 
-                           placeholder="ابحث باسم الشركة، مسؤول الاتصال، الهاتف، أو البريد..." 
-                           onkeyup="filterTenants()" />
-                </div>
-            </div>
+    @{
+        var tenantFilterBar = new SearchFilterBarModel
+        {
+            SearchInputId = "tenantSearchInput",
+            SearchPlaceholder = "ابحث باسم الشركة، مسؤول الاتصال، الهاتف، أو البريد...",
+            OnSearchInput = "filterTenants()",
+            CounterId = "visibleTenantsCount",
+            CounterLabel = "الشركات الظاهرة:",
+            InitialCount = totalTenants,
+            ResetFiltersFunction = "resetTenantFilters()",
+            Filters = new List<FilterDropdownModel>
+            {
+                new FilterDropdownModel
+                {
+                    Id = "tenantStatusFilter",
+                    Label = "معيار الحالة:",
+                    Icon = "bi-funnel-fill",
+                    OnChange = "onTenantStatusChange(this.value)",
+                    Options = new List<FilterOptionModel>
+                    {
+                        new FilterOptionModel("ALL", "الشركات القائمة", badge: totalTenants.ToString(), color: "primary", isSelected: true),
+                        new FilterOptionModel("ACTIVE", "النشطة فقط", badge: activeTenants.ToString(), color: "success"),
+                        new FilterOptionModel("BLOCKED", "المحظورة أو المعطلة", badge: blockedTenants.ToString(), color: "warning"),
+                        new FilterOptionModel("DELETED", "المحذوفة مؤقتاً", badge: deletedTenants.ToString(), color: "danger")
+                    }
+                }
+            }
+        };
+    }
 
-            <div class="col-12 col-md-5">
-                <div class="d-flex flex-wrap gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-filter="ALL" onclick="setStatusFilter(this, 'ALL')">
-                        الشركات القائمة (@totalTenants)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="ACTIVE" onclick="setStatusFilter(this, 'ACTIVE')">
-                        النشطة (@activeTenants)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-filter="BLOCKED" onclick="setStatusFilter(this, 'BLOCKED')">
-                        المحظورة (@blockedTenants)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 filter-pill" data-filter="DELETED" onclick="setStatusFilter(this, 'DELETED')">
-                        <i class="bi bi-trash3 me-1"></i> المحذوفة مؤقتاً (@deletedTenants)
-                    </button>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-2 text-md-end">
-                <span class="text-muted small">
-                    عرض <strong class="text-primary font-monospace" id="visibleTenantsCount">@totalTenants</strong> شركة
-                </span>
-            </div>
-        </div>
+    <!-- Toolbar: Search & Filter Microcomponent -->
+    <div class="portal-card mb-4 shadow-sm">
+        <partial name="Partials/_SearchFilterBar" model="tenantFilterBar" />
     </div>
 
     <!-- Tenants Table Card -->
     <div class="portal-card shadow-sm table-card-container mb-4">
         <div class="table-responsive table-responsive-custom">
-            <table class="table table-custom align-middle mb-0">
+            <table class="table table-custom table-sticky-col align-middle mb-0">
                 <thead>
                     <tr>
-                        <th style="min-width: 240px;">الشركة</th>
-                        <th style="min-width: 180px;">مسؤول الاتصال</th>
-                        <th style="min-width: 140px;">الرصيد المتاح</th>
-                        <th style="min-width: 140px;">كوتة الأجهزة</th>
-                        <th style="min-width: 120px;">الحد اليومي</th>
-                        <th style="min-width: 110px;">مفاتيح API</th>
-                        <th style="min-width: 90px;">الحالة</th>
-                        <th class="text-center" style="min-width: 160px;">الإجراءات</th>
+                        <th style="min-width: 125px;"><span class="d-none d-sm-inline">اسم الشركة</span><span class="d-sm-none">الشركة</span></th>
+                        <th style="min-width: 125px;"><span class="d-none d-sm-inline">مسؤول الاتصال</span><span class="d-sm-none">المسؤول</span></th>
+                        <th style="min-width: 110px;"><span class="d-none d-sm-inline">الرصيد المتاح</span><span class="d-sm-none">الرصيد</span></th>
+                        <th style="min-width: 100px;"><span class="d-none d-sm-inline">كوتة الأجهزة</span><span class="d-sm-none">الأجهزة</span></th>
+                        <th style="min-width: 95px;"><span class="d-none d-sm-inline">الحد اليومي</span><span class="d-sm-none">الحد</span></th>
+                        <th style="min-width: 90px;">مفاتيح API</th>
+                        <th style="min-width: 80px;">الحالة</th>
+                        <th class="text-center" style="min-width: 130px;">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody id="tenantsTableBody">
@@ -372,19 +368,19 @@
                                 data-status="@rowStatus" 
                                 data-search="@searchKeywords">
                                 <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="tenant-avatar @(tenant.IsDelete ? "border-danger text-danger bg-danger bg-opacity-10" : "")">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="tenant-avatar d-none d-md-flex @(tenant.IsDelete ? "border-danger text-danger bg-danger bg-opacity-10" : "")">
                                             @firstLetter
                                         </div>
-                                        <div>
-                                            <a asp-action="Details" asp-route-id="@tenant.Id" class="fw-bold text-main text-decoration-none d-block hover-primary">
+                                        <div class="min-w-0">
+                                            <a asp-action="Details" asp-route-id="@tenant.Id" class="fw-bold text-main text-decoration-none d-block hover-primary text-truncate" style="max-width: 120px;" title="@tenant.CompanyName">
                                                 @tenant.CompanyName
                                             </a>
                                             @if (!string.IsNullOrEmpty(tenant.CompanyNameEn))
                                             {
-                                                <small class="text-muted d-block" style="font-size: 0.78rem;">@tenant.CompanyNameEn</small>
+                                                <small class="text-muted d-none d-md-block" style="font-size: 0.78rem;">@tenant.CompanyNameEn</small>
                                             }
-                                            <small class="text-muted fs-8 font-monospace">كود: #@tenant.Id</small>
+                                            <small class="text-muted fs-8 font-monospace d-none d-sm-block">كود: #@tenant.Id</small>
                                         </div>
                                     </div>
                                 </td>
@@ -529,14 +525,14 @@
             </table>
         </div>
 
-        <!-- No search matches alert -->
-        <div id="noTenantMatches" class="p-5 text-center d-none">
-            <i class="bi bi-search fs-1 text-muted opacity-50 d-block mb-2"></i>
-            <h6 class="fw-bold mb-1 text-main">لم يتم العثور على شركات مطابقة</h6>
-            <p class="text-muted small mb-3">يرجى التأكد من كتابة الاسم أو البريد بشكل صحيح أو تغيير فلتر الحالة.</p>
-            <button type="button" class="btn btn-sm btn-outline-secondary px-3" onclick="resetTenantFilters()">
-                إعادة ضبط الفلاتر
-            </button>
+        <!-- No search matches alert microcomponent -->
+        <div id="noTenantMatches" class="d-none">
+            <partial name="Partials/_EmptyTableState" model='new EmptyTableStateModel {
+                Icon = "bi-search",
+                Title = "لم يتم العثور على شركات مطابقة",
+                Message = "يرجى التأكد من كتابة الاسم أو البريد بشكل صحيح أو تغيير معيار الحالة المحدد.",
+                ResetActionClick = "resetTenantFilters()"
+            }' />
         </div>
     </div>
 </div>
@@ -639,10 +635,18 @@
     <script>
         let currentStatusFilter = 'ALL';
 
+        function onTenantStatusChange(val) {
+            currentStatusFilter = val || 'ALL';
+            filterTenants();
+        }
+
         function setStatusFilter(btn, filter) {
-            document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
-            btn.classList.add("active");
             currentStatusFilter = filter;
+            const sel = document.getElementById('tenantStatusFilter');
+            if (sel) {
+                sel.value = filter;
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
             filterTenants();
         }
 
@@ -684,11 +688,17 @@
         }
 
         function resetTenantFilters() {
-            document.getElementById('tenantSearchInput').value = '';
+            const sInp = document.getElementById('tenantSearchInput');
+            if (sInp) {
+                sInp.value = '';
+                sInp.dispatchEvent(new Event('input', { bubbles: true }));
+            }
             currentStatusFilter = 'ALL';
-            document.querySelectorAll('.filter-pill').forEach(p => {
-                p.classList.toggle('active', p.getAttribute('data-filter') === 'ALL');
-            });
+            const sel = document.getElementById('tenantStatusFilter');
+            if (sel) {
+                sel.value = 'ALL';
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
             filterTenants();
         }
 

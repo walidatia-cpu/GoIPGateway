@@ -140,8 +140,9 @@ public class AccountController : Controller
     }
 
     [HttpGet]
-    public IActionResult AccessDenied()
+    public IActionResult AccessDenied(string? returnUrl = null)
     {
+        ViewData["ReturnUrl"] = returnUrl;
         return View();
     }
 }

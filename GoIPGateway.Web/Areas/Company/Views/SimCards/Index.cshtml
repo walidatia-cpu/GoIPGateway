@@ -208,59 +208,51 @@
         </div>
     </div>
 
-    <!-- Toolbar: Search, Device Filter & Operator Filters -->
-    <div class="portal-card p-3 mb-4 shadow-sm">
-        <div class="row g-3 align-items-center">
-            <div class="col-12 col-md-4">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0 text-muted">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" id="compSimSearchInput" class="form-control border-start-0" 
-                           placeholder="ابحث برقم الشريحة، أو المنفذ..." 
-                           onkeyup="filterCompanySims()" />
-                </div>
-            </div>
+    @{
+        var compSimFilterBar = new SearchFilterBarModel
+        {
+            SearchInputId = "compSimSearchInput",
+            SearchPlaceholder = "ابحث برقم الشريحة، المنفذ، أو الـ ICCID...",
+            OnSearchInput = "filterCompanySims()",
+            CounterId = "visibleCompSimCount",
+            CounterLabel = "الشرائح الظاهرة:",
+            InitialCount = totalSims,
+            ResetFiltersFunction = "resetCompanySimFilters()",
+            Filters = new List<FilterDropdownModel>
+            {
+                new FilterDropdownModel
+                {
+                    Id = "compSimDeviceFilter",
+                    Label = "الجهاز:",
+                    Icon = "bi-router",
+                    OnChange = "filterCompanySims()",
+                    Options = new List<FilterOptionModel>
+                    {
+                        new FilterOptionModel("ALL", "كل أجهزة GoIP", badge: devices.Count.ToString(), isSelected: true)
+                    }.Concat(devices.Select(d => new FilterOptionModel(d.Id.ToString(), d.DeviceName))).ToList()
+                },
+                new FilterDropdownModel
+                {
+                    Id = "compSimOpFilter",
+                    Label = "الشبكة:",
+                    Icon = "bi-broadcast",
+                    OnChange = "onCompSimOpChange(this.value)",
+                    Options = new List<FilterOptionModel>
+                    {
+                        new FilterOptionModel("ALL", "كل الشبكات", badge: totalSims.ToString(), color: "primary", isSelected: true),
+                        new FilterOptionModel("Vodafone", "فودافون كاش", badge: vfCount.ToString(), color: "danger"),
+                        new FilterOptionModel("Orange", "أورانج كاش", badge: orCount.ToString(), color: "warning"),
+                        new FilterOptionModel("Etisalat", "اتصالات كاش", badge: etCount.ToString(), color: "success"),
+                        new FilterOptionModel("WE", "وي باي (WE)", badge: weCount.ToString(), color: "info")
+                    }
+                }
+            }
+        };
+    }
 
-            <!-- Device Filter Dropdown -->
-            <div class="col-12 col-md-3">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0 text-muted">
-                        <i class="bi bi-router"></i>
-                    </span>
-                    <select id="compSimDeviceFilter" class="form-select border-start-0 fw-semibold" onchange="filterCompanySims()">
-                        <option value="ALL">📟 كل أجهزة GoIP (@devices.Count)</option>
-                        @foreach (var dev in devices)
-                        {
-                            <option value="@dev.Id">@dev.DeviceName</option>
-                        }
-                    </select>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-5 d-flex align-items-center justify-content-md-between flex-wrap gap-2">
-                <div class="d-flex flex-wrap gap-1.5">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 filter-pill active" data-op="ALL" onclick="setCompOpFilter(this, 'ALL')">
-                        الكل (@totalSims)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 filter-pill" data-op="Vodafone" onclick="setCompOpFilter(this, 'Vodafone')">
-                        فودافون (@vfCount)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 filter-pill" data-op="Orange" onclick="setCompOpFilter(this, 'Orange')">
-                        أورانج (@orCount)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 filter-pill" data-op="Etisalat" onclick="setCompOpFilter(this, 'Etisalat')">
-                        اتصالات (@etCount)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 filter-pill" data-op="WE" onclick="setCompOpFilter(this, 'WE')">
-                        WE (@weCount)
-                    </button>
-                </div>
-                <div class="text-muted small">
-                    عرض <strong class="text-primary font-monospace" id="visibleCompSimCount">@totalSims</strong> من @totalSims
-                </div>
-            </div>
-        </div>
+    <!-- Toolbar: Search & Filter Microcomponent -->
+    <div class="portal-card mb-4 shadow-sm">
+        <partial name="Partials/_SearchFilterBar" model="compSimFilterBar" />
     </div>
 
     <!-- SIMs Master Table Card -->
@@ -281,13 +273,13 @@
         else
         {
             <div class="table-responsive table-responsive-custom">
-                <table class="table table-custom align-middle mb-0" id="compSimMasterTable">
+                <table class="table table-custom table-sticky-dual align-middle mb-0" id="compSimMasterTable">
                     <thead>
                         <tr>
-                            <th style="width: 44px;" class="text-center">
+                            <th style="width: 44px;" class="text-center sticky-col-1">
                                 <input type="checkbox" id="selectAllSimsCheckbox" class="form-check-input sim-check-all" onchange="toggleSelectAllSims(this)" title="تحديد / إلغاء تحديد الكل" />
                             </th>
-                            <th style="min-width: 170px;">رقم الشريحة (المحفظة)</th>
+                            <th style="min-width: 120px;" class="sticky-col-2"><span class="d-none d-sm-inline">رقم الشريحة (المحفظة)</span><span class="d-sm-none">رقم الشريحة</span></th>
                             <th style="min-width: 130px;">الشبكة</th>
                             <th style="min-width: 180px;">الجهاز والمنفذ</th>
                             <th style="min-width: 140px;">الرصيد الحالي</th>
@@ -303,17 +295,17 @@
                             var searchKeywords = $"{sim.PhoneNumber} {sim.DevicePort?.Device?.DeviceName} {sim.DevicePort?.PortLabel} {sim.Operator}".ToLower();
 
                             <tr class="comp-sim-row" id="sim-row-@sim.Id" data-op="@opKey" data-device-id="@(sim.DevicePort?.DeviceId ?? 0)" data-search="@searchKeywords">
-                                <td class="text-center">
+                                <td class="text-center sticky-col-1">
                                     <input type="checkbox" class="form-check-input sim-row-checkbox" value="@sim.Id" data-phone="@sim.PhoneNumber" onchange="updateSimSelectionState()" />
                                 </td>
-                                <td>
+                                <td class="sticky-col-2">
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="row-avatar" style="width: 40px; height: 40px; font-size: 1rem;">
+                                        <div class="row-avatar d-none d-md-flex" style="width: 40px; height: 40px; font-size: 1rem;">
                                             <i class="bi bi-phone"></i>
                                         </div>
-                                        <div>
-                                            <span class="fw-bold font-monospace text-main fs-6 d-block" id="sim-phone-@sim.Id">@sim.PhoneNumber</span>
-                                            <small class="text-muted font-monospace fs-8">PIN: ••••</small>
+                                        <div class="min-w-0">
+                                            <span class="fw-bold font-monospace text-main fs-6 d-block text-truncate" id="sim-phone-@sim.Id">@sim.PhoneNumber</span>
+                                            <small class="text-muted font-monospace fs-8 d-none d-sm-block">PIN: ••••</small>
                                         </div>
                                     </div>
                                 </td>
@@ -419,10 +411,38 @@
     <script>
         let currentCompOpFilter = 'ALL';
 
+        function onCompSimOpChange(op) {
+            currentCompOpFilter = op || 'ALL';
+            filterCompanySims();
+        }
+
+        function resetCompanySimFilters() {
+            const sInp = document.getElementById('compSimSearchInput');
+            if (sInp) {
+                sInp.value = '';
+                sInp.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            currentCompOpFilter = 'ALL';
+            const devSel = document.getElementById('compSimDeviceFilter');
+            if (devSel) {
+                devSel.value = 'ALL';
+                devSel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            const opSel = document.getElementById('compSimOpFilter');
+            if (opSel) {
+                opSel.value = 'ALL';
+                opSel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            filterCompanySims();
+        }
+
         function setCompOpFilter(btn, op) {
-            document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
             currentCompOpFilter = op;
+            const opSel = document.getElementById('compSimOpFilter');
+            if (opSel) {
+                opSel.value = op;
+                opSel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
             filterCompanySims();
         }
 

@@ -1,0 +1,85 @@
+@{
+    ViewData["Title"] = "غير مصرح بالوصول - 403 Forbidden";
+    var isSuperAdmin = User.IsInRole("SuperAdmin");
+    var isCompanyUser = User.IsInRole("TenantAdmin") || User.IsInRole("TenantOperator") || User.IsInRole("TenantViewer");
+}
+
+<div class="container py-5 d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+    <div class="portal-card shadow-lg p-4 p-md-5 text-center text-main position-relative overflow-hidden" style="max-width: 580px; width: 100%; border-radius: 24px;">
+        <!-- Glowing Ambient Background Accent -->
+        <div class="position-absolute top-0 start-50 translate-middle-x" style="width: 240px; height: 120px; background: radial-gradient(circle, rgba(239, 68, 68, 0.22) 0%, rgba(239, 68, 68, 0) 70%); pointer-events: none;"></div>
+
+        <!-- Security Badge Icon -->
+        <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-circle bg-danger bg-opacity-10 text-danger mb-4 shadow-sm" style="width: 88px; height: 88px;">
+            <i class="bi bi-shield-slash-fill fs-1"></i>
+        </div>
+
+        <!-- Error Code Pill -->
+        <div class="mb-3">
+            <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-3 py-1.5 rounded-pill font-monospace fw-bold fs-7">
+                خطأ 403 • وصول محظور (Access Denied)
+            </span>
+        </div>
+
+        <!-- Main Title -->
+        <h2 class="fw-bold mb-2">عفواً، لا تمتلك صلاحية الوصول</h2>
+        <p class="text-muted fs-6 mb-4">
+            الحساب المسجل حالياً غير مصرح له بزيارة هذه الصفحة أو إجراء هذه العملية. إذا كنت تعتقد أن هذا خطأ في الصلاحيات، يرجى مراجعة مدير النظام.
+        </p>
+
+        <!-- Current User Info Pill -->
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <div class="p-3 mb-4 rounded-3 border bg-light bg-opacity-50 d-flex align-items-center justify-content-between text-start font-monospace small">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-badge fs-5 text-primary"></i>
+                    <div>
+                        <div class="fw-bold text-main">@(User.Identity.Name ?? "مستخدم مسجل")</div>
+                        <div class="text-muted fs-8">@(isSuperAdmin ? "مدير المنصة (SuperAdmin)" : isCompanyUser ? "حساب شركة (Tenant)" : "مستخدم")</div>
+                    </div>
+                </div>
+                <span class="badge bg-secondary bg-opacity-25 text-muted px-2.5 py-1 rounded-pill">جلسة نشطة</span>
+            </div>
+        }
+
+        <!-- Action Buttons -->
+        <div class="d-flex flex-column flex-sm-row align-items-center justify-content-center gap-2.5">
+            @if (isSuperAdmin)
+            {
+                <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="btn btn-primary px-4 py-2.5 rounded-3 fw-bold w-100 w-sm-auto d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>لوحة تحكم الإدارة</span>
+                </a>
+            }
+            else if (isCompanyUser)
+            {
+                <a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="btn btn-primary px-4 py-2.5 rounded-3 fw-bold w-100 w-sm-auto d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-speedometer"></i>
+                    <span>لوحة تحكم الشركة</span>
+                </a>
+            }
+            else
+            {
+                <a asp-area="" asp-controller="Account" asp-action="Login" class="btn btn-primary px-4 py-2.5 rounded-3 fw-bold w-100 w-sm-auto d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>تسجيل الدخول</span>
+                </a>
+            }
+
+            <button type="button" class="btn btn-outline-secondary px-3.5 py-2.5 rounded-3 fw-semibold w-100 w-sm-auto d-flex align-items-center justify-content-center gap-2" onclick="window.history.length > 1 ? window.history.back() : window.location.href = '/'">
+                <i class="bi bi-arrow-right"></i>
+                <span>العودة للخلف</span>
+            </button>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="w-100 w-sm-auto m-0">
+                    <button type="submit" class="btn btn-outline-danger px-3.5 py-2.5 rounded-3 fw-semibold w-100 d-flex align-items-center justify-content-center gap-1.5" title="الخروج والدخول بحساب آخر">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>حساب آخر</span>
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+</div>

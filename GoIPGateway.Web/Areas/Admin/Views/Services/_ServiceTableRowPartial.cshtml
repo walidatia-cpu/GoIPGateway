@@ -49,17 +49,17 @@
     data-active="@(srv.IsActive ? "true" : "false")"
     data-search="@searchKeywords">
     <td>
-        <div class="d-flex align-items-center gap-2.5">
-            <div class="service-icon-box">
+        <div class="d-flex align-items-center gap-2">
+            <div class="service-icon-box d-none d-md-flex">
                 <i class="bi @(string.IsNullOrEmpty(srv.IconClass) ? "bi-lightning-charge" : srv.IconClass)"></i>
             </div>
-            <div>
-                <a asp-action="Details" asp-route-id="@srv.Id" class="fw-bold text-main fs-6 text-decoration-none d-block hover-primary">
+            <div class="min-w-0">
+                <a asp-action="Details" asp-route-id="@srv.Id" class="fw-bold text-main fs-6 text-decoration-none d-block hover-primary text-truncate" style="max-width: 120px;" title="@srv.NameAr">
                     @srv.NameAr
                 </a>
                 @if (!string.IsNullOrEmpty(srv.NameEn))
                 {
-                    <small class="text-muted d-block" style="font-size: 0.78rem;">@srv.NameEn</small>
+                    <small class="text-muted d-none d-md-block" style="font-size: 0.78rem;">@srv.NameEn</small>
                 }
             </div>
         </div>

@@ -1,0 +1,35 @@
+@model GoIPGateway.Web.Models.Components.FilterDropdownModel
+
+@if (Model != null)
+{
+    <div class="d-inline-flex align-items-center gap-1.5 filter-dropdown-wrapper">
+        @if (!string.IsNullOrEmpty(Model.Label))
+        {
+            <label for="@Model.Id" class="small fw-semibold text-muted text-nowrap mb-0 d-none d-sm-inline">
+                @if (!string.IsNullOrEmpty(Model.Icon))
+                {
+                    <i class="bi @Model.Icon me-1"></i>
+                }
+                @Model.Label
+            </label>
+        }
+        <div style="min-width: 140px; max-width: 220px;" class="flex-grow-1">
+            <select id="@Model.Id"
+                    class="form-select form-select-sm searchable-select"
+                    data-searchable="true"
+                    data-placeholder="@(Model.Placeholder ?? "اختر...")"
+                    @(!string.IsNullOrEmpty(Model.OnChange) ? $"onchange=\"{Model.OnChange}\"" : "")>
+                @foreach (var opt in Model.Options)
+                {
+                    <option value="@opt.Value"
+                            selected="@(opt.IsSelected ? "selected" : null)"
+                            data-badge="@opt.BadgeText"
+                            data-badge-color="@opt.BadgeColor"
+                            data-icon="@opt.Icon">
+                        @opt.Text
+                    </option>
+                }
+            </select>
+        </div>
+    </div>
+}

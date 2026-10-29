@@ -1,0 +1,30 @@
+@model GoIPGateway.Web.Models.Components.EmptyTableStateModel
+
+@if (Model != null)
+{
+    <div class="empty-table-state text-center py-5 px-3">
+        <div class="empty-state-icon-wrapper mb-3 mx-auto rounded-circle d-flex align-items-center justify-content-center bg-body-secondary text-muted"
+             style="width: 64px; height: 64px; font-size: 1.75rem;">
+            <i class="bi @Model.Icon"></i>
+        </div>
+        <h6 class="fw-bold text-body mb-1">@Model.Title</h6>
+        @if (!string.IsNullOrEmpty(Model.Message))
+        {
+            <p class="text-muted small mb-3 mx-auto" style="max-width: 420px;">@Model.Message</p>
+        }
+        @if (!string.IsNullOrEmpty(Model.ResetActionClick))
+        {
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5" onclick="@Model.ResetActionClick">
+                <i class="bi bi-arrow-counterclockwise"></i>
+                <span>@(Model.ActionText ?? "إعادة تعيين الفلاتر")</span>
+            </button>
+        }
+        else if (!string.IsNullOrEmpty(Model.ActionUrl))
+        {
+            <a href="@Model.ActionUrl" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm">
+                <i class="bi bi-plus-lg"></i>
+                <span>@(Model.ActionText ?? "إضافة جديد")</span>
+            </a>
+        }
+    </div>
+}

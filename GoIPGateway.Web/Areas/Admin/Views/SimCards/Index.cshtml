@@ -105,52 +105,49 @@
         </div>
     </div>
 
-    <!-- Toolbar: Search & Operator Filters -->
-    <div class="portal-card p-3 mb-4 shadow-sm">
-        <div class="row g-3 align-items-center">
-            <div class="col-12 col-md-5">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0 text-muted">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" id="simSearchInput" class="form-control border-start-0" 
-                           placeholder="ابحث برقم الهاتف، اسم البورت، أو الشبكة..." 
-                           onkeyup="filterSims()" />
-                </div>
-            </div>
+    @{
+        var simFilterBar = new SearchFilterBarModel
+        {
+            SearchInputId = "simSearchInput",
+            SearchPlaceholder = "ابحث برقم الهاتف، اسم البورت، أو الشبكة...",
+            OnSearchInput = "filterSims()",
+            CounterId = "visibleSimCount",
+            CounterLabel = "الخطوط الظاهرة:",
+            InitialCount = totalSims,
+            ResetFiltersFunction = "resetSimFilters()",
+            Filters = new List<FilterDropdownModel>
+            {
+                new FilterDropdownModel
+                {
+                    Id = "simOpFilter",
+                    Label = "معيار الشبكة:",
+                    Icon = "bi-broadcast",
+                    OnChange = "onSimOpChange(this.value)",
+                    Options = new List<FilterOptionModel>
+                    {
+                        new FilterOptionModel("ALL", "كل الشبكات", badge: totalSims.ToString(), color: "primary", isSelected: true),
+                        new FilterOptionModel("Vodafone", "فودافون كاش", badge: vfCount.ToString(), color: "danger"),
+                        new FilterOptionModel("Orange", "أورانج كاش", badge: orCount.ToString(), color: "warning"),
+                        new FilterOptionModel("Etisalat", "اتصالات كاش", badge: etCount.ToString(), color: "success"),
+                        new FilterOptionModel("WE", "وي باي (WE)", badge: weCount.ToString(), color: "info")
+                    }
+                }
+            }
+        };
+    }
 
-            <div class="col-12 col-md-7 d-flex align-items-center justify-content-md-between flex-wrap gap-2">
-                <div class="d-flex flex-wrap gap-1.5">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-op="ALL" onclick="setOpFilter(this, 'ALL')">
-                        الكل (@totalSims)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="Vodafone" onclick="setOpFilter(this, 'Vodafone')">
-                        فودافون (@vfCount)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="Orange" onclick="setOpFilter(this, 'Orange')">
-                        أورانج (@orCount)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="Etisalat" onclick="setOpFilter(this, 'Etisalat')">
-                        اتصالات (@etCount)
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="WE" onclick="setOpFilter(this, 'WE')">
-                        WE (@weCount)
-                    </button>
-                </div>
-                <div class="text-muted small">
-                    عرض <strong class="text-primary font-monospace" id="visibleSimCount">@totalSims</strong> من أصل @totalSims
-                </div>
-            </div>
-        </div>
+    <!-- Toolbar: Search & Filter Microcomponent -->
+    <div class="portal-card mb-4 shadow-sm">
+        <partial name="Partials/_SearchFilterBar" model="simFilterBar" />
     </div>
 
     <!-- SIM Cards Table Card -->
     <div class="portal-card shadow-sm table-card-container mb-4">
         <div class="table-responsive table-responsive-custom">
-            <table class="table table-custom align-middle mb-0" id="simMasterTable">
+            <table class="table table-custom table-sticky-col align-middle mb-0" id="simMasterTable">
                 <thead>
                     <tr>
-                        <th style="min-width: 180px;">البورت / الجهاز</th>
+                        <th style="min-width: 120px;"><span class="d-none d-sm-inline">البورت / الجهاز</span><span class="d-sm-none">المنفذ</span></th>
                         <th style="min-width: 130px;">الشبكة</th>
                         <th style="min-width: 150px;">رقم الخط</th>
                         <th style="min-width: 140px;">باسورد المحفظة (PIN)</th>
@@ -179,13 +176,13 @@
 
                             <tr class="sim-row" id="sim-row-@sim.Id" data-op="@opKey" data-search="@searchKeywords">
                                 <td>
-                                    <div class="d-flex align-items-center gap-2.5">
-                                        <div class="row-avatar" style="width: 40px; height: 40px; font-size: 1rem;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="row-avatar d-none d-md-flex" style="width: 40px; height: 40px; font-size: 1rem;">
                                             <i class="bi bi-cpu"></i>
                                         </div>
-                                        <div>
-                                            <div class="fw-bold text-main">@(sim.DevicePort?.PortLabel ?? "بورت " + sim.DevicePortId)</div>
-                                            <small class="text-muted d-block fs-8">@(sim.DevicePort?.Device?.DeviceName ?? "-")</small>
+                                        <div class="min-w-0">
+                                            <div class="fw-bold text-main text-truncate" style="max-width: 120px;">@(sim.DevicePort?.PortLabel ?? "بورت " + sim.DevicePortId)</div>
+                                            <small class="text-muted d-none d-md-block fs-8 text-truncate" style="max-width: 120px;">@(sim.DevicePort?.Device?.DeviceName ?? "-")</small>
                                         </div>
                                     </div>
                                 </td>
@@ -317,10 +314,33 @@
     <script>
         let currentOpFilter = 'ALL';
 
+        function onSimOpChange(op) {
+            currentOpFilter = op || 'ALL';
+            filterSims();
+        }
+
+        function resetSimFilters() {
+            const sInp = document.getElementById('simSearchInput');
+            if (sInp) {
+                sInp.value = '';
+                sInp.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            currentOpFilter = 'ALL';
+            const sel = document.getElementById('simOpFilter');
+            if (sel) {
+                sel.value = 'ALL';
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            filterSims();
+        }
+
         function setOpFilter(btn, op) {
-            document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
             currentOpFilter = op;
+            const sel = document.getElementById('simOpFilter');
+            if (sel) {
+                sel.value = op;
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
             filterSims();
         }
 

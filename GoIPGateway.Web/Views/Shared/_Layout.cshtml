@@ -10,6 +10,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="user-tenant-id" content="@(User.FindFirst("TenantId")?.Value ?? "")" />
     <title>@ViewData["Title"] - بوابة GoIP Gateway</title>
 
     <!-- Prevent theme flicker on load -->
@@ -28,6 +29,7 @@
     <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap@(isRtl ? ".rtl" : "").min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
     <!-- Unified Design System Tokens (Light & Dark) -->
     <style>
@@ -930,39 +932,774 @@
         [data-bs-theme="dark"] .searchable-combobox .combobox-item.selected {
             background-color: rgba(37, 99, 235, 0.3);
         }
+
+        /* ========================================================
+           COMPREHENSIVE RESPONSIVE DESIGN SYSTEM (ALL SCREEN SIZES)
+           Mobile (<576px), Phablet (576-767px), Tablet (768-991px),
+           Laptop (992-1399px), Desktop & Ultrawide (>=1400px)
+           ======================================================== */
+
+        /* 1. Fluid Typography System */
+        h1, .h1 { font-size: clamp(1.4rem, 3.2vw, 2.2rem) !important; }
+        h2, .h2 { font-size: clamp(1.25rem, 2.6vw, 1.8rem) !important; }
+        h3, .h3 { font-size: clamp(1.1rem, 2.2vw, 1.5rem) !important; }
+        h4, .h4 { font-size: clamp(1.0rem, 1.8vw, 1.3rem) !important; }
+
+        /* 2. Main Content Wrapper Constraints for Ultrawide Screens */
+        .main-content-wrapper {
+            width: 100%;
+            max-width: 1760px;
+            margin: 0 auto;
+            overflow-x: hidden;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* 3. Collapsible Desktop/Tablet Sidebar */
+        .sidebar {
+            transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease !important;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .sidebar.sidebar-collapsed {
+            width: 72px !important;
+        }
+
+        .sidebar.sidebar-collapsed .sidebar-category-header,
+        .sidebar.sidebar-collapsed .sidebar-link span {
+            display: none !important;
+        }
+
+        .sidebar.sidebar-collapsed .sidebar-link {
+            justify-content: center !important;
+            padding: 12px 0 !important;
+            margin: 4px 8px !important;
+            border-right: none !important;
+            border-left: none !important;
+            position: relative;
+        }
+
+        .sidebar.sidebar-collapsed .sidebar-link i {
+            font-size: 1.3rem !important;
+            margin: 0 !important;
+        }
+
+        .sidebar.sidebar-collapsed .sidebar-link.active {
+            background: var(--sidebar-link-active);
+            color: var(--primary-accent);
+            border-radius: 12px;
+        }
+
+        /* 4. Mobile Offcanvas Navigation Drawer */
+        .mobile-offcanvas {
+            background-color: var(--sidebar-bg) !important;
+            color: var(--text-main) !important;
+            max-width: 310px;
+            border-color: var(--sidebar-border) !important;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+        }
+        .mobile-offcanvas .offcanvas-header {
+            border-color: var(--sidebar-border) !important;
+            background: var(--card-bg);
+        }
+        .mobile-offcanvas .sidebar-link {
+            margin: 4px 12px;
+        }
+
+        /* 5. Mobile Bottom Glassmorphic Navigation Bar */
+        .mobile-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: var(--navbar-bg);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-top: 1px solid var(--navbar-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            z-index: 1040;
+            padding: 0 6px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+        }
+        .mobile-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.72rem;
+            font-weight: 700;
+            gap: 3px;
+            flex: 1;
+            height: 100%;
+            transition: color 0.15s ease, transform 0.15s ease;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            padding: 0;
+        }
+        .mobile-nav-item i {
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+        .mobile-nav-item.active, .mobile-nav-item:hover {
+            color: var(--primary-accent) !important;
+        }
+        .mobile-nav-center {
+            position: relative;
+            top: -12px;
+        }
+        .mobile-nav-center-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
+            border: 3px solid var(--navbar-bg);
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .mobile-nav-center-btn i {
+            font-size: 1.35rem;
+            color: #ffffff !important;
+        }
+        .mobile-nav-center:active .mobile-nav-center-btn {
+            transform: scale(0.92);
+        }
+
+        /* 6. Universal Responsive Table Container & Sticky Columns (Google Egyptian League Style) */
+        .table-responsive, .table-responsive-custom {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 14px;
+            position: relative;
+            max-width: 100%;
+        }
+        .table-responsive-custom::-webkit-scrollbar {
+            height: 6px;
+        }
+        .table-responsive-custom::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .table-responsive-custom::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 999px;
+        }
+        [data-bs-theme="dark"] .table-responsive-custom::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.6);
+        }
+
+        /* 6. Universal Sticky Table Column System (Google Standings-Style Sticky Column) */
+        .table-sticky-col,
+        .table-sticky-first,
+        .table-sticky-dual {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+        }
+
+        /* Single Sticky Column (.table-sticky-col or .table-sticky-first) */
+        .table-sticky-col th:first-child,
+        .table-sticky-col td:first-child,
+        .table-sticky-first th:first-child,
+        .table-sticky-first td:first-child {
+            position: sticky !important;
+            z-index: 5;
+            background-color: var(--card-bg, #ffffff) !important;
+        }
+        .table-sticky-col thead th:first-child,
+        .table-sticky-first thead th:first-child {
+            z-index: 8;
+        }
+
+        [dir="rtl"] .table-sticky-col th:first-child,
+        [dir="rtl"] .table-sticky-col td:first-child,
+        [dir="rtl"] .table-sticky-first th:first-child,
+        [dir="rtl"] .table-sticky-first td:first-child,
+        .table-sticky-col th:first-child,
+        .table-sticky-col td:first-child,
+        .table-sticky-first th:first-child,
+        .table-sticky-first td:first-child {
+            right: 0 !important;
+            left: auto !important;
+            box-shadow: none !important;
+            border-left: none !important;
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        [dir="ltr"] .table-sticky-col th:first-child,
+        [dir="ltr"] .table-sticky-col td:first-child,
+        [dir="ltr"] .table-sticky-first th:first-child,
+        [dir="ltr"] .table-sticky-first td:first-child {
+            left: 0 !important;
+            right: auto !important;
+            box-shadow: none !important;
+            border-right: none !important;
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        /* Dual Sticky Columns (.table-sticky-dual) - for Checkbox + Identifier */
+        /* Column 1: Checkbox */
+        .table-sticky-dual th:first-child,
+        .table-sticky-dual td:first-child,
+        .table-sticky-dual th.sticky-col-1,
+        .table-sticky-dual td.sticky-col-1 {
+            position: sticky !important;
+            z-index: 20 !important;
+            width: 44px !important;
+            min-width: 44px !important;
+            max-width: 44px !important;
+            box-shadow: none !important;
+            border-left: none !important;
+            border-right: none !important;
+        }
+        .table-sticky-dual thead th:first-child,
+        .table-sticky-dual thead th.sticky-col-1 {
+            z-index: 30 !important;
+        }
+
+        [dir="rtl"] .table-sticky-dual th:first-child,
+        [dir="rtl"] .table-sticky-dual td:first-child,
+        [dir="rtl"] .table-sticky-dual th.sticky-col-1,
+        [dir="rtl"] .table-sticky-dual td.sticky-col-1,
+        .table-sticky-dual th:first-child,
+        .table-sticky-dual td:first-child,
+        .table-sticky-dual th.sticky-col-1,
+        .table-sticky-dual td.sticky-col-1 {
+            right: 0 !important;
+            left: auto !important;
+        }
+        [dir="ltr"] .table-sticky-dual th:first-child,
+        [dir="ltr"] .table-sticky-dual td:first-child,
+        [dir="ltr"] .table-sticky-dual th.sticky-col-1,
+        [dir="ltr"] .table-sticky-dual td.sticky-col-1 {
+            left: 0 !important;
+            right: auto !important;
+        }
+
+        /* Column 2: Primary Identifier (Phone number / Name) */
+        .table-sticky-dual th:nth-child(2),
+        .table-sticky-dual td:nth-child(2),
+        .table-sticky-dual th.sticky-col-2,
+        .table-sticky-dual td.sticky-col-2 {
+            position: sticky !important;
+            z-index: 15 !important;
+            box-shadow: none !important;
+            border-left: none !important;
+            border-right: none !important;
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .table-sticky-dual thead th:nth-child(2),
+        .table-sticky-dual thead th.sticky-col-2 {
+            z-index: 25 !important;
+        }
+
+        [dir="rtl"] .table-sticky-dual th:nth-child(2),
+        [dir="rtl"] .table-sticky-dual td:nth-child(2),
+        [dir="rtl"] .table-sticky-dual th.sticky-col-2,
+        [dir="rtl"] .table-sticky-dual td.sticky-col-2,
+        .table-sticky-dual th:nth-child(2),
+        .table-sticky-dual td:nth-child(2),
+        .table-sticky-dual th.sticky-col-2,
+        .table-sticky-dual td.sticky-col-2 {
+            right: 44px !important;
+            left: auto !important;
+        }
+        [dir="ltr"] .table-sticky-dual th:nth-child(2),
+        [dir="ltr"] .table-sticky-dual td:nth-child(2),
+        [dir="ltr"] .table-sticky-dual th.sticky-col-2,
+        [dir="ltr"] .table-sticky-dual td.sticky-col-2 {
+            left: 44px !important;
+            right: auto !important;
+        }
+
+        /* Keep non-sticky scrolling columns strictly underneath */
+        .table-sticky-col tbody td:not(:first-child),
+        .table-sticky-dual tbody td:not(.sticky-col-1):not(.sticky-col-2):not(:first-child):not(:nth-child(2)) {
+            z-index: 1;
+        }
+
+        /* ========================================================
+           100% SOLID OPAQUE BACKGROUNDS (No alpha transparency!)
+           ======================================================== */
+        /* Table Headers */
+        .table-custom thead th.sticky-col-1,
+        .table-custom thead th.sticky-col-2,
+        .table-custom thead th:first-child,
+        .table-custom thead th:nth-child(2) {
+            background-color: #f8fafc !important;
+        }
+        [data-bs-theme="dark"] .table-custom thead th.sticky-col-1,
+        [data-bs-theme="dark"] .table-custom thead th.sticky-col-2,
+        [data-bs-theme="dark"] .table-custom thead th:first-child,
+        [data-bs-theme="dark"] .table-custom thead th:nth-child(2) {
+            background-color: #162035 !important;
+        }
+
+        /* Default Rows */
+        .table-custom tbody tr td.sticky-col-1,
+        .table-custom tbody tr td.sticky-col-2,
+        .table-custom tbody tr td:first-child,
+        .table-custom tbody tr td:nth-child(2) {
+            background-color: #ffffff !important;
+        }
+        [data-bs-theme="dark"] .table-custom tbody tr td.sticky-col-1,
+        [data-bs-theme="dark"] .table-custom tbody tr td.sticky-col-2,
+        [data-bs-theme="dark"] .table-custom tbody tr td:first-child,
+        [data-bs-theme="dark"] .table-custom tbody tr td:nth-child(2) {
+            background-color: #131c31 !important;
+        }
+
+        /* Hover Rows */
+        .table-custom tbody tr:hover td:first-child,
+        .table-custom tbody tr:hover td:nth-child(2),
+        .table-custom tbody tr:hover td.sticky-col-1,
+        .table-custom tbody tr:hover td.sticky-col-2 {
+            background-color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .table-custom tbody tr:hover td:first-child,
+        [data-bs-theme="dark"] .table-custom tbody tr:hover td:nth-child(2),
+        [data-bs-theme="dark"] .table-custom tbody tr:hover td.sticky-col-1,
+        [data-bs-theme="dark"] .table-custom tbody tr:hover td.sticky-col-2 {
+            background-color: #17233f !important;
+        }
+
+        /* Assigned Rows (Routing) - Solid opaque mint, completely hiding underlying scrolling content */
+        .table-custom tbody tr.table-row-assigned td:first-child,
+        .table-custom tbody tr.table-row-assigned td:nth-child(2),
+        .table-custom tbody tr.table-row-assigned td.sticky-col-1,
+        .table-custom tbody tr.table-row-assigned td.sticky-col-2 {
+            background-color: #f0fdf4 !important;
+        }
+        .table-custom tbody tr.table-row-assigned:hover td:first-child,
+        .table-custom tbody tr.table-row-assigned:hover td:nth-child(2),
+        .table-custom tbody tr.table-row-assigned:hover td.sticky-col-1,
+        .table-custom tbody tr.table-row-assigned:hover td.sticky-col-2 {
+            background-color: #dcfce7 !important;
+        }
+        [data-bs-theme="dark"] .table-custom tbody tr.table-row-assigned td:first-child,
+        [data-bs-theme="dark"] .table-custom tbody tr.table-row-assigned td:nth-child(2),
+        [data-bs-theme="dark"] .table-custom tbody tr.table-row-assigned td.sticky-col-1,
+        [data-bs-theme="dark"] .table-custom tbody tr.table-row-assigned td.sticky-col-2 {
+            background-color: #0c2923 !important;
+        }
+        [data-bs-theme="dark"] .table-custom tbody tr.table-row-assigned:hover td:first-child,
+        [data-bs-theme="dark"] .table-custom tbody tr.table-row-assigned:hover td:nth-child(2),
+        [data-bs-theme="dark"] .table-custom tbody tr.table-row-assigned:hover td.sticky-col-1,
+        [data-bs-theme="dark"] .table-custom tbody tr.table-row-assigned:hover td.sticky-col-2 {
+            background-color: #103b32 !important;
+        }
+
+        /* ========================================================
+           DYNAMIC SCROLL ELEVATION: Active ONLY when Scrolled
+           ======================================================== */
+        /* Single Column Sticky: Shadow & divider on Col 1 when scrolled */
+        [dir="rtl"] .table-scrolled .table-sticky-col th:first-child,
+        [dir="rtl"] .table-scrolled .table-sticky-col td:first-child,
+        [dir="rtl"] .table-scrolled .table-sticky-first th:first-child,
+        [dir="rtl"] .table-scrolled .table-sticky-first td:first-child,
+        .table-scrolled .table-sticky-col th:first-child,
+        .table-scrolled .table-sticky-col td:first-child,
+        .table-scrolled .table-sticky-first th:first-child,
+        .table-scrolled .table-sticky-first td:first-child,
+        .table-sticky-col.table-scrolled th:first-child,
+        .table-sticky-col.table-scrolled td:first-child {
+            box-shadow: -6px 0 12px -2px rgba(0, 0, 0, 0.12) !important;
+            border-left: 1px solid var(--card-border, #e2e8f0) !important;
+        }
+        [dir="ltr"] .table-scrolled .table-sticky-col th:first-child,
+        [dir="ltr"] .table-scrolled .table-sticky-col td:first-child,
+        [dir="ltr"] .table-scrolled .table-sticky-first th:first-child,
+        [dir="ltr"] .table-scrolled .table-sticky-first td:first-child,
+        .table-sticky-col.table-scrolled th:first-child,
+        .table-sticky-col.table-scrolled td:first-child {
+            box-shadow: 6px 0 12px -2px rgba(0, 0, 0, 0.12) !important;
+            border-right: 1px solid var(--card-border, #e2e8f0) !important;
+        }
+
+        /* Dual Sticky: Shadow & divider on Col 2 (the outer pinned column) when scrolled */
+        [dir="rtl"] .table-scrolled .table-sticky-dual th:nth-child(2),
+        [dir="rtl"] .table-scrolled .table-sticky-dual td:nth-child(2),
+        [dir="rtl"] .table-scrolled .table-sticky-dual th.sticky-col-2,
+        [dir="rtl"] .table-scrolled .table-sticky-dual td.sticky-col-2,
+        .table-scrolled .table-sticky-dual th:nth-child(2),
+        .table-scrolled .table-sticky-dual td:nth-child(2),
+        .table-scrolled .table-sticky-dual th.sticky-col-2,
+        .table-scrolled .table-sticky-dual td.sticky-col-2,
+        .table-sticky-dual.table-scrolled th:nth-child(2),
+        .table-sticky-dual.table-scrolled td:nth-child(2),
+        .table-sticky-dual.table-scrolled th.sticky-col-2,
+        .table-sticky-dual.table-scrolled td.sticky-col-2 {
+            box-shadow: -6px 0 12px -2px rgba(0, 0, 0, 0.12) !important;
+            border-left: 1px solid var(--card-border, #e2e8f0) !important;
+        }
+        [dir="ltr"] .table-scrolled .table-sticky-dual th:nth-child(2),
+        [dir="ltr"] .table-scrolled .table-sticky-dual td:nth-child(2),
+        [dir="ltr"] .table-scrolled .table-sticky-dual th.sticky-col-2,
+        [dir="ltr"] .table-scrolled .table-sticky-dual td.sticky-col-2,
+        .table-sticky-dual.table-scrolled th:nth-child(2),
+        .table-sticky-dual.table-scrolled td:nth-child(2),
+        .table-sticky-dual.table-scrolled th.sticky-col-2,
+        .table-sticky-dual.table-scrolled td.sticky-col-2 {
+            box-shadow: 6px 0 12px -2px rgba(0, 0, 0, 0.12) !important;
+            border-right: 1px solid var(--card-border, #e2e8f0) !important;
+        }
+
+        /* Dark Mode Dynamic Shadow */
+        [data-bs-theme="dark"] [dir="rtl"] .table-scrolled .table-sticky-col th:first-child,
+        [data-bs-theme="dark"] [dir="rtl"] .table-scrolled .table-sticky-col td:first-child,
+        [data-bs-theme="dark"] [dir="rtl"] .table-scrolled .table-sticky-dual th:nth-child(2),
+        [data-bs-theme="dark"] [dir="rtl"] .table-scrolled .table-sticky-dual td:nth-child(2),
+        [data-bs-theme="dark"] [dir="rtl"] .table-scrolled .table-sticky-dual th.sticky-col-2,
+        [data-bs-theme="dark"] [dir="rtl"] .table-scrolled .table-sticky-dual td.sticky-col-2,
+        [data-bs-theme="dark"] .table-sticky-dual.table-scrolled th:nth-child(2),
+        [data-bs-theme="dark"] .table-sticky-dual.table-scrolled td:nth-child(2),
+        [data-bs-theme="dark"] .table-sticky-dual.table-scrolled th.sticky-col-2,
+        [data-bs-theme="dark"] .table-sticky-dual.table-scrolled td.sticky-col-2 {
+            box-shadow: -8px 0 16px -2px rgba(0, 0, 0, 0.5) !important;
+            border-left: 1px solid var(--card-border, #1e293b) !important;
+        }
+
+        /* Navbar Icon Buttons & Complete Caret Suppression */
+        .dropdown-toggle-no-caret::after,
+        .dropdown-toggle-no-caret::before,
+        [dir="rtl"] .dropdown-toggle-no-caret::after,
+        [dir="rtl"] .dropdown-toggle-no-caret::before {
+            display: none !important;
+            content: none !important;
+            border: none !important;
+            margin: 0 !important;
+        }
+
+        .nav-pill-btn {
+            border-radius: 9999px;
+            padding: 5px 14px;
+            height: 36px;
+            transition: all 0.2s ease;
+        }
+        @@media (max-width: 767.98px) {
+            .nav-pill-btn,
+            #themeToggleBtn {
+                width: 36px !important;
+                height: 36px !important;
+                min-width: 36px !important;
+                max-width: 36px !important;
+                padding: 0 !important;
+                border-radius: 50% !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                border: 1px solid rgba(148, 163, 184, 0.25) !important;
+                background: var(--card-bg) !important;
+            }
+            .navbar-signalr-pill {
+                width: 36px !important;
+                height: 36px !important;
+                min-width: 36px !important;
+                max-width: 36px !important;
+                padding: 0 !important;
+                border-radius: 50% !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+        }
+
+        /* 7. Swipeable Filter Pills Bar for Mobile/Tablet */
+        .filter-pills-scrollable, .filter-pills-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+        }
+        .filter-pills-scrollable::-webkit-scrollbar, .filter-pills-row::-webkit-scrollbar {
+            display: none;
+        }
+        .filter-pills-scrollable .filter-pill, .filter-pills-row .filter-pill {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        /* 8. Breakpoint-Specific Rules */
+        /* Extra-Small & Small Phones (< 768px) */
+        @@media (max-width: 767.98px) {
+            body {
+                padding-bottom: 74px !important;
+            }
+            .navbar-custom {
+                padding-top: 0.4rem !important;
+                padding-bottom: 0.4rem !important;
+            }
+            .portal-card {
+                border-radius: 14px !important;
+            }
+            .card-stat {
+                padding: 14px !important;
+                border-radius: 14px !important;
+            }
+            .card-stat .icon-box {
+                width: 44px !important;
+                height: 44px !important;
+                font-size: 1.35rem !important;
+                border-radius: 12px !important;
+            }
+            .admin-hero-card, .merchant-hero-card {
+                padding: 16px 18px !important;
+                border-radius: 16px !important;
+            }
+            .admin-kpi-card {
+                padding: 16px 18px !important;
+            }
+            .admin-kpi-icon {
+                width: 44px !important;
+                height: 44px !important;
+                font-size: 1.35rem !important;
+            }
+            .table-custom th {
+                padding: 9px 12px !important;
+                font-size: 0.8rem !important;
+                white-space: nowrap;
+            }
+            .table-custom td {
+                padding: 10px 12px !important;
+                font-size: 0.85rem !important;
+                white-space: nowrap;
+            }
+
+            /* ========================================================
+               Mobile Lean & Compact Frozen Columns (< 768px)
+               Limits frozen column to ~33-38% of screen, leaving 62-67%
+               for smooth horizontal scrolling and data inspection
+               ======================================================== */
+            .table-sticky-col th:first-child,
+            .table-sticky-col td:first-child,
+            .table-sticky-first th:first-child,
+            .table-sticky-first td:first-child {
+                width: 135px !important;
+                min-width: 115px !important;
+                max-width: 140px !important;
+                padding: 8px 10px !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Hide heavy decorative avatars inside sticky cells on small screens */
+            .table-sticky-col td:first-child .row-avatar,
+            .table-sticky-col td:first-child .tenant-avatar,
+            .table-sticky-col td:first-child .service-icon-box,
+            .table-sticky-dual td:nth-child(2) .row-avatar {
+                display: none !important;
+            }
+
+            /* Auto-truncate long primary text inside frozen column on mobile */
+            .table-sticky-col td:first-child a,
+            .table-sticky-col td:first-child .fw-bold,
+            .table-sticky-col td:first-child code {
+                display: inline-block !important;
+                max-width: 115px !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+                vertical-align: middle !important;
+            }
+
+            /* Dual Sticky Columns Mobile Optimization */
+            .table-sticky-dual th:first-child,
+            .table-sticky-dual td:first-child,
+            .table-sticky-dual th.sticky-col-1,
+            .table-sticky-dual td.sticky-col-1 {
+                width: 38px !important;
+                min-width: 38px !important;
+                max-width: 38px !important;
+                padding: 8px 4px !important;
+            }
+
+            .table-sticky-dual th:nth-child(2),
+            .table-sticky-dual td:nth-child(2),
+            .table-sticky-dual th.sticky-col-2,
+            .table-sticky-dual td.sticky-col-2 {
+                width: 125px !important;
+                min-width: 110px !important;
+                max-width: 130px !important;
+                padding: 8px 8px !important;
+                box-sizing: border-box !important;
+            }
+
+            [dir="rtl"] .table-sticky-dual th:nth-child(2),
+            [dir="rtl"] .table-sticky-dual td:nth-child(2),
+            [dir="rtl"] .table-sticky-dual th.sticky-col-2,
+            [dir="rtl"] .table-sticky-dual td.sticky-col-2,
+            .table-sticky-dual th:nth-child(2),
+            .table-sticky-dual td:nth-child(2),
+            .table-sticky-dual th.sticky-col-2,
+            .table-sticky-dual td.sticky-col-2 {
+                right: 38px !important;
+            }
+            [dir="ltr"] .table-sticky-dual th:nth-child(2),
+            [dir="ltr"] .table-sticky-dual td:nth-child(2),
+            [dir="ltr"] .table-sticky-dual th.sticky-col-2,
+            [dir="ltr"] .table-sticky-dual td.sticky-col-2 {
+                left: 38px !important;
+            }
+            .btn-merchant-action {
+                width: 100% !important;
+                justify-content: center !important;
+                padding: 11px 16px !important;
+                font-size: 0.95rem !important;
+            }
+            .actions-pill-group {
+                gap: 4px !important;
+                padding: 2px 4px !important;
+            }
+            .action-pill-btn {
+                height: 32px !important;
+                font-size: 0.78rem !important;
+            }
+            .form-control, .form-select, .combobox-trigger {
+                min-height: 44px !important;
+                font-size: 0.92rem !important;
+            }
+            .modal-dialog {
+                margin: 0.5rem !important;
+                max-width: calc(100% - 1rem) !important;
+            }
+            .modal-content {
+                border-radius: 18px !important;
+            }
+            .port-grid {
+                grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)) !important;
+                gap: 6px !important;
+                padding: 10px !important;
+            }
+            .port-cell {
+                font-size: 0.72rem !important;
+                border-radius: 8px !important;
+            }
+        }
+
+        /* Tablets & Small Laptops (768px - 991.98px) */
+        @@media (min-width: 768px) and (max-width: 991.98px) {
+            .sidebar:not(.sidebar-collapsed) {
+                width: 220px !important;
+            }
+            .sidebar-link {
+                padding: 10px 14px !important;
+                margin: 4px 10px !important;
+                font-size: 0.9rem !important;
+            }
+            .table-custom th, .table-custom td {
+                padding: 12px 14px !important;
+            }
+            .table-sticky-col th:first-child,
+            .table-sticky-col td:first-child,
+            .table-sticky-first th:first-child,
+            .table-sticky-first td:first-child {
+                max-width: 180px !important;
+            }
+            .table-sticky-col td:first-child a,
+            .table-sticky-col td:first-child .fw-bold,
+            .table-sticky-col td:first-child code {
+                max-width: 155px !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+            }
+            .card-stat {
+                padding: 18px !important;
+            }
+        }
+
+        /* High-Resolution Screens & 4K Displays (>= 1600px) */
+        @@media (min-width: 1600px) {
+            .container-fluid {
+                padding-left: 2rem !important;
+                padding-right: 2rem !important;
+            }
+            .main-content-wrapper {
+                max-width: 1920px;
+            }
+        }
+
+        /* Touch Device Optimizations */
+        @@media (hover: none) and (pointer: coarse) {
+            .btn, .sidebar-link, .dropdown-item, .combobox-item {
+                -webkit-tap-highlight-color: transparent;
+            }
+            .action-pill-btn, .btn-action-icon {
+                min-height: 34px !important;
+            }
+        }
+
+        /* Print Media Styles */
+        @@media print {
+            .navbar-custom, .sidebar, .mobile-bottom-nav, #themeToggleBtn, .actions-pill-group, .btn-merchant-action {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+            }
+            .portal-card {
+                border: 1px solid #ccc !important;
+                box-shadow: none !important;
+            }
+        }
     </style>
     @RenderSection("Styles", required: false)
 </head>
 <body>
     <!-- Top Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-custom sticky-top py-2">
-        <div class="container-fluid px-3 px-md-4">
-            <!-- Brand -->
-            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="/">
-                <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
-                    <i class="bi bi-router-fill fs-5"></i>
-                </div>
-                <span class="fs-5">بوابة GoIP <span class="badge bg-primary bg-opacity-10 text-primary fs-8">Gateway</span></span>
-            </a>
+    <nav class="navbar navbar-custom sticky-top py-2">
+        <div class="container-fluid px-2 px-sm-3 px-md-4">
+            <div class="d-flex align-items-center gap-2">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <!-- Mobile Hamburger Button (<768px) -->
+                    <button class="btn btn-sm btn-outline-secondary d-md-none p-1.5 px-2 rounded-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" aria-label="فتح القائمة">
+                        <i class="bi bi-list fs-5"></i>
+                    </button>
+
+                    <!-- Desktop/Tablet Sidebar Collapse Toggle (>=768px) -->
+                    <button class="btn btn-sm btn-outline-secondary d-none d-md-inline-flex align-items-center justify-content-center p-1.5 px-2 rounded-3" id="sidebarCollapseBtn" type="button" onclick="toggleDesktopSidebar()" title="طي / توسيع القائمة الجانبية">
+                        <i class="bi bi-layout-sidebar-inset fs-6" id="sidebarCollapseIcon"></i>
+                    </button>
+                }
+
+                <!-- Brand -->
+                <a class="navbar-brand d-flex align-items-center gap-2 fw-bold me-0" href="/">
+                    <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center">
+                        <i class="bi bi-router-fill fs-5"></i>
+                    </div>
+                    <span class="fs-5 brand-text">GoIP <span class="badge bg-primary bg-opacity-10 text-primary fs-8 d-none d-sm-inline">Gateway</span></span>
+                </a>
+            </div>
 
             <!-- Right Controls: SignalR, Theme Switcher, Language, User -->
-            <div class="d-flex align-items-center gap-2 gap-md-3">
-                <!-- Live SignalR Pulse Indicator -->
-                <div class="d-none d-sm-flex align-items-center gap-2 px-3 py-1 rounded-pill border border-secondary border-opacity-25 fs-8" style="background: var(--card-bg);">
+            <div class="d-flex align-items-center gap-1.5 gap-sm-2 gap-md-2.5">
+                <!-- Live SignalR Pulse Indicator (Responsive: Dot only on small screens, label on md+) -->
+                <div class="d-flex align-items-center gap-1.5 px-2 px-md-3 py-1 rounded-pill border border-secondary border-opacity-25 fs-8 navbar-signalr-pill" style="background: var(--card-bg);" title="حالة الاتصال المباشر (SignalR)">
                     <span id="signalr-indicator" class="badge-live-pulse"></span>
-                    <span id="signalr-status" class="text-muted fw-bold">متصل لحظياً</span>
+                    <span id="signalr-status" class="text-muted fw-bold d-none d-md-inline">متصل لحظياً</span>
                 </div>
 
                 <!-- Theme Toggle Button (Dark / Light) -->
-                <button type="button" id="themeToggleBtn" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 px-3 py-1 rounded-pill" onclick="toggleTheme()" title="تبديل الوضع النهاري / الليلي">
+                <button type="button" id="themeToggleBtn" class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center gap-1 nav-pill-btn" onclick="toggleTheme()" title="تبديل الوضع النهاري / الليلي">
                     <i id="themeIcon" class="bi bi-moon-stars-fill text-warning"></i>
                     <span id="themeLabel" class="d-none d-md-inline fw-bold small">الوضع الليلي</span>
                 </button>
 
                 <!-- Language Switcher -->
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle px-3 py-1 rounded-pill" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-globe me-1"></i> @(isRtl ? "العربية" : "English")
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-no-caret d-flex align-items-center justify-content-center nav-pill-btn" type="button" data-bs-toggle="dropdown" aria-label="تغيير اللغة">
+                        <i class="bi bi-globe me-0 me-md-1"></i> <span class="d-none d-md-inline">@(isRtl ? "العربية" : "English")</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                         <li><a class="dropdown-item @(isRtl ? "active" : "")" asp-area="" asp-controller="Account" asp-action="SetLanguage" asp-route-culture="ar-EG" asp-route-returnUrl="@Context.Request.Path">🇪🇬 العربية</a></li>
@@ -974,9 +1711,9 @@
                 @if (User.Identity?.IsAuthenticated == true)
                 {
                     <div class="dropdown">
-                        <button class="btn btn-sm btn-outline-primary dropdown-toggle d-flex align-items-center gap-2 px-3 py-1 rounded-pill fw-bold" type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle dropdown-toggle-no-caret d-flex align-items-center justify-content-center gap-1.5 nav-pill-btn fw-bold" type="button" data-bs-toggle="dropdown" aria-label="حساب المستخدم">
                             <i class="bi bi-person-circle fs-6"></i>
-                            <span>@(User.Identity.Name ?? "المستخدم")</span>
+                            <span class="d-none d-sm-inline text-truncate" style="max-width: 140px;">@(User.Identity.Name ?? "المستخدم")</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                             <li><h6 class="dropdown-header">@(User.IsInRole("SuperAdmin") ? "👑 مدير المنصة (Super Admin)" : "🏢 حساب التاجر / الشركة")</h6></li>
@@ -998,33 +1735,124 @@
         </div>
     </nav>
 
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <!-- Mobile Sidebar Offcanvas (<768px) -->
+        <div class="offcanvas offcanvas-start mobile-offcanvas" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
+            <div class="offcanvas-header border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-router-fill fs-5"></i>
+                    </div>
+                    <span class="fs-6 fw-bold">بوابة GoIP Gateway</span>
+                </div>
+                <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="إغلاق"></button>
+            </div>
+            <div class="offcanvas-body p-0">
+                <div class="p-3 mx-3 mt-3 mb-2 rounded-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-5 flex-shrink-0" style="width: 42px; height: 42px;">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fw-bold text-truncate">@(User.Identity.Name ?? "المستخدم")</div>
+                        <div class="fs-8 text-muted">@(User.IsInRole("SuperAdmin") ? "👑 مدير المنصة (Super Admin)" : "🏢 حساب التاجر / الشركة")</div>
+                    </div>
+                </div>
+
+                <div class="py-2">
+                    @if (isAdminArea || User.IsInRole("SuperAdmin"))
+                    {
+                        <div class="px-4 pb-2 text-uppercase fs-8 fw-bold text-muted">إدارة النظام (الأدمن)</div>
+                        <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isAdminArea ? "active" : "")">
+                            <i class="bi bi-speedometer2"></i> <span>الرئيسية والإحصائيات</span>
+                        </a>
+                        <a asp-area="Admin" asp-controller="Tenants" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tenants" ? "active" : "")">
+                            <i class="bi bi-buildings"></i> <span>إدارة الشركات والتجار</span>
+                        </a>
+                        <a asp-area="Admin" asp-controller="Services" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Services" ? "active" : "")">
+                            <i class="bi bi-gear-wide-connected"></i> <span>كتالوج الخدمات و USSD</span>
+                        </a>
+                        <a asp-area="Admin" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isAdminArea ? "active" : "")">
+                            <i class="bi bi-clock-history"></i> <span>سجل العمليات العام</span>
+                        </a>
+                        <a asp-area="Admin" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")">
+                            <i class="bi bi-pie-chart-fill"></i> <span>تقرير الإجماليات والتسويات</span>
+                        </a>
+                        <a asp-area="Admin" asp-controller="Reports" asp-action="Tenants" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Tenants" ? "active" : "")">
+                            <i class="bi bi-graph-up-arrow"></i> <span>أداء وحجم أعمال الشركات</span>
+                        </a>
+                        <a asp-area="Admin" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                            <i class="bi bi-file-earmark-bar-graph"></i> <span>تقرير بوابات GoIP والأجهزة</span>
+                        </a>
+                        <div class="border-top my-3" style="border-color: var(--sidebar-border);"></div>
+                    }
+
+                    @if (isCompanyArea || !User.IsInRole("SuperAdmin"))
+                    {
+                        <div class="px-4 pb-2 text-uppercase fs-8 fw-bold text-muted">بوابة التاجر والشركة</div>
+                        <a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isCompanyArea ? "active" : "")">
+                            <i class="bi bi-speedometer"></i> <span>لوحة المتابعة</span>
+                        </a>
+                        <a asp-area="Company" asp-controller="Devices" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Devices" ? "active" : "")">
+                            <i class="bi bi-router"></i> <span>أجهزة GoIP</span>
+                        </a>
+                        <a asp-area="Company" asp-controller="SimCards" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SimCards" ? "active" : "")">
+                            <i class="bi bi-sim"></i> <span>الشرائح والمحافظ</span>
+                        </a>
+                        <a asp-area="Company" asp-controller="Routing" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Routing" ? "active" : "")">
+                            <i class="bi bi-shuffle text-primary"></i> <span>توجيه الخدمات والشرائح</span>
+                        </a>
+                        @if (!User.IsInRole("SuperAdmin"))
+                        {
+                            <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Execute" ? "active" : "")">
+                                <i class="bi bi-lightning-charge-fill text-warning"></i> <span>تنفيذ عملية فورية</span>
+                            </a>
+                        }
+                        <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")">
+                            <i class="bi bi-receipt"></i> <span>سجل العمليات</span>
+                        </a>
+                        <a asp-area="Company" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")">
+                            <i class="bi bi-pie-chart-fill"></i> <span>تقرير الإجماليات والتسويات</span>
+                        </a>
+                        <a asp-area="Company" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                            <i class="bi bi-file-earmark-bar-graph"></i> <span>تقرير الأجهزة والعمليات</span>
+                        </a>
+                        <a asp-area="Company" asp-controller="ApiSettings" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ApiSettings" ? "active" : "")">
+                            <i class="bi bi-key"></i> <span>مفاتيح الربط والـ API</span>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
     <!-- Layout Body -->
-    <div class="d-flex flex-grow-1">
+    <div class="d-flex flex-grow-1 position-relative">
         @if (User.Identity?.IsAuthenticated == true)
         {
-            <aside class="sidebar py-3 d-none d-md-block">
+            <aside class="sidebar py-3 d-none d-md-block" id="desktopSidebar">
                 @if (isAdminArea || User.IsInRole("SuperAdmin"))
                 {
-                    <div class="px-3 pb-2 text-uppercase fs-8 fw-bold text-muted">إدارة النظام (الأدمن)</div>
-                    <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isAdminArea ? "active" : "")">
+                    <div class="px-3 pb-2 text-uppercase fs-8 fw-bold text-muted sidebar-category-header">إدارة النظام (الأدمن)</div>
+                    <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isAdminArea ? "active" : "")" title="الرئيسية والإحصائيات">
                         <i class="bi bi-speedometer2"></i> <span>الرئيسية والإحصائيات</span>
                     </a>
-                    <a asp-area="Admin" asp-controller="Tenants" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tenants" ? "active" : "")">
+                    <a asp-area="Admin" asp-controller="Tenants" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tenants" ? "active" : "")" title="إدارة الشركات والتجار">
                         <i class="bi bi-buildings"></i> <span>إدارة الشركات والتجار</span>
                     </a>
-                    <a asp-area="Admin" asp-controller="Services" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Services" ? "active" : "")">
+                    <a asp-area="Admin" asp-controller="Services" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Services" ? "active" : "")" title="كتالوج الخدمات و USSD">
                         <i class="bi bi-gear-wide-connected"></i> <span>كتالوج الخدمات و USSD</span>
                     </a>
-                    <a asp-area="Admin" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isAdminArea ? "active" : "")">
+                    <a asp-area="Admin" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isAdminArea ? "active" : "")" title="سجل العمليات العام">
                         <i class="bi bi-clock-history"></i> <span>سجل العمليات العام</span>
                     </a>
-                    <a asp-area="Admin" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")">
+                    <a asp-area="Admin" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")" title="تقرير الإجماليات والتسويات">
                         <i class="bi bi-pie-chart-fill"></i> <span>تقرير الإجماليات والتسويات</span>
                     </a>
-                    <a asp-area="Admin" asp-controller="Reports" asp-action="Tenants" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Tenants" ? "active" : "")">
+                    <a asp-area="Admin" asp-controller="Reports" asp-action="Tenants" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Tenants" ? "active" : "")" title="أداء وحجم أعمال الشركات">
                         <i class="bi bi-graph-up-arrow"></i> <span>أداء وحجم أعمال الشركات</span>
                     </a>
-                    <a asp-area="Admin" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                    <a asp-area="Admin" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")" title="تقرير بوابات GoIP والأجهزة">
                         <i class="bi bi-file-earmark-bar-graph"></i> <span>تقرير بوابات GoIP والأجهزة</span>
                     </a>
                     <div class="border-top my-3" style="border-color: var(--sidebar-border);"></div>
@@ -1032,42 +1860,42 @@
 
                 @if (isCompanyArea || !User.IsInRole("SuperAdmin"))
                 {
-                    <div class="px-3 pb-2 text-uppercase fs-8 fw-bold text-muted">بوابة التاجر والشركة</div>
-                    <a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isCompanyArea ? "active" : "")">
+                    <div class="px-3 pb-2 text-uppercase fs-8 fw-bold text-muted sidebar-category-header">بوابة التاجر والشركة</div>
+                    <a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isCompanyArea ? "active" : "")" title="لوحة المتابعة">
                         <i class="bi bi-speedometer"></i> <span>لوحة المتابعة</span>
                     </a>
-                    <a asp-area="Company" asp-controller="Devices" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Devices" ? "active" : "")">
+                    <a asp-area="Company" asp-controller="Devices" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Devices" ? "active" : "")" title="أجهزة GoIP">
                         <i class="bi bi-router"></i> <span>أجهزة GoIP</span>
                     </a>
-                    <a asp-area="Company" asp-controller="SimCards" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SimCards" ? "active" : "")">
+                    <a asp-area="Company" asp-controller="SimCards" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SimCards" ? "active" : "")" title="الشرائح والمحافظ">
                         <i class="bi bi-sim"></i> <span>الشرائح والمحافظ</span>
                     </a>
-                    <a asp-area="Company" asp-controller="Routing" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Routing" ? "active" : "")">
+                    <a asp-area="Company" asp-controller="Routing" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Routing" ? "active" : "")" title="توجيه الخدمات والشرائح">
                         <i class="bi bi-shuffle text-primary"></i> <span>توجيه الخدمات والشرائح</span>
                     </a>
                     @if (!User.IsInRole("SuperAdmin"))
                     {
-                        <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Execute" ? "active" : "")">
+                        <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Execute" ? "active" : "")" title="تنفيذ عملية فورية">
                             <i class="bi bi-lightning-charge-fill text-warning"></i> <span>تنفيذ عملية فورية</span>
                         </a>
                     }
-                    <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")">
+                    <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")" title="سجل العمليات">
                         <i class="bi bi-receipt"></i> <span>سجل العمليات</span>
                     </a>
-                    <a asp-area="Company" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")">
+                    <a asp-area="Company" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")" title="تقرير الإجماليات والتسويات">
                         <i class="bi bi-pie-chart-fill"></i> <span>تقرير الإجماليات والتسويات</span>
                     </a>
-                    <a asp-area="Company" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                    <a asp-area="Company" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")" title="تقرير الأجهزة والعمليات">
                         <i class="bi bi-file-earmark-bar-graph"></i> <span>تقرير الأجهزة والعمليات</span>
                     </a>
-                    <a asp-area="Company" asp-controller="ApiSettings" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ApiSettings" ? "active" : "")">
+                    <a asp-area="Company" asp-controller="ApiSettings" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ApiSettings" ? "active" : "")" title="مفاتيح الربط والـ API">
                         <i class="bi bi-key"></i> <span>مفاتيح الربط والـ API</span>
                     </a>
                 }
             </aside>
         }
 
-        <main class="flex-grow-1 p-3 p-md-4">
+        <main class="flex-grow-1 p-2 p-sm-3 p-md-4 main-content-wrapper">
             @if (TempData["Success"] != null)
             {
                 <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 py-3 auto-dismiss-alert position-relative overflow-hidden" role="alert" data-timeout="20000">
@@ -1116,6 +1944,63 @@
             @RenderBody()
         </main>
     </div>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <!-- Mobile Bottom Glassmorphic Navigation Bar (<768px) -->
+        <nav class="mobile-bottom-nav d-md-none" aria-label="شريط التنقل السريع للهواتف">
+            @if (isAdminArea || User.IsInRole("SuperAdmin"))
+            {
+                <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="mobile-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isAdminArea ? "active" : "")">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>الرئيسية</span>
+                </a>
+                <a asp-area="Admin" asp-controller="Tenants" asp-action="Index" class="mobile-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tenants" ? "active" : "")">
+                    <i class="bi bi-buildings"></i>
+                    <span>الشركات</span>
+                </a>
+                <a asp-area="Admin" asp-controller="Services" asp-action="Index" class="mobile-nav-item mobile-nav-center @(ViewContext.RouteData.Values["controller"]?.ToString() == "Services" ? "active" : "")" title="الخدمات">
+                    <div class="mobile-nav-center-btn">
+                        <i class="bi bi-gear-wide-connected"></i>
+                    </div>
+                    <span>الخدمات</span>
+                </a>
+                <a asp-area="Admin" asp-controller="Transactions" asp-action="Index" class="mobile-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isAdminArea ? "active" : "")">
+                    <i class="bi bi-clock-history"></i>
+                    <span>العمليات</span>
+                </a>
+                <button type="button" class="mobile-nav-item" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" title="المزيد">
+                    <i class="bi bi-grid-fill"></i>
+                    <span>المزيد</span>
+                </button>
+            }
+            else
+            {
+                <a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="mobile-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isCompanyArea ? "active" : "")">
+                    <i class="bi bi-speedometer"></i>
+                    <span>الرئيسية</span>
+                </a>
+                <a asp-area="Company" asp-controller="Devices" asp-action="Index" class="mobile-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Devices" ? "active" : "")">
+                    <i class="bi bi-router"></i>
+                    <span>الأجهزة</span>
+                </a>
+                <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="mobile-nav-item mobile-nav-center @(ViewContext.RouteData.Values["controller"]?.ToString() == "Execute" ? "active" : "")" title="تنفيذ فوري">
+                    <div class="mobile-nav-center-btn">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                    </div>
+                    <span>تنفيذ فوري</span>
+                </a>
+                <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="mobile-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")">
+                    <i class="bi bi-receipt"></i>
+                    <span>العمليات</span>
+                </a>
+                <button type="button" class="mobile-nav-item" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" title="المزيد">
+                    <i class="bi bi-grid-fill"></i>
+                    <span>المزيد</span>
+                </button>
+            }
+        </nav>
+    }
 
     <!-- Unified System-Wide Confirmation Modal -->
     <div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
@@ -1167,526 +2052,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
 
-    <!-- Theme Switcher, SignalR & Global Confirmation Scripts -->
-    <script>
-        let globalPendingConfirmAction = null;
-
-        function showConfirmModal(options) {
-            const modalEl = document.getElementById('globalConfirmModal');
-            if (!modalEl) return;
-
-            const titleEl = document.getElementById('globalConfirmTitle');
-            const msgEl = document.getElementById('globalConfirmMessage');
-            const detailBox = document.getElementById('globalConfirmDetailBox');
-            const detailText = document.getElementById('globalConfirmDetailText');
-            const detailLabel = document.getElementById('globalConfirmDetailLabel');
-            const consequenceBox = document.getElementById('globalConfirmConsequenceBox');
-            const consequenceEl = document.getElementById('globalConfirmConsequence');
-            const btn = document.getElementById('globalConfirmActionBtn');
-            const btnText = document.getElementById('globalConfirmActionBtnText');
-            const btnIcon = document.getElementById('globalConfirmActionBtnIcon');
-            const cancelBtn = document.getElementById('globalConfirmCancelBtn');
-            const iconWrapper = document.getElementById('globalConfirmIconWrapper');
-            const icon = document.getElementById('globalConfirmIcon');
-
-            titleEl.innerText = options.title || 'تأكيد الإجراء';
-            msgEl.innerText = options.message || 'هل أنت متأكد من تنفيذ هذه العملية؟';
-
-            if (options.detail) {
-                detailBox.classList.remove('d-none');
-                detailText.innerText = options.detail;
-                if (options.detailLabel) detailLabel.innerText = options.detailLabel;
-            } else {
-                detailBox.classList.add('d-none');
-            }
-
-            if (options.consequence) {
-                consequenceBox.classList.remove('d-none');
-                consequenceEl.innerText = options.consequence;
-            } else {
-                consequenceBox.classList.add('d-none');
-            }
-
-            const isAlertMode = (options.hideCancel === true || options.isAlert === true);
-            if (cancelBtn) {
-                if (isAlertMode) {
-                    cancelBtn.classList.add('d-none');
-                } else {
-                    cancelBtn.classList.remove('d-none');
-                }
-            }
-
-            const type = options.type || 'danger';
-            iconWrapper.className = 'confirm-icon-wrapper mb-3 mx-auto confirm-icon-' + type;
-
-            let btnClass = 'btn-danger';
-            let defaultIcon = 'bi-shield-x';
-
-            if (type === 'danger') {
-                btnClass = 'btn-danger';
-                defaultIcon = 'bi-shield-x';
-            } else if (type === 'warning') {
-                btnClass = 'btn-warning text-dark';
-                defaultIcon = 'bi-exclamation-triangle-fill';
-            } else if (type === 'info') {
-                btnClass = 'btn-primary';
-                defaultIcon = 'bi-info-circle-fill';
-            } else if (type === 'success') {
-                btnClass = 'btn-success';
-                defaultIcon = 'bi-check-circle-fill';
-            } else {
-                btnClass = 'btn-primary';
-                defaultIcon = 'bi-question-circle-fill';
-            }
-
-            btn.className = 'btn px-4 py-2 rounded-pill fw-bold fs-7 shadow-sm d-flex align-items-center justify-content-center gap-1.5 ' + btnClass + (isAlertMode ? ' px-5' : ' flex-grow-1');
-            icon.className = 'bi ' + (options.icon || defaultIcon);
-            if (btnIcon) {
-                btnIcon.className = 'bi ' + (isAlertMode ? 'bi-check-lg' : 'bi-check-circle-fill');
-            }
-
-            btnText.innerText = options.btnText || (isAlertMode ? 'حسناً، فهمت' : (type === 'danger' ? 'نعم، تأكيد' : 'تأكيد الإجراء'));
-
-            globalPendingConfirmAction = options.onConfirm || null;
-
-            const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            bsModal.show();
-        }
-
-        function showAlertModal(options, title, type) {
-            let opts = {};
-            if (typeof options === 'string') {
-                opts = {
-                    message: options,
-                    title: title || 'تنبيه النظام',
-                    type: type || 'warning',
-                    btnText: 'حسناً، فهمت'
-                };
-            } else {
-                opts = Object.assign({}, options);
-            }
-            opts.hideCancel = true;
-            opts.isAlert = true;
-            showConfirmModal(opts);
-        }
-
-        // Global exposure
-        window.showAlertModal = showAlertModal;
-        window.showConfirmModal = showConfirmModal;
-
-        // Global override for window.alert to guarantee 100% UI consistency across the entire app
-        window.alert = function (message) {
-            showAlertModal(message);
-        };
-
-        function updateThemeUI(theme) {
-            const icon = document.getElementById("themeIcon");
-            const label = document.getElementById("themeLabel");
-            if (!icon || !label) return;
-
-            if (theme === "dark") {
-                icon.className = "bi bi-sun-fill text-warning";
-                label.innerText = "الوضع النهاري";
-            } else {
-                icon.className = "bi bi-moon-stars-fill text-primary";
-                label.innerText = "الوضع الليلي";
-            }
-        }
-
-        function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
-            const newTheme = currentTheme === "dark" ? "light" : "dark";
-            document.documentElement.setAttribute("data-bs-theme", newTheme);
-            localStorage.setItem("goip_theme", newTheme);
-            updateThemeUI(newTheme);
-        }
-
-        document.addEventListener("DOMContentLoaded", function () {
-            const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
-            updateThemeUI(currentTheme);
-
-            // Wire Global Confirmation Action Button
-            const confirmBtn = document.getElementById('globalConfirmActionBtn');
-            if (confirmBtn) {
-                confirmBtn.addEventListener('click', function () {
-                    const modalEl = document.getElementById('globalConfirmModal');
-                    const bsModal = bootstrap.Modal.getInstance(modalEl);
-                    if (bsModal) bsModal.hide();
-
-                    if (typeof globalPendingConfirmAction === 'function') {
-                        const act = globalPendingConfirmAction;
-                        globalPendingConfirmAction = null;
-                        act();
-                    }
-                });
-            }
-
-            // Global Interceptor for forms with data-confirm="true"
-            document.addEventListener('submit', function (e) {
-                const form = e.target;
-                if (form.getAttribute('data-confirm') === 'true' && !form.dataset.confirmed) {
-                    e.preventDefault();
-                    showConfirmModal({
-                        title: form.getAttribute('data-confirm-title') || 'تأكيد العملية الحساسة',
-                        message: form.getAttribute('data-confirm-message') || 'هل أنت متأكد من تنفيذ هذا الإجراء؟',
-                        detail: form.getAttribute('data-confirm-detail') || '',
-                        detailLabel: form.getAttribute('data-confirm-detail-label') || 'العنصر المراد:',
-                        consequence: form.getAttribute('data-confirm-consequence') || '',
-                        btnText: form.getAttribute('data-confirm-btn') || 'نعم، تأكيد الإجراء',
-                        type: form.getAttribute('data-confirm-type') || 'danger',
-                        onConfirm: function () {
-                            form.dataset.confirmed = 'true';
-                            form.submit();
-                        }
-                    });
-                }
-            });
-
-            // SignalR Connection
-            const connection = new signalR.HubConnectionBuilder()
-                .withUrl("/hubs/gateway")
-                .withAutomaticReconnect()
-                .build();
-
-            const indicator = document.getElementById("signalr-indicator");
-            const statusLabel = document.getElementById("signalr-status");
-
-            connection.start().then(() => {
-                if (indicator) indicator.style.backgroundColor = "#22c55e";
-                if (statusLabel) statusLabel.innerText = "متصل لحظياً";
-                connection.invoke("JoinAdminGroup").catch(err => console.log(err));
-                var currentTenantId = '@(User.FindFirst("TenantId")?.Value ?? "")';
-                if (currentTenantId) {
-                    connection.invoke("JoinTenantGroup", currentTenantId).catch(err => console.log(err));
-                }
-            }).catch(err => {
-                if (indicator) indicator.style.backgroundColor = "#ef4444";
-                if (statusLabel) statusLabel.innerText = "غير متصل";
-            });
-
-            connection.on("OnTransactionUpdated", function (tx) {
-                window.dispatchEvent(new CustomEvent("goip:transactionUpdated", { detail: tx }));
-            });
-
-            connection.on("OnSimBalanceChanged", function (sim) {
-                window.dispatchEvent(new CustomEvent("goip:simBalanceChanged", { detail: sim }));
-            });
-
-            connection.on("OnPortStatusChanged", function (port) {
-                window.dispatchEvent(new CustomEvent("goip:portStatusChanged", { detail: port }));
-            });
-
-            // Auto-dismiss Alerts (20 Seconds with Countdown & Hover Pause)
-            function setupAutoDismissAlerts() {
-                const alerts = document.querySelectorAll('.alert-dismissible');
-                alerts.forEach(function (alertEl) {
-                    if (alertEl.dataset.autoDismissInit === 'true') return;
-                    alertEl.dataset.autoDismissInit = 'true';
-                    alertEl.classList.add('auto-dismiss-alert', 'position-relative', 'overflow-hidden');
-
-                    let progressBar = alertEl.querySelector('.alert-progress-bar');
-                    if (!progressBar) {
-                        progressBar = document.createElement('div');
-                        progressBar.className = 'alert-progress-bar';
-                        const progressInner = document.createElement('div');
-                        progressInner.className = 'alert-progress-inner';
-                        progressBar.appendChild(progressInner);
-                        alertEl.appendChild(progressBar);
-                    }
-
-                    const progressInner = alertEl.querySelector('.alert-progress-inner');
-                    const timeoutMs = parseInt(alertEl.getAttribute('data-timeout') || '20000', 10);
-
-                    if (progressInner) {
-                        progressInner.style.animationDuration = timeoutMs + 'ms';
-                    }
-
-                    let remainingMs = timeoutMs;
-                    let startTime = Date.now();
-                    let timerId = null;
-
-                    function startTimer() {
-                        startTime = Date.now();
-                        timerId = setTimeout(function () {
-                            try {
-                                const bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
-                                bsAlert.close();
-                            } catch {
-                                alertEl.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                                alertEl.style.opacity = '0';
-                                alertEl.style.transform = 'translateY(-10px)';
-                                setTimeout(() => alertEl.remove(), 400);
-                            }
-                        }, remainingMs);
-                    }
-
-                    function pauseTimer() {
-                        if (timerId) {
-                            clearTimeout(timerId);
-                            timerId = null;
-                            const elapsed = Date.now() - startTime;
-                            remainingMs = Math.max(0, remainingMs - elapsed);
-                            if (progressInner) {
-                                progressInner.style.animationPlayState = 'paused';
-                            }
-                        }
-                    }
-
-                    function resumeTimer() {
-                        if (!timerId && remainingMs > 0) {
-                            if (progressInner) {
-                                progressInner.style.animationPlayState = 'running';
-                            }
-                            startTimer();
-                        }
-                    }
-
-                    alertEl.addEventListener('mouseenter', pauseTimer);
-                    alertEl.addEventListener('mouseleave', resumeTimer);
-
-                    startTimer();
-                });
-            }
-
-            setupAutoDismissAlerts();
-
-            // ========================================================
-            // UNIVERSAL SEARCHABLE COMBOBOX ENGINE
-            // Enhances any <select class="searchable-select"> automatically
-            // ========================================================
-            function initSearchableSelects(container) {
-                const root = container || document;
-                const selects = root.querySelectorAll('select.searchable-select, select[data-searchable="true"]');
-                selects.forEach(function (select) {
-                    if (select.dataset.searchableInit === 'true') return;
-                    select.dataset.searchableInit = 'true';
-
-                    const isSm = select.classList.contains('form-select-sm') || select.classList.contains('input-sm');
-                    const placeholder = select.getAttribute('data-placeholder') || 'اختر أو ابحث...';
-                    const searchPlaceholder = select.getAttribute('data-search-placeholder') || 'ابحث هنا...';
-
-                    // Create Wrapper
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'searchable-combobox ' + (isSm ? 'combobox-sm' : '');
-                    if (select.classList.contains('w-100')) wrapper.classList.add('w-100');
-
-                    // Create Trigger
-                    const trigger = document.createElement('div');
-                    trigger.className = 'combobox-trigger d-flex align-items-center justify-content-between ' + (isSm ? 'py-1.5 px-2.5 fs-7' : '');
-                    trigger.setAttribute('tabindex', '0');
-                    trigger.setAttribute('role', 'combobox');
-                    trigger.setAttribute('aria-expanded', 'false');
-
-                    const triggerContent = document.createElement('div');
-                    triggerContent.className = 'd-flex align-items-center gap-2 overflow-hidden text-truncate';
-
-                    const caret = document.createElement('i');
-                    caret.className = 'bi bi-chevron-down text-muted fs-7 combobox-caret ms-2 flex-shrink-0';
-
-                    trigger.appendChild(triggerContent);
-                    trigger.appendChild(caret);
-                    wrapper.appendChild(trigger);
-
-                    // Create Menu Dropdown
-                    const menu = document.createElement('div');
-                    menu.className = 'combobox-menu shadow-lg p-2';
-
-                    // Sticky Search Box
-                    const searchBox = document.createElement('div');
-                    searchBox.className = 'combobox-search-box';
-                    searchBox.innerHTML = `
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control border-start-0 combobox-search-input" placeholder="${searchPlaceholder}" />
-                        </div>
-                    `;
-                    menu.appendChild(searchBox);
-
-                    // Items Container
-                    const itemsContainer = document.createElement('div');
-                    itemsContainer.className = 'combobox-items-list';
-                    menu.appendChild(itemsContainer);
-
-                    // Empty State Notice
-                    const noResults = document.createElement('div');
-                    noResults.className = 'combobox-no-results text-center py-3 text-muted small d-none';
-                    noResults.innerHTML = '<i class="bi bi-search d-block mb-1 opacity-50"></i> لا توجد نتائج مطابقة للبحث';
-                    menu.appendChild(noResults);
-
-                    wrapper.appendChild(menu);
-
-                    // Build Options
-                    function buildItems() {
-                        itemsContainer.innerHTML = '';
-                        Array.from(select.children).forEach(function (child) {
-                            if (child.tagName === 'OPTGROUP') {
-                                const groupHeader = document.createElement('div');
-                                groupHeader.className = 'combobox-group-header';
-                                groupHeader.textContent = child.label;
-                                itemsContainer.appendChild(groupHeader);
-                                Array.from(child.children).forEach(opt => appendOptionItem(opt));
-                            } else if (child.tagName === 'OPTION') {
-                                appendOptionItem(child);
-                            }
-                        });
-                    }
-
-                    function appendOptionItem(opt) {
-                        const item = document.createElement('div');
-                        const isSel = opt.selected;
-                        item.className = 'combobox-item ' + (isSm ? 'py-1.5 px-2 fs-7' : 'py-2 px-2.5') + (isSel ? ' selected' : '');
-                        item.setAttribute('data-value', opt.value);
-                        item.setAttribute('data-search', (opt.text + ' ' + (opt.getAttribute('data-search') || '')).toLowerCase());
-
-                        const badge = opt.getAttribute('data-badge');
-                        const badgeClass = opt.getAttribute('data-badge-class') || 'bg-light text-dark border';
-                        const icon = opt.getAttribute('data-icon');
-
-                        let itemHtml = '<div class="d-flex align-items-center gap-2 overflow-hidden text-truncate">';
-                        if (icon) {
-                            itemHtml += `<i class="bi ${icon} text-primary flex-shrink-0"></i>`;
-                        }
-                        itemHtml += `<span class="text-truncate">${opt.text}</span></div>`;
-                        if (badge) {
-                            itemHtml += `<span class="badge ${badgeClass} fs-9 ms-2 flex-shrink-0">${badge}</span>`;
-                        }
-                        item.innerHTML = itemHtml;
-
-                        item.addEventListener('click', function (e) {
-                            e.stopPropagation();
-                            select.value = opt.value;
-                            select.dispatchEvent(new Event('change', { bubbles: true }));
-                            select.dispatchEvent(new Event('input', { bubbles: true }));
-                            updateTriggerDisplay();
-                            closeMenu();
-                        });
-
-                        itemsContainer.appendChild(item);
-                    }
-
-                    function updateTriggerDisplay() {
-                        const currentOpt = select.options[select.selectedIndex];
-                        if (!currentOpt || currentOpt.value === '') {
-                            const promptText = currentOpt ? currentOpt.text : placeholder;
-                            triggerContent.innerHTML = `<span class="text-muted text-truncate">${promptText}</span>`;
-                        } else {
-                            const icon = currentOpt.getAttribute('data-icon');
-                            const badge = currentOpt.getAttribute('data-badge');
-                            const badgeClass = currentOpt.getAttribute('data-badge-class') || 'bg-light text-dark border';
-                            let html = '';
-                            if (icon) html += `<i class="bi ${icon} text-primary flex-shrink-0"></i> `;
-                            html += `<span class="fw-semibold text-main text-truncate">${currentOpt.text}</span>`;
-                            if (badge) html += ` <span class="badge ${badgeClass} fs-9 ms-1">${badge}</span>`;
-                            triggerContent.innerHTML = html;
-                        }
-
-                        itemsContainer.querySelectorAll('.combobox-item').forEach(function (it) {
-                            if (it.getAttribute('data-value') === select.value) {
-                                it.classList.add('selected');
-                            } else {
-                                it.classList.remove('selected');
-                            }
-                        });
-                    }
-
-                    function openMenu() {
-                        document.querySelectorAll('.combobox-menu.show').forEach(function (m) {
-                            if (m !== menu) {
-                                m.classList.remove('show');
-                                m.parentElement.querySelector('.combobox-trigger')?.classList.remove('active');
-                            }
-                        });
-                        menu.classList.add('show');
-                        trigger.classList.add('active');
-                        trigger.setAttribute('aria-expanded', 'true');
-                        const input = searchBox.querySelector('.combobox-search-input');
-                        if (input) {
-                            input.value = '';
-                            filterItems('');
-                            setTimeout(() => input.focus(), 60);
-                        }
-                    }
-
-                    function closeMenu() {
-                        menu.classList.remove('show');
-                        trigger.classList.remove('active');
-                        trigger.setAttribute('aria-expanded', 'false');
-                    }
-
-                    function filterItems(query) {
-                        const q = (query || '').trim().toLowerCase();
-                        let visibleCount = 0;
-                        itemsContainer.querySelectorAll('.combobox-item').forEach(function (it) {
-                            const searchData = it.getAttribute('data-search') || '';
-                            const matches = !q || searchData.includes(q);
-                            it.style.display = matches ? 'flex' : 'none';
-                            if (matches) visibleCount++;
-                        });
-
-                        itemsContainer.querySelectorAll('.combobox-group-header').forEach(function (header) {
-                            let next = header.nextElementSibling;
-                            let hasVisible = false;
-                            while (next && !next.classList.contains('combobox-group-header')) {
-                                if (next.style.display !== 'none') hasVisible = true;
-                                next = next.nextElementSibling;
-                            }
-                            header.style.display = hasVisible ? 'block' : 'none';
-                        });
-
-                        noResults.classList.toggle('d-none', visibleCount > 0);
-                    }
-
-                    const searchInput = searchBox.querySelector('.combobox-search-input');
-                    searchInput.addEventListener('input', e => filterItems(e.target.value));
-                    searchInput.addEventListener('click', e => e.stopPropagation());
-
-                    trigger.addEventListener('click', function (e) {
-                        e.stopPropagation();
-                        if (menu.classList.contains('show')) closeMenu();
-                        else openMenu();
-                    });
-
-                    // Sync when select value changes programmatically or via form reset
-                    select.addEventListener('change', updateTriggerDisplay);
-                    if (select.form) {
-                        select.form.addEventListener('reset', function () {
-                            setTimeout(updateTriggerDisplay, 50);
-                        });
-                    }
-
-                    // Hide original select and insert combobox right after it
-                    select.style.display = 'none';
-                    select.parentNode.insertBefore(wrapper, select.nextSibling);
-
-                    buildItems();
-                    updateTriggerDisplay();
-                });
-            }
-
-            // Expose globally
-            window.initSearchableSelects = initSearchableSelects;
-            initSearchableSelects();
-
-            // Global Click Outside & Escape Key Listener
-            document.addEventListener('click', function (e) {
-                if (!e.target.closest('.searchable-combobox')) {
-                    document.querySelectorAll('.combobox-menu.show').forEach(function (m) {
-                        m.classList.remove('show');
-                        m.parentElement.querySelector('.combobox-trigger')?.classList.remove('active');
-                    });
-                }
-            });
-
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') {
-                    document.querySelectorAll('.combobox-menu.show').forEach(function (m) {
-                        m.classList.remove('show');
-                        m.parentElement.querySelector('.combobox-trigger')?.classList.remove('active');
-                    });
-                }
-            });
-        });
-    </script>
+    <!-- Modular GoIP Frontend Services -->
+    <script src="~/js/services/themeService.js" asp-append-version="true"></script>
+    <script src="~/js/services/sidebarService.js" asp-append-version="true"></script>
+    <script src="~/js/services/tableStickyService.js" asp-append-version="true"></script>
+    <script src="~/js/services/comboboxService.js" asp-append-version="true"></script>
+    <script src="~/js/services/confirmModalService.js" asp-append-version="true"></script>
+    <script src="~/js/services/alertService.js" asp-append-version="true"></script>
+    <script src="~/js/services/signalrService.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>

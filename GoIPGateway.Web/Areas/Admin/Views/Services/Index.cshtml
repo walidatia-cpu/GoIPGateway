@@ -308,88 +308,80 @@
         </div>
     </div>
 
-    <!-- Unified Filters Toolbar -->
-    <div class="portal-card p-3 mb-4 shadow-sm">
-        <!-- Row 1: Search & Toggle -->
-        <div class="row g-3 align-items-center mb-3">
-            <div class="col-12 col-md-6">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0 text-muted">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" id="serviceSearchInput" class="form-control border-start-0" 
-                           placeholder="ابحث باسم الخدمة، كود الـ API (مثل VF_PAY)، أو الشبكة..." 
-                           onkeyup="filterCatalog()" />
-                </div>
-            </div>
+    @{
+        var activeCount = servicesList.Count(s => s.IsActive);
+        var inactiveCount = totalServices - activeCount;
 
-            <div class="col-12 col-md-6 d-flex align-items-center gap-3 justify-content-md-end flex-wrap">
-                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" id="btnActiveOnly" onclick="toggleActiveOnly(this)">
-                    <i class="bi bi-toggle2-on me-1"></i> النشطة فقط
-                </button>
-                <div class="text-muted small">
-                    عرض <strong class="text-primary font-monospace" id="visibleCount">@totalServices</strong> من أصل @totalServices خدمة
-                </div>
-            </div>
-        </div>
-
-        <!-- Row 2: Telecom Networks Filter Pills -->
-        <div class="d-flex flex-wrap align-items-center gap-2 pt-2 border-top">
-            <span class="text-muted small fw-bold me-2"><i class="bi bi-sim me-1"></i> تصفية بالشبكة:</span>
-            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill active" data-op="ALL" onclick="filterByOp(this, 'ALL')">
-                كل الشبكات (@totalServices)
-            </button>
-            @if (generalCount > 0)
+        var serviceFilterBar = new SearchFilterBarModel
+        {
+            SearchInputId = "serviceSearchInput",
+            SearchPlaceholder = "ابحث باسم الخدمة، كود الـ API (مثل VF_PAY)، أو الشبكة...",
+            OnSearchInput = "filterCatalog()",
+            CounterId = "visibleCount",
+            CounterLabel = "الخدمات الظاهرة:",
+            InitialCount = totalServices,
+            ResetFiltersFunction = "resetServiceFilters()",
+            Filters = new List<FilterDropdownModel>
             {
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-pill" data-op="General" onclick="filterByOp(this, 'General')">
-                    🌐 عامة / لكافة الشبكات (@generalCount)
-                </button>
+                new FilterDropdownModel
+                {
+                    Id = "serviceOpFilter",
+                    Label = "معيار الشبكة:",
+                    Icon = "bi-broadcast",
+                    OnChange = "onServiceOpChange(this.value)",
+                    Options = new List<FilterOptionModel>
+                    {
+                        new FilterOptionModel("ALL", "كل الشبكات", badge: totalServices.ToString(), color: "primary", isSelected: true),
+                        new FilterOptionModel("General", "عامة / لكافة الشبكات", badge: generalCount.ToString(), color: "secondary"),
+                        new FilterOptionModel("Vodafone", "فودافون كاش", badge: vfCount.ToString(), color: "danger"),
+                        new FilterOptionModel("Orange", "أورانج كاش", badge: orCount.ToString(), color: "warning"),
+                        new FilterOptionModel("Etisalat", "اتصالات كاش", badge: etCount.ToString(), color: "success"),
+                        new FilterOptionModel("WE", "وي باي WE", badge: weCount.ToString(), color: "info")
+                    }
+                },
+                new FilterDropdownModel
+                {
+                    Id = "serviceCatFilter",
+                    Label = "معيار التصنيف:",
+                    Icon = "bi-tags",
+                    OnChange = "onServiceCatChange(this.value)",
+                    Options = new List<FilterOptionModel>
+                    {
+                        new FilterOptionModel("ALL", "كل التصنيفات", badge: totalServices.ToString(), color: "primary", isSelected: true),
+                        new FilterOptionModel("Payment", "دفع وتحويل كاش", badge: paymentServices.Count.ToString(), color: "primary"),
+                        new FilterOptionModel("Inquiry", "استعلام رصيد", badge: balanceServices.Count.ToString(), color: "info"),
+                        new FilterOptionModel("NumberInquiry", "استعلام وتأكيد رقم", badge: numberServices.Count.ToString(), color: "warning")
+                    }
+                },
+                new FilterDropdownModel
+                {
+                    Id = "serviceStatusFilter",
+                    Label = "معيار الحالة:",
+                    Icon = "bi-funnel-fill",
+                    OnChange = "onServiceStatusChange(this.value)",
+                    Options = new List<FilterOptionModel>
+                    {
+                        new FilterOptionModel("ALL", "كل الحالات", badge: totalServices.ToString(), color: "primary", isSelected: true),
+                        new FilterOptionModel("ACTIVE", "النشطة فقط", badge: activeCount.ToString(), color: "success"),
+                        new FilterOptionModel("INACTIVE", "المعطلة", badge: inactiveCount.ToString(), color: "danger")
+                    }
+                }
             }
-            <button type="button" class="btn btn-sm pill-op-vodafone rounded-pill px-3 filter-pill" data-op="Vodafone" onclick="filterByOp(this, 'Vodafone')">
-                <span class="dot-indicator"></span> فودافون كاش (@vfCount)
-            </button>
-            <button type="button" class="btn btn-sm pill-op-orange rounded-pill px-3 filter-pill" data-op="Orange" onclick="filterByOp(this, 'Orange')">
-                <span class="dot-indicator"></span> أورانج كاش (@orCount)
-            </button>
-            <button type="button" class="btn btn-sm pill-op-etisalat rounded-pill px-3 filter-pill" data-op="Etisalat" onclick="filterByOp(this, 'Etisalat')">
-                <span class="dot-indicator"></span> اتصالات كاش (@etCount)
-            </button>
-            <button type="button" class="btn btn-sm pill-op-we rounded-pill px-3 filter-pill" data-op="WE" onclick="filterByOp(this, 'WE')">
-                <span class="dot-indicator"></span> وي باي WE (@weCount)
-            </button>
-        </div>
+        };
+    }
 
-        <!-- Row 3: Category Tabs -->
-        <div class="d-flex flex-wrap align-items-center gap-2 pt-2 mt-2 border-top">
-            <span class="text-muted small fw-bold me-2"><i class="bi bi-tags me-1"></i> تصفية بالتصنيف:</span>
-            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-cat-tab active" data-cat="ALL" onclick="filterByCat(this, 'ALL')">
-                كل التصنيفات (@totalServices)
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 filter-cat-tab" data-cat="Payment" onclick="filterByCat(this, 'Payment')">
-                💳 دفع وتحويل كاش (@paymentServices.Count)
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 filter-cat-tab" data-cat="Inquiry" onclick="filterByCat(this, 'Inquiry')">
-                🔍 استعلام رصيد (@balanceServices.Count)
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 filter-cat-tab" data-cat="NumberInquiry" onclick="filterByCat(this, 'NumberInquiry')">
-                📱 استعلام رقم (@numberServices.Count)
-            </button>
-            @if (otherServices.Any())
-            {
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-cat-tab" data-cat="Other" onclick="filterByCat(this, 'Other')">
-                    ⚙️ خدمات أخرى (@otherServices.Count)
-                </button>
-            }
-        </div>
+    <!-- Unified Filters Toolbar Microcomponent -->
+    <div class="portal-card mb-4 shadow-sm">
+        <partial name="Partials/_SearchFilterBar" model="serviceFilterBar" />
     </div>
 
     <!-- Unified Master Services Table Card -->
     <div class="portal-card shadow-sm table-card-container mb-4">
         <div class="table-responsive table-responsive-custom">
-            <table class="table table-custom align-middle mb-0" id="servicesMasterTable">
+            <table class="table table-custom table-sticky-col align-middle mb-0" id="servicesMasterTable">
                 <thead>
                     <tr>
-                        <th style="min-width: 220px;">اسم الخدمة</th>
+                        <th style="min-width: 130px;"><span class="d-none d-sm-inline">اسم الخدمة</span><span class="d-sm-none">الخدمة</span></th>
                         <th style="min-width: 140px;">كود الـ API</th>
                         <th style="min-width: 130px;">الشبكة</th>
                         <th style="min-width: 120px;">التصنيف</th>
@@ -421,14 +413,14 @@
             </table>
         </div>
 
-        <!-- No search matches alert -->
-        <div id="noCatalogMatches" class="p-5 text-center d-none">
-            <i class="bi bi-search fs-1 text-muted opacity-50 d-block mb-2"></i>
-            <h6 class="fw-bold mb-1 text-main">لم يتم العثور على خدمات مطابقة</h6>
-            <p class="text-muted small mb-3">جرب تغيير كلمات البحث أو اختيار شبكة أو تصنيف آخر.</p>
-            <button type="button" class="btn btn-sm btn-outline-secondary px-3" onclick="resetCatalogFilters()">
-                إعادة ضبط كل الفلاتر
-            </button>
+        <!-- No search matches alert microcomponent -->
+        <div id="noCatalogMatches" class="d-none">
+            <partial name="Partials/_EmptyTableState" model='new EmptyTableStateModel {
+                Icon = "bi-search",
+                Title = "لم يتم العثور على خدمات مطابقة",
+                Message = "جرب تغيير كلمات البحث أو اختيار شبكة أو تصنيف آخر من القوائم المنسدلة.",
+                ResetActionClick = "resetServiceFilters()"
+            }' />
         </div>
     </div>
 </div>
@@ -438,55 +430,54 @@
     <script>
         let currentOp = 'ALL';
         let currentCat = 'ALL';
-        let activeOnly = false;
+        let currentStatus = 'ALL';
 
-        function filterByOp(btn, op) {
-            document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
-            btn.classList.add("active");
-            currentOp = op;
+        function onServiceOpChange(op) {
+            currentOp = op || 'ALL';
             filterCatalog();
         }
 
-        function filterByCat(btn, cat) {
-            document.querySelectorAll(".filter-cat-tab").forEach(p => p.classList.remove("active"));
-            btn.classList.add("active");
-            currentCat = cat;
+        function onServiceCatChange(cat) {
+            currentCat = cat || 'ALL';
             filterCatalog();
         }
 
-        function toggleActiveOnly(btn) {
-            activeOnly = !activeOnly;
-            if (activeOnly) {
-                btn.classList.remove("btn-outline-primary");
-                btn.classList.add("btn-primary");
-            } else {
-                btn.classList.remove("btn-primary");
-                btn.classList.add("btn-outline-primary");
+        function onServiceStatusChange(st) {
+            currentStatus = st || 'ALL';
+            filterCatalog();
+        }
+
+        function resetServiceFilters() {
+            const sInp = document.getElementById('serviceSearchInput');
+            if (sInp) {
+                sInp.value = '';
+                sInp.dispatchEvent(new Event('input', { bubbles: true }));
             }
+            currentOp = 'ALL';
+            currentCat = 'ALL';
+            currentStatus = 'ALL';
+
+            const opSel = document.getElementById('serviceOpFilter');
+            if (opSel) {
+                opSel.value = 'ALL';
+                opSel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            const catSel = document.getElementById('serviceCatFilter');
+            if (catSel) {
+                catSel.value = 'ALL';
+                catSel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            const stSel = document.getElementById('serviceStatusFilter');
+            if (stSel) {
+                stSel.value = 'ALL';
+                stSel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
             filterCatalog();
         }
 
         function resetCatalogFilters() {
-            document.getElementById('serviceSearchInput').value = '';
-            currentOp = 'ALL';
-            currentCat = 'ALL';
-            activeOnly = false;
-
-            const activeBtn = document.getElementById('btnActiveOnly');
-            if (activeBtn) {
-                activeBtn.classList.remove('btn-primary');
-                activeBtn.classList.add('btn-outline-primary');
-            }
-
-            document.querySelectorAll('.filter-pill').forEach(p => {
-                p.classList.toggle('active', p.getAttribute('data-op') === 'ALL');
-            });
-
-            document.querySelectorAll('.filter-cat-tab').forEach(p => {
-                p.classList.toggle('active', p.getAttribute('data-cat') === 'ALL');
-            });
-
-            filterCatalog();
+            resetServiceFilters();
         }
 
         function filterCatalog() {
@@ -504,10 +495,14 @@
                                || (currentOp === 'General' && (rowOp === 'General' || rowOp === 'ALL'))
                                || (rowOp === currentOp || rowOp === 'General' || rowOp === 'ALL');
                 const matchesCat = (currentCat === 'ALL' || rowCat === currentCat);
-                const matchesActive = (!activeOnly || rowActive);
+                
+                let matchesStatus = true;
+                if (currentStatus === 'ACTIVE') matchesStatus = rowActive;
+                else if (currentStatus === 'INACTIVE') matchesStatus = !rowActive;
+
                 const matchesQuery = (!query || rowSearch.includes(query));
 
-                if (matchesOp && matchesCat && matchesActive && matchesQuery) {
+                if (matchesOp && matchesCat && matchesStatus && matchesQuery) {
                     r.style.display = '';
                     totalVisible++;
                 } else {

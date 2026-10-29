@@ -257,10 +257,10 @@
             else
             {
                 <div class="table-responsive">
-                    <table class="table table-custom align-middle mb-0">
+                    <table class="table table-custom table-sticky-col align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>اسم الجهاز والموديل</th>
+                                <th style="min-width: 130px;"><span class="d-none d-sm-inline">اسم الجهاز والموديل</span><span class="d-sm-none">الجهاز</span></th>
                                 <th>عنوان IP</th>
                                 <th>الحالة</th>
                                 <th>المنافذ والشرائح</th>
@@ -276,12 +276,12 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
-                                            <div class="p-2 rounded-3 bg-secondary bg-opacity-10 text-main fs-6">
+                                            <div class="p-2 rounded-3 bg-secondary bg-opacity-10 text-main fs-6 d-none d-md-flex">
                                                 <i class="bi bi-router"></i>
                                             </div>
-                                            <div>
-                                                <div class="fw-bold text-main">@dev.DeviceName</div>
-                                                <div class="text-muted fs-8 font-monospace">@dev.DeviceType</div>
+                                            <div class="min-w-0">
+                                                <div class="fw-bold text-main text-truncate" style="max-width: 120px;" title="@dev.DeviceName">@dev.DeviceName</div>
+                                                <div class="text-muted fs-8 font-monospace d-none d-md-block">@dev.DeviceType</div>
                                             </div>
                                         </div>
                                     </td>
@@ -389,10 +389,10 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-custom align-middle mb-0">
+                        <table class="table table-custom table-sticky-col align-middle mb-0">
                             <thead>
                                 <tr>
-                                    <th>الخدمة</th>
+                                    <th style="min-width: 120px;"><span class="d-none d-sm-inline">الخدمة</span><span class="d-sm-none">الخدمة</span></th>
                                     <th>التصنيف</th>
                                     <th>عدد العمليات</th>
                                     <th>نسبة النجاح</th>
@@ -404,8 +404,10 @@
                                 {
                                     <tr>
                                         <td>
-                                            <div class="fw-bold text-main">@svc.NameAr</div>
-                                            <div class="text-muted fs-8 font-monospace">@svc.ServiceCode</div>
+                                            <div class="min-w-0">
+                                                <div class="fw-bold text-main text-truncate" style="max-width: 120px;" title="@svc.NameAr">@svc.NameAr</div>
+                                                <div class="text-muted fs-8 font-monospace d-none d-md-block">@svc.ServiceCode</div>
+                                            </div>
                                         </td>
                                         <td>
                                             <span class="badge bg-secondary bg-opacity-10 text-main fs-8">@svc.Category</span>
@@ -451,10 +453,10 @@
             else
             {
                 <div class="table-responsive">
-                    <table class="table table-custom align-middle mb-0">
+                    <table class="table table-custom table-sticky-col align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>رقم المعاملة</th>
+                                <th style="min-width: 125px;"><span class="d-none d-sm-inline">رقم المعاملة</span><span class="d-sm-none">المعاملة</span></th>
                                 <th>الجهاز والمنفذ</th>
                                 <th>الشريحة والمحفظة</th>
                                 <th>الخدمة</th>
@@ -470,11 +472,13 @@
                             {
                                 <tr>
                                     <td>
-                                        <div class="fw-bold font-monospace text-main fs-8">@tx.TransactionRef</div>
-                                        @if (!string.IsNullOrEmpty(tx.ExternalRef))
-                                        {
-                                            <div class="text-muted fs-8 font-monospace">مرجع: @tx.ExternalRef</div>
-                                        }
+                                        <div class="min-w-0">
+                                            <div class="fw-bold font-monospace text-main fs-8 text-truncate" style="max-width: 120px;" title="@tx.TransactionRef">@tx.TransactionRef</div>
+                                            @if (!string.IsNullOrEmpty(tx.ExternalRef))
+                                            {
+                                                <div class="text-muted fs-8 font-monospace d-none d-md-block text-truncate" style="max-width: 120px;" title="@tx.ExternalRef">مرجع: @tx.ExternalRef</div>
+                                            }
+                                        </div>
                                     </td>
                                     <td>
                                         @if (tx.DevicePort?.Device != null)

@@ -14,6 +14,10 @@
     int orCount = sims.Count(s => s.Operator == OperatorType.Orange);
     int etCount = sims.Count(s => s.Operator == OperatorType.Etisalat);
     int weCount = sims.Count(s => s.Operator == OperatorType.WE);
+
+    var activeSimId = (int?)ViewBag.ActiveSimId ?? sims.FirstOrDefault()?.Id ?? 0;
+    var activeSim = sims.FirstOrDefault(s => s.Id == activeSimId);
+    var activeTab = (string?)ViewBag.ActiveTab ?? "byService";
 }
 
 <style>
@@ -95,6 +99,27 @@
         border-radius: 20px;
         padding: 20px 24px;
         box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+    }
+
+    /* Routing Mode Switcher Nav */
+    .routing-mode-nav {
+        background-color: var(--bs-tertiary-bg, rgba(148, 163, 184, 0.08));
+        padding: 5px;
+        border-radius: 16px;
+    }
+    .routing-mode-nav .nav-link {
+        color: var(--bs-secondary-color, #64748b);
+        border: 1px solid transparent;
+        transition: all 0.25s ease;
+    }
+    .routing-mode-nav .nav-link:hover {
+        color: var(--bs-primary, #2563eb);
+        background-color: rgba(37, 99, 235, 0.05);
+    }
+    .routing-mode-nav .nav-link.active {
+        color: #ffffff !important;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
     }
 
     /* 1-Click Fast Operator Capsule Pills */
@@ -195,6 +220,36 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
+    /* Mobile Responsive Segmented Control - Spans 100% with no overflow */
+    @@media (max-width: 767.98px) {
+        .assignment-filter-wrapper {
+            width: 100% !important;
+        }
+        .segmented-control {
+            width: 100% !important;
+            display: flex !important;
+            padding: 3px !important;
+            box-sizing: border-box !important;
+            max-width: 100% !important;
+        }
+        .btn-segmented {
+            flex: 1 1 0 !important;
+            min-width: 0 !important;
+            justify-content: center !important;
+            padding: 7px 4px !important;
+            font-size: 0.78rem !important;
+            gap: 4px !important;
+            white-space: nowrap !important;
+        }
+        .btn-segmented i {
+            font-size: 0.82rem !important;
+        }
+        .btn-segmented .badge {
+            font-size: 0.72rem !important;
+            padding: 2px 5px !important;
+        }
+    }
+
     /* Interactive Table Assignment Action Button */
     .btn-assign-action {
         display: inline-flex;
@@ -243,13 +298,45 @@
     .btn-assign-action.is-unassigned:hover .state-active { display: none; }
     .btn-assign-action.is-unassigned:hover .state-hover { display: inline-flex; align-items: center; }
 
-    /* Table Row Assigned Highlight */
+    /* Table Row Assigned Highlight - 100% Solid Opaque (No transparency bleed) */
     .table-row-assigned {
-        background-color: rgba(16, 185, 129, 0.04) !important;
+        background-color: #f0fdf4 !important;
         border-inline-start: 4px solid #10b981 !important;
     }
     .table-row-assigned:hover {
-        background-color: rgba(16, 185, 129, 0.08) !important;
+        background-color: #dcfce7 !important;
+    }
+    [data-bs-theme="dark"] .table-row-assigned {
+        background-color: #0c2923 !important;
+    }
+    [data-bs-theme="dark"] .table-row-assigned:hover {
+        background-color: #103b32 !important;
+    }
+
+    /* Force 100% Solid Opaque on Sticky Cells to prevent any see-through */
+    .table-sticky-dual tbody tr.table-row-assigned td.sticky-col-1,
+    .table-sticky-dual tbody tr.table-row-assigned td.sticky-col-2 {
+        background-color: #f0fdf4 !important;
+    }
+    .table-sticky-dual tbody tr.table-row-assigned:hover td.sticky-col-1,
+    .table-sticky-dual tbody tr.table-row-assigned:hover td.sticky-col-2 {
+        background-color: #dcfce7 !important;
+    }
+    [data-bs-theme="dark"] .table-sticky-dual tbody tr.table-row-assigned td.sticky-col-1,
+    [data-bs-theme="dark"] .table-sticky-dual tbody tr.table-row-assigned td.sticky-col-2 {
+        background-color: #0c2923 !important;
+    }
+    [data-bs-theme="dark"] .table-sticky-dual tbody tr.table-row-assigned:hover td.sticky-col-1,
+    [data-bs-theme="dark"] .table-sticky-dual tbody tr.table-row-assigned:hover td.sticky-col-2 {
+        background-color: #103b32 !important;
+    }
+
+    /* Mobile sticky column width optimization */
+    @@media (max-width: 767.98px) {
+        .sticky-col-2 {
+            min-width: 135px !important;
+            max-width: 145px !important;
+        }
     }
 
     /* Floating Bulk Action Bar */
@@ -276,6 +363,20 @@
         transform: translateX(-50%) translateY(0);
         opacity: 1;
         visibility: visible;
+    }
+    @@media (max-width: 767.98px) {
+        .floating-bulk-bar {
+            bottom: 74px !important;
+            width: calc(100% - 24px) !important;
+            max-width: 440px !important;
+            padding: 8px 12px !important;
+            gap: 8px !important;
+            font-size: 0.8rem !important;
+        }
+        .floating-bulk-bar .btn {
+            padding: 6px 10px !important;
+            font-size: 0.78rem !important;
+        }
     }
 
     /* Auto Save Toast */
@@ -356,6 +457,30 @@
         </div>
     </div>
 
+    <!-- Mode Switcher Tabs (By Service vs By SIM) -->
+    <div class="portal-card shadow-sm mb-4 p-2">
+        <div class="nav nav-pills nav-fill routing-mode-nav gap-2" id="routingModeTabs" role="tablist">
+            <button class="nav-link @(activeTab == "byService" ? "active" : "") py-2.5 px-3 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2" 
+                    id="tabBtnByService" type="button" onclick="switchRoutingMode('byService')">
+                <i class="bi bi-gear-wide-connected fs-5"></i>
+                <div class="text-start">
+                    <div class="lh-sm">1. التوجيه بحسب الخدمة</div>
+                    <small class="opacity-75 fw-normal d-none d-sm-inline">اختر الخدمة وحدد الشرائح والخطوط المسؤولة عن تنفيذها</small>
+                </div>
+            </button>
+            <button class="nav-link @(activeTab == "bySim" ? "active" : "") py-2.5 px-3 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2" 
+                    id="tabBtnBySim" type="button" onclick="switchRoutingMode('bySim')">
+                <i class="bi bi-sim-fill fs-5"></i>
+                <div class="text-start">
+                    <div class="lh-sm">2. التوجيه بحسب الخط والشريحة</div>
+                    <small class="opacity-75 fw-normal d-none d-sm-inline">اختر الخط وحدد الخدمات المصرح له بتنفيذها فورياً</small>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== MODE 1: BY SERVICE PANEL ==================== -->
+    <div id="routingPanelByService" class="@(activeTab == "bySim" ? "d-none" : "")">
     <!-- Active Service Selector & Coverage Hero Banner -->
     <div class="portal-card service-hero-card p-4 mb-4 shadow-sm">
         <div class="row g-4 align-items-center">
@@ -495,112 +620,88 @@
 
     <!-- Power Multi-Criteria Filters Toolbar (الجريد والفلاتر والبحث السريع) -->
     <div class="portal-card filters-command-card mb-4 shadow-sm">
-        <!-- Top Filter Row: Search & Device Scope & Density -->
-        <div class="row g-2.5 align-items-center mb-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2.5 mb-3">
             <!-- Instant Search Input -->
-            <div class="col-12 col-lg-5">
-                <div class="position-relative w-100">
-                    <span class="position-absolute top-50 translate-middle-y text-muted" style="inset-inline-start: 14px; pointer-events: none;">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" id="gridSearchInput" class="form-control rounded-3 py-2" 
-                           style="padding-inline-start: 40px; padding-inline-end: 38px;"
-                           placeholder="ابحث برقم الشريحة، المنفذ، الجهاز، أو الـ IP..." 
-                           oninput="onSearchInputChanged()" />
-                    <button type="button" id="gridSearchClearBtn" class="btn btn-link text-muted position-absolute top-50 translate-middle-y p-0 d-none" 
-                            style="inset-inline-end: 14px; text-decoration: none;" onclick="clearSearchInput()" title="مسح كلمة البحث">
-                        <i class="bi bi-x-circle-fill"></i>
-                    </button>
-                </div>
+            <div class="position-relative flex-grow-1" style="min-width: 220px; max-width: 320px;">
+                <span class="position-absolute top-50 translate-middle-y text-muted opacity-75" style="inset-inline-start: 14px; pointer-events: none;">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" id="gridSearchInput" class="form-control form-control-sm rounded-pill bg-body-tertiary border-0 shadow-none text-truncate" 
+                       style="padding-inline-start: 38px; padding-inline-end: 34px;"
+                       placeholder="ابحث برقم الشريحة، المنفذ، الجهاز، أو الـ IP..." 
+                       oninput="onSearchInputChanged()" />
+                <button type="button" id="gridSearchClearBtn" class="btn btn-link text-muted position-absolute top-50 translate-middle-y p-0 d-none text-decoration-none" 
+                        style="inset-inline-end: 12px;" onclick="clearSearchInput()" title="مسح كلمة البحث">
+                    <i class="bi bi-x-circle-fill fs-7"></i>
+                </button>
             </div>
 
-            <!-- Filter by Device ("فلتر بالجهاز") -->
-            <div class="col-12 col-sm-6 col-lg-4">
-                <div class="input-group">
-                    <span class="input-group-text bg-light text-muted border-end-0">
-                        <i class="bi bi-router"></i>
-                    </span>
-                    <select id="gridDeviceFilter" class="form-select border-start-0 fw-semibold" onchange="onFilterChanged()">
-                        <option value="ALL">📟 كل أجهزة GoIP (@devices.Count جهاز)</option>
-                        @foreach (var dev in devices)
-                        {
-                            var devSimCount = sims.Count(s => s.DevicePort?.DeviceId == dev.Id);
-                            var modelName = dev.DeviceType == DeviceType.GoIP512 ? "512P" : "128P";
-                            <option value="@dev.Id">@dev.DeviceName (@modelName - @devSimCount خط)</option>
-                        }
-                    </select>
+            <!-- Dropdown Filters Group -->
+            <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+                <!-- Filter by Device -->
+                <div class="d-inline-flex align-items-center gap-1.5 filter-dropdown-wrapper">
+                    <label for="gridDeviceFilter" class="small fw-semibold text-muted text-nowrap mb-0 d-none d-xl-inline">
+                        <i class="bi bi-router me-1"></i>الجهاز:
+                    </label>
+                    <div style="min-width: 150px; max-width: 220px;" class="flex-grow-1">
+                        <select id="gridDeviceFilter" class="form-select form-select-sm searchable-select" data-searchable="true" onchange="onFilterChanged()" data-placeholder="اختر الجهاز...">
+                            <option value="ALL" data-badge="@devices.Count" data-badge-color="primary" data-icon="bi-router">كل أجهزة GoIP</option>
+                            @foreach (var dev in devices)
+                            {
+                                var devSimCount = sims.Count(s => s.DevicePort?.DeviceId == dev.Id);
+                                var modelName = dev.DeviceType == DeviceType.GoIP512 ? "512P" : "128P";
+                                <option value="@dev.Id" data-badge="@devSimCount خط" data-badge-color="secondary" data-icon="bi-cpu">@dev.DeviceName (@modelName)</option>
+                            }
+                        </select>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Page Size Density Selector & Reset -->
-            <div class="col-12 col-sm-6 col-lg-3">
-                <div class="d-flex align-items-center gap-2">
-                    <select id="gridPageSizeSelect" class="form-select fw-semibold" onchange="onPageSizeChanged(this.value)" title="عدد الشرائح في الصفحة">
-                        <option value="50">50 خط / صفحة</option>
+                <!-- Operator Network Filter Dropdown -->
+                <div class="d-inline-flex align-items-center gap-1.5 filter-dropdown-wrapper">
+                    <label for="gridOpFilter" class="small fw-semibold text-muted text-nowrap mb-0 d-none d-xl-inline">
+                        <i class="bi bi-broadcast-pin me-1"></i>الشبكة:
+                    </label>
+                    <div style="min-width: 150px; max-width: 200px;" class="flex-grow-1">
+                        <select id="gridOpFilter" class="form-select form-select-sm searchable-select" data-searchable="true" onchange="onOperatorDropdownChanged(this.value)" data-placeholder="اختر الشبكة...">
+                            <option value="ALL" data-badge="@totalSimsCount" data-badge-color="primary" data-icon="bi-globe2">كل الشبكات</option>
+                            <option value="Vodafone" data-badge="@vfCount" data-badge-color="danger" data-icon="bi-broadcast">فودافون كاش</option>
+                            <option value="Orange" data-badge="@orCount" data-badge-color="warning" data-icon="bi-broadcast">أورانج كاش</option>
+                            <option value="Etisalat" data-badge="@etCount" data-badge-color="success" data-icon="bi-broadcast">اتصالات كاش</option>
+                            <option value="WE" data-badge="@weCount" data-badge-color="purple" data-icon="bi-broadcast">وي باي WE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Assignment Status Filter Dropdown -->
+                <div class="d-inline-flex align-items-center gap-1.5 filter-dropdown-wrapper">
+                    <label for="gridAssignFilter" class="small fw-semibold text-muted text-nowrap mb-0 d-none d-xl-inline">
+                        <i class="bi bi-funnel-fill me-1"></i>التخصيص:
+                    </label>
+                    <div style="min-width: 150px; max-width: 200px;" class="flex-grow-1">
+                        <select id="gridAssignFilter" class="form-select form-select-sm searchable-select" data-searchable="true" onchange="onAssignmentDropdownChanged(this.value)" data-placeholder="حالة التخصيص...">
+                            <option value="ALL" data-icon="bi-layers">كل الشرائح</option>
+                            <option value="ASSIGNED" data-badge-color="success" data-icon="bi-check-circle-fill">مخصصة للخدمة فقط</option>
+                            <option value="UNASSIGNED" data-badge-color="secondary" data-icon="bi-dash-circle">غير مخصصة</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Page Size Density Selector -->
+                <div style="min-width: 110px; max-width: 140px;">
+                    <select id="gridPageSizeSelect" class="form-select form-select-sm searchable-select" data-searchable="false" onchange="onPageSizeChanged(this.value)" title="عدد الشرائح في الصفحة">
+                        <option value="50">50 خط / ص</option>
                         <option value="100" selected>100 خط (الموصى به)</option>
                         <option value="250">250 خط</option>
                         <option value="500">500 خط</option>
-                        <option value="ALL">عرض الكل (@totalSimsCount)</option>
+                        <option value="ALL">عرض الكل</option>
                     </select>
-                    <button type="button" class="btn btn-outline-secondary rounded-3 px-3 py-2 fw-semibold text-nowrap d-flex align-items-center gap-1" onclick="resetAllFilters()" title="إعادة ضبط كافة الفلاتر والبحث">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                        <span class="d-none d-sm-inline">إعادة ضبط</span>
-                    </button>
                 </div>
-            </div>
-        </div>
 
-        <!-- Middle Filter Row: 1-Click Fast Operator Pills & Assignment Segmented Tabs -->
-        <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 pt-2.5 border-top">
-            <!-- 1-Click Operator Capsule Pills -->
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <span class="text-muted small fw-bold me-1">الشبكة:</span>
-                <button type="button" class="btn-op-capsule active" data-op="ALL" onclick="setOperatorFilter('ALL', this)">
-                    <i class="bi bi-globe2"></i>
-                    <span>كل الشبكات</span>
-                    <span class="badge bg-light text-dark font-monospace rounded-pill ms-1">@totalSimsCount</span>
+                <!-- Reset Button -->
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 fs-8" onclick="resetAllFilters()" title="إعادة ضبط كافة الفلاتر والبحث">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    <span class="d-none d-sm-inline">إعادة ضبط</span>
                 </button>
-                <button type="button" class="btn-op-capsule" data-op="Vodafone" onclick="setOperatorFilter('Vodafone', this)">
-                    <span class="pulse-dot" style="background:#dc2626;"></span>
-                    <span>فودافون</span>
-                    <span class="badge bg-danger bg-opacity-20 text-danger font-monospace rounded-pill ms-1">@vfCount</span>
-                </button>
-                <button type="button" class="btn-op-capsule" data-op="Orange" onclick="setOperatorFilter('Orange', this)">
-                    <span class="pulse-dot" style="background:#ea580c;"></span>
-                    <span>أورنج</span>
-                    <span class="badge bg-warning bg-opacity-20 text-warning font-monospace rounded-pill ms-1">@orCount</span>
-                </button>
-                <button type="button" class="btn-op-capsule" data-op="Etisalat" onclick="setOperatorFilter('Etisalat', this)">
-                    <span class="pulse-dot" style="background:#16a34a;"></span>
-                    <span>اتصالات</span>
-                    <span class="badge bg-success bg-opacity-20 text-success font-monospace rounded-pill ms-1">@etCount</span>
-                </button>
-                <button type="button" class="btn-op-capsule" data-op="WE" onclick="setOperatorFilter('WE', this)">
-                    <span class="pulse-dot" style="background:#9333ea;"></span>
-                    <span>وي</span>
-                    <span class="badge bg-purple bg-opacity-20 text-dark font-monospace rounded-pill ms-1">@weCount</span>
-                </button>
-            </div>
-
-            <!-- 1-Click Assignment Segmented Control -->
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <span class="text-muted small fw-bold">حالة التخصيص:</span>
-                <div class="segmented-control">
-                    <button type="button" class="btn-segmented active" data-assign="ALL" onclick="setAssignmentFilter('ALL', this)">
-                        <i class="bi bi-layers"></i>
-                        <span>كل الشرائح</span>
-                    </button>
-                    <button type="button" class="btn-segmented" data-assign="ASSIGNED" onclick="setAssignmentFilter('ASSIGNED', this)">
-                        <i class="bi bi-check-circle-fill text-success"></i>
-                        <span>مخصصة</span>
-                        <span class="badge bg-success bg-opacity-15 text-success rounded-pill font-monospace" id="lblTabAssignedCount">0</span>
-                    </button>
-                    <button type="button" class="btn-segmented" data-assign="UNASSIGNED" onclick="setAssignmentFilter('UNASSIGNED', this)">
-                        <i class="bi bi-dash-circle text-muted"></i>
-                        <span>غير مخصصة</span>
-                        <span class="badge bg-secondary bg-opacity-15 text-muted rounded-pill font-monospace" id="lblTabUnassignedCount">0</span>
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -648,14 +749,14 @@
     <!-- The High-Density Routing Data Grid -->
     <div class="portal-card shadow-sm table-card-container mb-4">
         <div class="table-responsive table-responsive-custom">
-            <table class="table table-custom align-middle mb-0" id="routingMasterGrid">
+            <table class="table table-custom table-sticky-dual align-middle mb-0" id="routingMasterGrid">
                 <thead>
                     <tr>
-                        <th style="width: 44px;" class="text-center">
+                        <th style="width: 44px;" class="text-center sticky-col-1">
                             <input type="checkbox" id="masterGridCheckbox" class="form-check-input" onchange="toggleMasterCheckbox(this.checked)" title="تحديد / إلغاء تحديد الكل في هذه الصفحة" />
                         </th>
+                        <th style="min-width: 135px;" class="sticky-col-2"><span class="d-none d-sm-inline">رقم الشريحة (المحفظة)</span><span class="d-sm-none">رقم الشريحة</span></th>
                         <th style="min-width: 175px;">التخصيص للخدمة</th>
-                        <th style="min-width: 170px;">رقم الشريحة (المحفظة)</th>
                         <th style="min-width: 130px;">الشبكة</th>
                         <th style="min-width: 200px;">الجهاز والمنفذ</th>
                         <th style="min-width: 140px;">الرصيد الحالي</th>
@@ -692,6 +793,232 @@
             </div>
         </div>
     </div>
+    </div>
+    <!-- ==================== END MODE 1: BY SERVICE PANEL ==================== -->
+
+    <!-- ==================== MODE 2: BY SIM PANEL (التوجيه بحسب الخط والشريحة) ==================== -->
+    <div id="routingPanelBySim" class="@(activeTab == "bySim" ? "" : "d-none")">
+        <!-- SIM Hero & Coverage Banner -->
+        <div class="portal-card service-hero-card p-4 mb-4 shadow-sm">
+            <div class="row g-4 align-items-center">
+                <!-- SIM Card Selector & Info -->
+                <div class="col-12 col-xl-6">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill fw-bold fs-8">
+                            <i class="bi bi-sim me-1"></i> الشريحة والخط المستهدف للتوجيه
+                        </span>
+                        <span class="text-muted small">اختر الشريحة لتحديد وتعيين الخدمات المصرح بتنفيذها عليها فورياً</span>
+                    </div>
+
+                    <!-- Searchable SIM Selector Combobox -->
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="flex-grow-1" style="min-width: 250px;">
+                            <select id="simRoutingSelect" class="form-select form-select-lg searchable-select" data-searchable="true" onchange="onSimSelectionChange(this.value)" data-placeholder="ابحث برقم الشريحة أو الجهاز...">
+                                @foreach (var s in sims)
+                                {
+                                    var dev = s.DevicePort?.Device;
+                                    var isSel = (s.Id == activeSimId);
+                                    var opBadgeColor = s.Operator switch {
+                                        OperatorType.Vodafone => "danger",
+                                        OperatorType.Orange => "warning",
+                                        OperatorType.Etisalat => "success",
+                                        OperatorType.WE => "purple",
+                                        _ => "secondary"
+                                    };
+                                    <option value="@s.Id" selected="@(isSel ? "selected" : null)" 
+                                            data-badge="@s.Operator.ToString()" 
+                                            data-badge-color="@opBadgeColor"
+                                            data-icon="bi-sim">
+                                        @s.PhoneNumber - @(dev?.DeviceName ?? "N/A") (@(s.DevicePort?.PortLabel ?? $"#{s.DevicePort?.PortNumber}")) - رصيد: @s.CurrentBalance.ToString("N2") ج.م
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SIM KPI Coverage & Balance Box -->
+                <div class="col-12 col-xl-6">
+                    <div class="service-kpi-box">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-2 pb-2 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-bold fs-5 text-main font-monospace" id="lblSimHeroPhone">@(activeSim?.PhoneNumber ?? "---")</span>
+                                <span class="badge bg-light text-primary border fs-8 font-monospace" id="lblSimHeroPort">@(activeSim?.DevicePort?.PortLabel ?? "---")</span>
+                            </div>
+                            <div id="lblSimHeroStatusBadge">
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 fw-bold fs-9">
+                                    <i class="bi bi-check-circle-fill me-1"></i> جاهزة للتشغيل
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                            <span class="text-muted small fw-semibold">
+                                <i class="bi bi-diagram-3-fill me-1 text-primary"></i> الخدمات المسندة لهذا الخط:
+                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fs-6 fw-bold text-main font-monospace" id="lblSimServicesFraction">0 / @tenantServices.Count</span>
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill font-monospace fw-bold" id="lblSimServicesPercentage">0%</span>
+                            </div>
+                        </div>
+
+                        <div class="progress mb-2" style="height: 9px; border-radius: 9999px; background: rgba(148, 163, 184, 0.18);">
+                            <div id="kpiSimProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center text-muted fs-8">
+                            <div id="lblSimBalanceSummary" class="text-truncate">
+                                <i class="bi bi-wallet2 text-success me-1"></i> الرصيد: <b class="font-monospace text-main">@(activeSim?.CurrentBalance.ToString("N2") ?? "0.00") ج.م</b>
+                            </div>
+                            <div class="text-nowrap" id="lblSimOpDesc">
+                                شبكة: <b class="text-main">@(activeSim?.Operator.ToString() ?? "---")</b>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- By-SIM Filters Command Center Card -->
+        <div class="portal-card filters-command-card mb-4 shadow-sm">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <!-- Search by Service Name, Code, API -->
+                <div class="position-relative flex-grow-1" style="min-width: 220px; max-width: 320px;">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted opacity-75"></i>
+                    <input type="text" id="simServiceSearchInput" class="form-control form-control-sm ps-5 rounded-pill bg-body-tertiary border-0 shadow-none text-truncate" 
+                           placeholder="ابحث باسم الخدمة، كود الـ API، أو التصنيف..." 
+                           oninput="onSimServiceSearchChanged()" />
+                    <button type="button" id="simServiceSearchClearBtn" class="btn btn-link position-absolute top-50 end-0 translate-middle-y text-muted p-0 me-2 text-decoration-none d-none" onclick="clearSimServiceSearch()">
+                        <i class="bi bi-x-circle-fill fs-7"></i>
+                    </button>
+                </div>
+
+                <!-- Dropdown Filters -->
+                <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+                    <!-- Category Dropdown Filter -->
+                    <div class="d-inline-flex align-items-center gap-1.5 filter-dropdown-wrapper">
+                        <label for="simServiceCatFilter" class="small fw-semibold text-muted text-nowrap mb-0 d-none d-xl-inline">
+                            <i class="bi bi-tags-fill me-1"></i>التصنيف:
+                        </label>
+                        <div style="min-width: 150px; max-width: 210px;" class="flex-grow-1">
+                            <select id="simServiceCatFilter" class="form-select form-select-sm searchable-select" data-searchable="true" onchange="applySimServicesFilters()" data-placeholder="التصنيف...">
+                                <option value="ALL" data-badge="@tenantServices.Count" data-badge-color="primary" data-icon="bi-tags">كل التصنيفات</option>
+                                <option value="Payment" data-badge="@tenantServices.Count(ts => ts.ServiceDefinition?.Category == ServiceCategory.Payment)" data-badge-color="info" data-icon="bi-credit-card">دفع كاش</option>
+                                <option value="Transfer" data-badge="@tenantServices.Count(ts => ts.ServiceDefinition?.Category == ServiceCategory.Transfer)" data-badge-color="primary" data-icon="bi-arrow-left-right">تحويل كاش</option>
+                                <option value="BalanceInquiry" data-badge="@tenantServices.Count(ts => ts.ServiceDefinition?.Category == ServiceCategory.BalanceInquiry)" data-badge-color="secondary" data-icon="bi-search">استعلام رصيد</option>
+                                <option value="NumberInquiry" data-badge="@tenantServices.Count(ts => ts.ServiceDefinition?.Category == ServiceCategory.NumberInquiry)" data-badge-color="warning" data-icon="bi-123">استعلام رقم</option>
+                                <option value="Settlement" data-badge="@tenantServices.Count(ts => ts.ServiceDefinition?.Category == ServiceCategory.Settlement)" data-badge-color="success" data-icon="bi-receipt">تسوية وتحصيل</option>
+                                <option value="Management" data-badge="@tenantServices.Count(ts => ts.ServiceDefinition?.Category == ServiceCategory.Management)" data-badge-color="secondary" data-icon="bi-gear">إدارة</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Network Match Filter -->
+                    <div class="d-inline-flex align-items-center gap-1.5 filter-dropdown-wrapper">
+                        <label for="simServiceNetFilter" class="small fw-semibold text-muted text-nowrap mb-0 d-none d-xl-inline">
+                            <i class="bi bi-broadcast me-1"></i>الشبكة:
+                        </label>
+                        <div style="min-width: 155px; max-width: 210px;" class="flex-grow-1">
+                            <select id="simServiceNetFilter" class="form-select form-select-sm searchable-select" data-searchable="true" onchange="applySimServicesFilters()" data-placeholder="الشبكة...">
+                                <option value="ALL" data-icon="bi-globe2">كل الشبكات</option>
+                                <option value="MATCHING_SIM" data-badge="المطابقة" data-badge-color="success" data-icon="bi-sim">مطابقة لشبكة الخط فقط</option>
+                                <option value="Vodafone" data-badge-color="danger" data-icon="bi-broadcast">فودافون كاش</option>
+                                <option value="Orange" data-badge-color="warning" data-icon="bi-broadcast">أورانج كاش</option>
+                                <option value="Etisalat" data-badge-color="success" data-icon="bi-broadcast">اتصالات كاش</option>
+                                <option value="WE" data-badge-color="purple" data-icon="bi-broadcast">وي باي WE</option>
+                                <option value="General" data-icon="bi-globe">عامة (كافة الشبكات)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Assignment Status Filter -->
+                    <div class="d-inline-flex align-items-center gap-1.5 filter-dropdown-wrapper">
+                        <label for="simServiceAssignFilter" class="small fw-semibold text-muted text-nowrap mb-0 d-none d-xl-inline">
+                            <i class="bi bi-funnel me-1"></i>حالة الخدمة:
+                        </label>
+                        <div style="min-width: 150px; max-width: 200px;" class="flex-grow-1">
+                            <select id="simServiceAssignFilter" class="form-select form-select-sm searchable-select" data-searchable="true" onchange="applySimServicesFilters()" data-placeholder="حالة التخصيص...">
+                                <option value="ALL" data-icon="bi-layers">كل الخدمات المتاحة</option>
+                                <option value="ASSIGNED" data-badge-color="success" data-icon="bi-check-circle-fill">مفعلة على هذا الخط</option>
+                                <option value="UNASSIGNED" data-badge-color="secondary" data-icon="bi-dash-circle">غير مفعلة</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Reset Button -->
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 fs-8" onclick="resetSimServicesFilters()" title="إعادة ضبط الفلاتر">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        <span class="d-none d-sm-inline">إعادة ضبط</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bottom Row: 1-Click Fast Actions for SIM -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 pt-3 border-top mt-3">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-muted small fw-bold me-1 d-flex align-items-center gap-1">
+                        <i class="bi bi-lightning-charge text-warning"></i>
+                        <span>إجراءات سريعة للخط:</span>
+                    </span>
+                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5" onclick="assignAllMatchingOperatorServicesToSim()">
+                        <i class="bi bi-sim"></i>
+                        <span>تخصيص كافة خدمات شبكة هذا الخط</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success fw-semibold rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5" onclick="assignAllFilteredServicesToSim()">
+                        <i class="bi bi-check-all"></i>
+                        <span>تخصيص كل المعروض بالفلتر</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger fw-semibold rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5" onclick="unassignAllServicesFromSim()">
+                        <i class="bi bi-x-circle"></i>
+                        <span>إلغاء تخصيص كافة الخدمات عن هذا الخط</span>
+                    </button>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 text-muted small">
+                    <span>المعروض: </span>
+                    <b id="lblSimServicesVisibleCount" class="text-main font-monospace fs-7">@tenantServices.Count</b>
+                    <span> من أصل </span>
+                    <b class="font-monospace">@tenantServices.Count</b>
+                    <span> خدمة</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- High-Performance Services Table for this SIM -->
+        <div class="portal-card shadow-sm table-card-container mb-4">
+            <div class="table-responsive table-responsive-custom">
+                <table class="table table-custom table-sticky-col align-middle mb-0" id="simServicesMasterGrid">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 175px;" class="sticky-col-1">التخصيص لهذا الخط</th>
+                            <th style="min-width: 200px;"><span class="d-none d-sm-inline">اسم الخدمة وكود الـ API</span><span class="d-sm-none">الخدمة</span></th>
+                            <th style="min-width: 130px;">الشبكة</th>
+                            <th style="min-width: 140px;">التصنيف</th>
+                            <th style="min-width: 140px;">التأثير المالي والرسوم</th>
+                            <th style="min-width: 160px;">خطوط أخرى مسندة للخدمة</th>
+                            <th style="min-width: 90px;">حالة الخدمة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="simServicesGridBody">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State for SIM Services -->
+            <div id="simServicesEmptyPlaceholder" class="text-center py-5 d-none">
+                <div class="p-3 rounded-circle bg-light d-inline-block mb-3">
+                    <i class="bi bi-funnel text-muted fs-1"></i>
+                </div>
+                <h5 class="fw-bold text-main mb-1">لا توجد خدمات تطابق الفلاتر المحددة</h5>
+                <p class="text-muted small">جرب تغيير كلمات البحث أو إعادة ضبط خيارات التصنيف والشبكة.</p>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-3 fw-bold px-3 py-1.5" onclick="resetSimServicesFilters()">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> إعادة ضبط الفلاتر
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- ==================== END MODE 2: BY SIM PANEL ==================== -->
 </div>
 
 <!-- Floating Bulk Action Bar (شريط التخصيص السريع عند التحديد) -->
@@ -766,16 +1093,38 @@
             @foreach (var ts in tenantServices)
             {
                 var sDef = ts.ServiceDefinition;
+                var catLabel = sDef?.Category switch {
+                    ServiceCategory.Payment => "دفع كاش",
+                    ServiceCategory.Transfer => "تحويل كاش",
+                    ServiceCategory.BalanceInquiry => "استعلام رصيد",
+                    ServiceCategory.NumberInquiry => "استعلام رقم",
+                    ServiceCategory.Settlement => "تسوية وتحصيل",
+                    ServiceCategory.Management => "إدارة",
+                    _ => "خدمات عامة"
+                };
+                var balanceImpactLabel = sDef?.BalanceActionType switch {
+                    BalanceActionType.Decrement => "خصم رصيد",
+                    BalanceActionType.Increment => "إضافة رصيد",
+                    _ => "استعلام / لا تأثير"
+                };
                 <text>@ts.ServiceDefinitionId: {
                     id: @ts.ServiceDefinitionId,
                     name: "@(sDef?.NameAr ?? sDef?.NameEn ?? "")",
                     code: "@(sDef?.ServiceCode ?? "")",
-                    operator: "@(sDef?.Operator.ToString() ?? "عام")"
+                    operator: "@(sDef?.Operator.HasValue == true ? sDef.Operator.Value.ToString() : "General")",
+                    operatorLabel: "@(sDef?.Operator.HasValue == true ? sDef.Operator.Value.ToString() : "عامة / لكافة الشبكات")",
+                    category: "@(sDef?.Category.ToString() ?? "Other")",
+                    categoryLabel: "@catLabel",
+                    balanceImpact: "@balanceImpactLabel",
+                    baseCost: @(sDef?.BaseCost.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "0"),
+                    isActive: @(ts.IsActive && (sDef?.IsActive ?? true) ? "true" : "false")
                 },</text>
             }
         };
 
         let currentServiceId = @activeServiceId;
+        let currentSimId = @activeSimId;
+        let currentRoutingMode = '@activeTab';
         let selectedSimIds = new Set();
         let filteredSims = [];
         let currentPage = 1;
@@ -783,15 +1132,76 @@
         let currentFilterOp = 'ALL';
         let currentFilterAssignment = 'ALL';
 
+        // Two-way assignment mapping: simAssignments[simId] -> Set of serviceIds
+        const simAssignments = {};
+        allSims.forEach(sim => {
+            simAssignments[sim.id] = new Set();
+        });
+        for (const sId in serviceAssignments) {
+            const intServiceId = parseInt(sId);
+            serviceAssignments[sId].forEach(simId => {
+                if (simAssignments[simId]) {
+                    simAssignments[simId].add(intServiceId);
+                }
+            });
+        }
+
         // Initialize Grid on Load
         document.addEventListener("DOMContentLoaded", function () {
             if (!currentServiceId) {
                 const keys = Object.keys(serviceAssignments);
                 if (keys.length > 0) currentServiceId = parseInt(keys[0]);
             }
+            if (!currentSimId && allSims.length > 0) {
+                currentSimId = allSims[0].id;
+            }
             applyFilters();
             updateCoverageKPI();
+            updateSimHeroCard();
+            applySimServicesFilters();
+
+            if (currentRoutingMode === 'bySim') {
+                switchRoutingMode('bySim');
+            }
         });
+
+        // Mode Switching
+        function switchRoutingMode(mode) {
+            currentRoutingMode = mode;
+            const tabBtnService = document.getElementById('tabBtnByService');
+            const tabBtnSim = document.getElementById('tabBtnBySim');
+            const panelService = document.getElementById('routingPanelByService');
+            const panelSim = document.getElementById('routingPanelBySim');
+
+            if (mode === 'byService') {
+                tabBtnService?.classList.add('active');
+                tabBtnSim?.classList.remove('active');
+                panelService?.classList.remove('d-none');
+                panelSim?.classList.add('d-none');
+                applyFilters();
+                updateCoverageKPI();
+            } else {
+                tabBtnSim?.classList.add('active');
+                tabBtnService?.classList.remove('active');
+                panelSim?.classList.remove('d-none');
+                panelService?.classList.add('d-none');
+                updateSimHeroCard();
+                applySimServicesFilters();
+            }
+
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', mode);
+            window.history.replaceState({}, '', url.toString());
+
+            setTimeout(() => {
+                if (window.ComboboxService && typeof window.ComboboxService.init === 'function') {
+                    window.ComboboxService.init();
+                }
+                if (window.TableStickyService && typeof window.TableStickyService.init === 'function') {
+                    window.TableStickyService.init();
+                }
+            }, 50);
+        }
 
         // Switching Active Service
         function onServiceSelectionChange(newServiceId) {
@@ -859,22 +1269,24 @@
             if (tabUnassigned) tabUnassigned.innerText = Math.max(0, total - count).toLocaleString();
         }
 
-        // 1-Click Fast Operator Filter
-        function setOperatorFilter(op, btnEl) {
-            currentFilterOp = op;
-            document.querySelectorAll('.btn-op-capsule').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-op') === op);
-            });
+        // Dropdown Filter Handlers
+        function onOperatorDropdownChanged(op) {
+            currentFilterOp = op || 'ALL';
             applyFilters();
         }
 
-        // 1-Click Fast Assignment Filter
-        function setAssignmentFilter(assign, btnEl) {
-            currentFilterAssignment = assign;
-            document.querySelectorAll('.btn-segmented').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-assign') === assign);
-            });
+        function onAssignmentDropdownChanged(assign) {
+            currentFilterAssignment = assign || 'ALL';
             applyFilters();
+        }
+
+        // Backwards compatibility for any legacy callers
+        function setOperatorFilter(op, btnEl) {
+            onOperatorDropdownChanged(op);
+        }
+
+        function setAssignmentFilter(assign, btnEl) {
+            onAssignmentDropdownChanged(assign);
         }
 
         // Search Input Handlers
@@ -957,14 +1369,12 @@
             if (devSelect) devSelect.value = 'ALL';
 
             currentFilterOp = 'ALL';
-            document.querySelectorAll('.btn-op-capsule').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-op') === 'ALL');
-            });
+            const opSelect = document.getElementById('gridOpFilter');
+            if (opSelect) opSelect.value = 'ALL';
 
             currentFilterAssignment = 'ALL';
-            document.querySelectorAll('.btn-segmented').forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-assign') === 'ALL');
-            });
+            const assignSelect = document.getElementById('gridAssignFilter');
+            if (assignSelect) assignSelect.value = 'ALL';
 
             applyFilters();
             showAutoSaveToast('تمت إعادة ضبط جميع الفلاتر');
@@ -1033,17 +1443,17 @@
 
                 html += `
                     <tr class="grid-sim-row ${rowAssignedClass}" id="grid-row-${sim.id}">
-                        <td class="text-center">
+                        <td class="text-center sticky-col-1">
                             <input type="checkbox" class="form-check-input sim-select-cb" value="${sim.id}" ${isChecked ? 'checked' : ''} onchange="toggleSimSelect(${sim.id}, this.checked)" />
                         </td>
-                        <td id="assign-col-${sim.id}">
-                            ${assignBtnHtml}
-                        </td>
-                        <td>
+                        <td class="sticky-col-2">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="pulse-online ${sim.isActive ? '' : 'bg-secondary'}" style="${sim.isActive ? '' : 'animation:none;'}" title="${sim.isActive ? 'متصلة ونشطة' : 'معطلة'}"></span>
                                 <span class="font-monospace fw-bold text-main fs-6">${sim.phoneNumber}</span>
                             </div>
+                        </td>
+                        <td id="assign-col-${sim.id}">
+                            ${assignBtnHtml}
                         </td>
                         <td>
                             <span class="badge ${opBadgeClass} fs-8 py-1 px-2.5 rounded-pill font-monospace fw-bold">
@@ -1087,6 +1497,7 @@
             renderPaginationControls(totalPages);
             updateMasterCheckboxState();
             updateBulkActionBar();
+            if (typeof initTableScrollShadows === 'function') initTableScrollShadows();
         }
 
         // Pagination Controls
@@ -1555,5 +1966,452 @@
                 closeRoutingCombobox();
             }
         });
+
+        // =========================================================
+        // MODE 2: BY-SIM JAVASCRIPT LOGIC (التوجيه بحسب الخط والشريحة)
+        // =========================================================
+
+        function onSimSelectionChange(newSimId) {
+            currentSimId = parseInt(newSimId);
+            updateSimHeroCard();
+            applySimServicesFilters();
+        }
+
+        function updateSimHeroCard() {
+            const sim = allSims.find(s => s.id === currentSimId);
+            if (!sim) return;
+
+            const lblPhone = document.getElementById('lblSimHeroPhone');
+            const lblPort = document.getElementById('lblSimHeroPort');
+            const statusBadge = document.getElementById('lblSimHeroStatusBadge');
+            const fraction = document.getElementById('lblSimServicesFraction');
+            const percentage = document.getElementById('lblSimServicesPercentage');
+            const progressBar = document.getElementById('kpiSimProgressBar');
+            const balanceSummary = document.getElementById('lblSimBalanceSummary');
+            const opDesc = document.getElementById('lblSimOpDesc');
+
+            if (lblPhone) lblPhone.innerText = sim.phoneNumber;
+            if (lblPort) lblPort.innerText = `${sim.deviceName} (${sim.portLabel})`;
+
+            const assignedServices = simAssignments[currentSimId] || new Set();
+            const count = assignedServices.size;
+            const totalServices = Object.keys(servicesMeta).length;
+            const pct = totalServices > 0 ? Math.round((count / totalServices) * 100) : 0;
+
+            if (fraction) fraction.innerText = `${count} / ${totalServices}`;
+            if (percentage) percentage.innerText = `${pct}%`;
+
+            if (progressBar) {
+                progressBar.style.width = `${pct}%`;
+                progressBar.setAttribute('aria-valuenow', pct);
+                if (pct === 0) progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-secondary';
+                else if (pct < 30) progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-warning';
+                else progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-success';
+            }
+
+            if (statusBadge) {
+                if (!sim.isActive || sim.isBlocked) {
+                    statusBadge.innerHTML = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-1 fw-bold fs-9"><i class="bi bi-x-circle-fill me-1"></i> الخط معطل</span>';
+                } else if (count > 0) {
+                    statusBadge.innerHTML = '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 fw-bold fs-9"><i class="bi bi-check-circle-fill me-1"></i> جاهزة للتشغيل</span>';
+                } else {
+                    statusBadge.innerHTML = '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-2.5 py-1 fw-bold fs-9"><i class="bi bi-exclamation-triangle-fill me-1"></i> لا توجد خدمات مسندة</span>';
+                }
+            }
+
+            if (balanceSummary) {
+                balanceSummary.innerHTML = `<i class="bi bi-wallet2 text-success me-1"></i> الرصيد: <b class="font-monospace text-main">${sim.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م</b>`;
+            }
+
+            if (opDesc) {
+                opDesc.innerHTML = `شبكة: <b class="text-main">${sim.op}</b>`;
+            }
+        }
+
+        let filteredSimServices = [];
+
+        function onSimServiceSearchChanged() {
+            const input = document.getElementById('simServiceSearchInput');
+            const clearBtn = document.getElementById('simServiceSearchClearBtn');
+            if (clearBtn && input) {
+                if (input.value.length > 0) clearBtn.classList.remove('d-none');
+                else clearBtn.classList.add('d-none');
+            }
+            applySimServicesFilters();
+        }
+
+        function clearSimServiceSearch() {
+            const input = document.getElementById('simServiceSearchInput');
+            const clearBtn = document.getElementById('simServiceSearchClearBtn');
+            if (input) input.value = '';
+            if (clearBtn) clearBtn.classList.add('d-none');
+            applySimServicesFilters();
+            input?.focus();
+        }
+
+        function resetSimServicesFilters() {
+            const input = document.getElementById('simServiceSearchInput');
+            if (input) input.value = '';
+            const clearBtn = document.getElementById('simServiceSearchClearBtn');
+            if (clearBtn) clearBtn.classList.add('d-none');
+
+            const catSelect = document.getElementById('simServiceCatFilter');
+            if (catSelect) catSelect.value = 'ALL';
+
+            const netSelect = document.getElementById('simServiceNetFilter');
+            if (netSelect) netSelect.value = 'ALL';
+
+            const assignSelect = document.getElementById('simServiceAssignFilter');
+            if (assignSelect) assignSelect.value = 'ALL';
+
+            applySimServicesFilters();
+            showAutoSaveToast('تمت إعادة ضبط فلاتر الخدمات');
+        }
+
+        function applySimServicesFilters() {
+            const query = (document.getElementById('simServiceSearchInput')?.value || '').trim().toLowerCase();
+            const catFilter = document.getElementById('simServiceCatFilter')?.value || 'ALL';
+            const netFilter = document.getElementById('simServiceNetFilter')?.value || 'ALL';
+            const assignFilter = document.getElementById('simServiceAssignFilter')?.value || 'ALL';
+
+            const sim = allSims.find(s => s.id === currentSimId);
+            const assignedServices = simAssignments[currentSimId] || new Set();
+
+            const allServicesList = Object.values(servicesMeta);
+
+            filteredSimServices = allServicesList.filter(service => {
+                // Category match
+                if (catFilter !== 'ALL' && service.category !== catFilter) return false;
+
+                // Network match
+                if (netFilter === 'MATCHING_SIM' && sim) {
+                    if (service.operator !== 'General' && service.operator !== sim.op) return false;
+                } else if (netFilter !== 'ALL' && netFilter !== 'MATCHING_SIM') {
+                    if (service.operator !== netFilter) return false;
+                }
+
+                // Assignment match
+                const isAssigned = assignedServices.has(service.id);
+                if (assignFilter === 'ASSIGNED' && !isAssigned) return false;
+                if (assignFilter === 'UNASSIGNED' && isAssigned) return false;
+
+                // Search query match
+                if (query) {
+                    const matchName = service.name && service.name.toLowerCase().includes(query);
+                    const matchCode = service.code && service.code.toLowerCase().includes(query);
+                    const matchCat = service.categoryLabel && service.categoryLabel.toLowerCase().includes(query);
+                    const matchOp = service.operatorLabel && service.operatorLabel.toLowerCase().includes(query);
+                    if (!matchName && !matchCode && !matchCat && !matchOp) return false;
+                }
+
+                return true;
+            });
+
+            renderSimServicesGrid();
+        }
+
+        function renderSimServicesGrid() {
+            const tbody = document.getElementById('simServicesGridBody');
+            const emptyPlaceholder = document.getElementById('simServicesEmptyPlaceholder');
+            const lblVisible = document.getElementById('lblSimServicesVisibleCount');
+
+            if (lblVisible) lblVisible.innerText = filteredSimServices.length.toLocaleString();
+
+            if (filteredSimServices.length === 0) {
+                if (tbody) tbody.innerHTML = '';
+                if (emptyPlaceholder) emptyPlaceholder.classList.remove('d-none');
+                return;
+            } else {
+                if (emptyPlaceholder) emptyPlaceholder.classList.add('d-none');
+            }
+
+            const assignedServices = simAssignments[currentSimId] || new Set();
+
+            let html = '';
+            for (let i = 0; i < filteredSimServices.length; i++) {
+                const s = filteredSimServices[i];
+                const isAssigned = assignedServices.has(s.id);
+
+                // Other assigned SIMs count
+                const otherSimsCount = serviceAssignments[s.id] ? serviceAssignments[s.id].size : 0;
+
+                // Network badge
+                let opBadgeClass = 'badge-op-vf';
+                if (s.operator === 'Orange') opBadgeClass = 'badge-op-or';
+                else if (s.operator === 'Etisalat') opBadgeClass = 'badge-op-et';
+                else if (s.operator === 'WE') opBadgeClass = 'badge-op-we';
+                else if (s.operator === 'General') opBadgeClass = 'bg-secondary bg-opacity-10 text-muted border';
+
+                const rowAssignedClass = isAssigned ? 'table-row-assigned' : '';
+
+                const assignBtnHtml = isAssigned
+                    ? `<button type="button" class="btn-assign-action is-assigned" onclick="toggleSimServiceAssignment(${s.id}, false)" title="انقر لإلغاء تفعيل هذه الخدمة لهذا الخط">
+                           <span class="state-active"><i class="bi bi-check-circle-fill me-1.5"></i>مفعلة على الخط</span>
+                           <span class="state-hover"><i class="bi bi-x-circle-fill me-1.5"></i>إلغاء التفعيل</span>
+                       </button>`
+                    : `<button type="button" class="btn-assign-action is-unassigned" onclick="toggleSimServiceAssignment(${s.id}, true)" title="انقر لتفعيل وتعيين هذه الخدمة لهذا الخط">
+                           <span class="state-active"><i class="bi bi-plus-circle me-1.5"></i>غير مفعلة</span>
+                           <span class="state-hover"><i class="bi bi-check2 me-1.5"></i>+ تفعيل للخط</span>
+                       </button>`;
+
+                html += `
+                    <tr class="grid-sim-row ${rowAssignedClass}" id="sim-srv-row-${s.id}">
+                        <td class="sticky-col-1" id="sim-srv-col-${s.id}">
+                            ${assignBtnHtml}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary fs-6 d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                                    <i class="bi bi-lightning-charge-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-main fs-7">${s.name}</div>
+                                    <span class="badge bg-light text-primary border font-monospace fs-9">${s.code}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge ${opBadgeClass} fs-8 py-1 px-2.5 rounded-pill font-monospace fw-bold">
+                                ${s.operatorLabel}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border fs-8 py-1 px-2.5 rounded-pill">
+                                ${s.categoryLabel}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fs-8 fw-semibold text-main">${s.balanceImpact}</div>
+                            <small class="text-muted fs-9">الرسوم الأساسية: ${s.baseCost.toFixed(2)} ج.م</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-primary border font-monospace fs-8" title="مسندة إلى ${otherSimsCount} خطوط في النظام">
+                                <i class="bi bi-sim me-1"></i> ${otherSimsCount} خطوط مسندة
+                            </span>
+                        </td>
+                        <td>
+                            ${s.isActive 
+                                ? '<span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 fs-9 py-1 px-2 rounded-pill">نشطة</span>' 
+                                : '<span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 fs-9 py-1 px-2 rounded-pill">معطلة</span>'}
+                        </td>
+                    </tr>
+                `;
+            }
+
+            if (tbody) tbody.innerHTML = html;
+            if (typeof initTableScrollShadows === 'function') initTableScrollShadows();
+        }
+
+        async function toggleSimServiceAssignment(serviceId, assign) {
+            const simSet = simAssignments[currentSimId] || new Set();
+            const srvSet = serviceAssignments[serviceId] || new Set();
+
+            if (assign) {
+                simSet.add(serviceId);
+                srvSet.add(currentSimId);
+            } else {
+                simSet.delete(serviceId);
+                srvSet.delete(currentSimId);
+            }
+
+            // Optimistic UI update
+            const row = document.getElementById('sim-srv-row-' + serviceId);
+            const col = document.getElementById('sim-srv-col-' + serviceId);
+            if (row) row.classList.toggle('table-row-assigned', assign);
+            if (col) {
+                col.innerHTML = assign
+                    ? `<button type="button" class="btn-assign-action is-assigned" onclick="toggleSimServiceAssignment(${serviceId}, false)" title="انقر لإلغاء تفعيل هذه الخدمة لهذا الخط">
+                           <span class="state-active"><i class="bi bi-check-circle-fill me-1.5"></i>مفعلة على الخط</span>
+                           <span class="state-hover"><i class="bi bi-x-circle-fill me-1.5"></i>إلغاء التفعيل</span>
+                       </button>`
+                    : `<button type="button" class="btn-assign-action is-unassigned" onclick="toggleSimServiceAssignment(${serviceId}, true)" title="انقر لتفعيل وتعيين هذه الخدمة لهذا الخط">
+                           <span class="state-active"><i class="bi bi-plus-circle me-1.5"></i>غير مفعلة</span>
+                           <span class="state-hover"><i class="bi bi-check2 me-1.5"></i>+ تفعيل للخط</span>
+                       </button>`;
+            }
+
+            updateSimHeroCard();
+            updateCoverageKPI();
+
+            const assignFilter = document.getElementById('simServiceAssignFilter')?.value;
+            if (assignFilter && assignFilter !== 'ALL') {
+                applySimServicesFilters();
+            }
+
+            try {
+                const res = await fetch('/Company/Routing/ToggleSimServiceAjax', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        simId: currentSimId,
+                        serviceId: serviceId,
+                        assign: assign
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAutoSaveToast(`تم ${assign ? 'تفعيل' : 'إلغاء تفعيل'} الخدمة للخط بنجاح (${data.count} خدمات مفعلة)`);
+                } else {
+                    // Revert
+                    if (assign) {
+                        simSet.delete(serviceId);
+                        srvSet.delete(currentSimId);
+                    } else {
+                        simSet.add(serviceId);
+                        srvSet.add(currentSimId);
+                    }
+                    updateSimHeroCard();
+                    renderSimServicesGrid();
+                    showAutoSaveToast(data.message || 'فشل حفظ التخصيص', false);
+                }
+            } catch (err) {
+                console.error(err);
+                if (assign) {
+                    simSet.delete(serviceId);
+                    srvSet.delete(currentSimId);
+                } else {
+                    simSet.add(serviceId);
+                    srvSet.add(currentSimId);
+                }
+                updateSimHeroCard();
+                renderSimServicesGrid();
+                showAutoSaveToast('تعذر الاتصال بالخادم', false);
+            }
+        }
+
+        // Batch Actions for SIM Services
+        function assignAllMatchingOperatorServicesToSim() {
+            const sim = allSims.find(s => s.id === currentSimId);
+            if (!sim) return;
+
+            const matchingServices = Object.values(servicesMeta).filter(s => s.operator === 'General' || s.operator === sim.op);
+            if (matchingServices.length === 0) {
+                showAlertModal({
+                    title: 'لا توجد خدمات مطابقة',
+                    message: `لا توجد خدمات مخصصة لشبكة ${sim.op} أو عامة في باقة الشركة.`,
+                    type: 'warning'
+                });
+                return;
+            }
+
+            showConfirmModal({
+                title: 'تخصيص كافة خدمات شبكة هذا الخط',
+                message: `هل ترغب في تفعيل كافة الخدمات المطابقة لشبكة (${sim.op}) والخدمات العامة (${matchingServices.length} خدمة) لهذا الخط؟`,
+                detail: `${sim.phoneNumber} - ${sim.deviceName}`,
+                detailLabel: 'الخط المحدد:',
+                btnText: `نعم، تفعيل (${matchingServices.length}) خدمة`,
+                type: 'primary',
+                onConfirm: () => performBatchSimServicesSave(matchingServices.map(s => s.id), true)
+            });
+        }
+
+        function assignAllFilteredServicesToSim() {
+            if (filteredSimServices.length === 0) {
+                showAlertModal({
+                    title: 'لا توجد خدمات',
+                    message: 'لا توجد أي خدمات معروضة بالفلتر لتفعيلها.',
+                    type: 'warning'
+                });
+                return;
+            }
+
+            const sim = allSims.find(s => s.id === currentSimId);
+            const simSet = simAssignments[currentSimId] || new Set();
+            const unionIds = new Set([...simSet, ...filteredSimServices.map(s => s.id)]);
+
+            showConfirmModal({
+                title: 'تخصيص كافة الخدمات المعروضة بالفلتر',
+                message: `هل ترغب في تفعيل جميع الخدمات المعروضة بالفلتر (${filteredSimServices.length} خدمة) لهذا الخط؟`,
+                detail: `${sim?.phoneNumber ?? ''}`,
+                detailLabel: 'الخط المحدد:',
+                btnText: `نعم، تفعيل (${filteredSimServices.length}) خدمة`,
+                type: 'primary',
+                onConfirm: () => performBatchSimServicesSave(Array.from(unionIds), false)
+            });
+        }
+
+        function unassignAllServicesFromSim() {
+            const sim = allSims.find(s => s.id === currentSimId);
+            const currentCount = simAssignments[currentSimId]?.size || 0;
+
+            if (currentCount === 0) {
+                showAlertModal({
+                    title: 'لا توجد خدمات مفعلة',
+                    message: 'هذا الخط لا يحتوي على أي خدمات مفعلة حالياً.',
+                    type: 'info'
+                });
+                return;
+            }
+
+            showConfirmModal({
+                title: 'إلغاء تخصيص كافة الخدمات عن هذا الخط',
+                message: `هل أنت متأكد من إلغاء تفعيل كافة الخدمات (${currentCount} خدمة) عن هذا الخط؟`,
+                detail: `${sim?.phoneNumber ?? ''}`,
+                detailLabel: 'الخط المحدد:',
+                consequence: 'تنبيه: لن يتم توجيه أي عمليات إلى هذا الخط حتى إعادة تفعيل خدمات له.',
+                btnText: 'نعم، إلغاء تفعيل كافة الخدمات',
+                type: 'warning',
+                onConfirm: () => performBatchSimServicesSave([], false)
+            });
+        }
+
+        async function performBatchSimServicesSave(serviceIdsToSet, isMatchingOp) {
+            const targetIds = Array.isArray(serviceIdsToSet) ? serviceIdsToSet : [];
+            const previousSet = new Set(simAssignments[currentSimId] || []);
+
+            // Optimistic update
+            simAssignments[currentSimId] = new Set(targetIds);
+
+            // Synchronize serviceAssignments
+            Object.keys(serviceAssignments).forEach(sId => {
+                const intSId = parseInt(sId);
+                if (targetIds.includes(intSId)) {
+                    serviceAssignments[sId].add(currentSimId);
+                } else {
+                    serviceAssignments[sId].delete(currentSimId);
+                }
+            });
+
+            updateSimHeroCard();
+            updateCoverageKPI();
+            renderSimServicesGrid();
+
+            showAutoSaveToast(`جاري حفظ ${targetIds.length} خدمة للخط...`);
+
+            try {
+                const res = await fetch('/Company/Routing/SetSimServicesAjax', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        simId: currentSimId,
+                        serviceIds: targetIds
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAutoSaveToast(`تم تحديث الخدمات المسندة للخط بنجاح (${targetIds.length} خدمة)`);
+                } else {
+                    // Revert
+                    simAssignments[currentSimId] = previousSet;
+                    updateSimHeroCard();
+                    renderSimServicesGrid();
+                    showAlertModal({
+                        title: 'فشل حفظ التوجيه',
+                        message: data.message || 'حدث خطأ أثناء حفظ التخصيص.',
+                        type: 'danger'
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+                simAssignments[currentSimId] = previousSet;
+                updateSimHeroCard();
+                renderSimServicesGrid();
+                showAlertModal({
+                    title: 'خطأ اتصال بالخادم',
+                    message: 'تعذر الاتصال بالخادم، يرجى إعادة المحاولة.',
+                    type: 'danger'
+                });
+            }
+        }
     </script>
 }

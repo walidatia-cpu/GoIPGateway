@@ -131,45 +131,38 @@
         </div>
     }
 
-    <!-- Toolbar: Search & Filter Tabs -->
-    <div class="portal-card p-3 mb-4 shadow-sm">
-        <div class="row g-3 align-items-center">
-            <div class="col-12 col-md-5">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0 text-muted">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" id="devSearchInput" class="form-control border-start-0" 
-                           placeholder="ابحث باسم الجهاز، السيريال، أو عنوان الـ IP..." 
-                           onkeyup="filterDevices()" />
-                </div>
-            </div>
+    @{
+        var devFilterBar = new SearchFilterBarModel
+        {
+            SearchInputId = "devSearchInput",
+            SearchPlaceholder = "ابحث باسم الجهاز، السيريال، أو عنوان الـ IP...",
+            OnSearchInput = "filterDevices()",
+            CounterId = "visibleDevCount",
+            CounterLabel = "الأجهزة الظاهرة:",
+            InitialCount = devList.Count,
+            ResetFiltersFunction = "resetDeviceFilters()",
+            Filters = new List<FilterDropdownModel>
+            {
+                new FilterDropdownModel
+                {
+                    Id = "devStatusFilter",
+                    Label = "معيار الحالة:",
+                    Icon = "bi-funnel-fill",
+                    OnChange = "onDeviceStatusChange(this.value)",
+                    Options = new List<FilterOptionModel>
+                    {
+                        new FilterOptionModel("all", "كل الأجهزة", badge: devList.Count.ToString(), color: "primary", isSelected: true),
+                        new FilterOptionModel("active", "الأجهزة النشطة", badge: activeCount.ToString(), color: "success"),
+                        new FilterOptionModel("deleted", "المحذوفة مؤقتاً", badge: deletedCount.ToString(), color: "danger")
+                    }
+                }
+            }
+        };
+    }
 
-            <div class="col-12 col-md-5">
-                <div class="btn-group w-100" role="group">
-                    <input type="radio" class="btn-check" name="statusFilter" id="filterAll" value="all" checked onchange="filterDevices()">
-                    <label class="btn btn-sm btn-outline-secondary fw-semibold" for="filterAll">
-                        الكل (@devList.Count)
-                    </label>
-
-                    <input type="radio" class="btn-check" name="statusFilter" id="filterActive" value="active" onchange="filterDevices()">
-                    <label class="btn btn-sm btn-outline-success fw-semibold" for="filterActive">
-                        النشطة (@activeCount)
-                    </label>
-
-                    <input type="radio" class="btn-check" name="statusFilter" id="filterDeleted" value="deleted" onchange="filterDevices()">
-                    <label class="btn btn-sm btn-outline-danger fw-semibold" for="filterDeleted">
-                        المحذوفة مؤقتاً (@deletedCount)
-                    </label>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-2 text-md-end">
-                <span class="text-muted small">
-                    عرض <strong class="text-primary font-monospace" id="visibleDevCount">@devList.Count</strong> جهاز
-                </span>
-            </div>
-        </div>
+    <!-- Toolbar: Search & Filter Microcomponent -->
+    <div class="portal-card mb-4 shadow-sm">
+        <partial name="Partials/_SearchFilterBar" model="devFilterBar" />
     </div>
 
     <!-- Devices Table Card -->
@@ -193,10 +186,10 @@
         else
         {
             <div class="table-responsive table-responsive-custom">
-                <table class="table table-custom align-middle mb-0" id="devMasterTable">
+                <table class="table table-custom table-sticky-col align-middle mb-0" id="devMasterTable">
                     <thead>
                         <tr>
-                            <th style="min-width: 220px;">اسم الجهاز</th>
+                            <th class="dev-name-col" style="min-width: 130px;"><span class="d-none d-sm-inline">اسم الجهاز</span><span class="d-sm-none">الجهاز</span></th>
                             <th style="min-width: 140px;">النوع والموديل</th>
                             <th style="min-width: 160px;">عنوان IP والمنفذ</th>
                             <th style="min-width: 120px;">حالة الاتصال والتشغيل</th>
@@ -218,13 +211,13 @@
                                 data-search="@searchKeywords" 
                                 data-status="@(isDel ? "deleted" : "active")">
                                 <td>
-                                    <div class="d-flex align-items-center gap-2.5">
-                                        <div class="row-avatar @(isDel ? "bg-danger bg-opacity-10 text-danger" : "")" style="width: 42px; height: 42px; font-size: 1.1rem;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="row-avatar d-none d-md-flex @(isDel ? "bg-danger bg-opacity-10 text-danger" : "")" style="width: 42px; height: 42px; font-size: 1.1rem;">
                                             <i class="bi @(isDel ? "bi-trash3" : "bi-router")"></i>
                                         </div>
-                                        <div>
+                                        <div class="min-w-0">
                                             <div class="d-flex align-items-center gap-1.5">
-                                                <a asp-action="Details" asp-route-id="@dev.Id" class="fw-bold text-main text-decoration-none hover-primary @(isDel ? "text-decoration-line-through text-muted" : "")">
+                                                <a asp-action="Details" asp-route-id="@dev.Id" class="fw-bold text-main text-decoration-none hover-primary text-truncate d-inline-block dev-name-text @(isDel ? "text-decoration-line-through text-muted" : "")" style="max-width: 120px;" title="@dev.DeviceName">
                                                     @dev.DeviceName
                                                 </a>
                                                 @if (isDel)
@@ -234,7 +227,7 @@
                                                     </span>
                                                 }
                                             </div>
-                                            <div class="d-flex align-items-center gap-1 mt-0.5 flex-wrap">
+                                            <div class="d-none d-md-flex align-items-center gap-1 mt-0.5 flex-wrap">
                                                 <small class="text-muted font-monospace fs-8">SN: @(dev.SerialNumber ?? "N/A")</small>
                                                 @if (!string.IsNullOrWhiteSpace(dev.MerchantCode))
                                                 {
@@ -245,7 +238,7 @@
                                             </div>
                                             @if (!string.IsNullOrWhiteSpace(dev.Location))
                                             {
-                                                <small class="text-muted d-block fs-9"><i class="bi bi-geo-alt me-0.5"></i>@dev.Location</small>
+                                                <small class="text-muted d-none d-md-block fs-9"><i class="bi bi-geo-alt me-0.5"></i>@dev.Location</small>
                                             }
                                         </div>
                                     </div>
@@ -365,9 +358,31 @@
 
 @section Scripts {
     <script>
+        let currentDevStatusFilter = 'all';
+
+        function onDeviceStatusChange(status) {
+            currentDevStatusFilter = status || 'all';
+            filterDevices();
+        }
+
+        function resetDeviceFilters() {
+            const sInp = document.getElementById('devSearchInput');
+            if (sInp) {
+                sInp.value = '';
+                sInp.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            currentDevStatusFilter = 'all';
+            const sel = document.getElementById('devStatusFilter');
+            if (sel) {
+                sel.value = 'all';
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            filterDevices();
+        }
+
         function filterDevices() {
             const query = (document.getElementById('devSearchInput')?.value || '').trim().toLowerCase();
-            const selectedFilter = document.querySelector('input[name="statusFilter"]:checked')?.value || 'all';
+            const selectedFilter = currentDevStatusFilter;
             const rows = document.querySelectorAll('.dev-row');
             let visible = 0;
 
