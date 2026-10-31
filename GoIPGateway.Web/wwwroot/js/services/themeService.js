@@ -1,6 +1,7 @@
 /**
  * GoIP Gateway - Theme Service
  * Handles dark / light mode toggle, persistence in localStorage, and UI indicator updates.
+ * Default Mode: Light (الوضع الفاتح)
  */
 (function (window) {
     'use strict';
@@ -9,8 +10,8 @@
 
     const ThemeService = {
         getTheme: function () {
-            return localStorage.getItem(STORAGE_KEY) || 
-                   (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            // Default theme is explicitly 'light' unless user saved another preference
+            return localStorage.getItem(STORAGE_KEY) || 'light';
         },
 
         setTheme: function (theme) {
@@ -28,20 +29,20 @@
         },
 
         updateThemeUI: function (theme) {
-            const icon = document.getElementById('theme-icon');
-            const text = document.getElementById('theme-text');
+            const icon = document.getElementById('themeIcon') || document.getElementById('theme-icon');
+            const text = document.getElementById('themeLabel') || document.getElementById('theme-text');
             if (icon) {
                 icon.className = theme === 'dark' 
-                    ? 'bi bi-moon-stars-fill text-warning fs-5' 
-                    : 'bi bi-sun-fill text-warning fs-5';
+                    ? 'bi bi-moon-stars-fill text-warning' 
+                    : 'bi bi-sun-fill text-warning';
             }
             if (text) {
-                text.innerText = theme === 'dark' ? 'الوضع الليلي' : 'الوضع النهاري';
+                text.innerText = theme === 'dark' ? 'الوضع الليلي' : 'الوضع الفاتح';
             }
         },
 
         init: function () {
-            const currentTheme = document.documentElement.getAttribute('data-bs-theme') || this.getTheme();
+            const currentTheme = this.getTheme();
             this.setTheme(currentTheme);
         }
     };

@@ -1,4 +1,4 @@
-@using System.Globalization
+﻿@using System.Globalization
 @{
     var isRtl = CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
     var currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
@@ -1692,8 +1692,8 @@
 
                 <!-- Theme Toggle Button (Dark / Light) -->
                 <button type="button" id="themeToggleBtn" class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center gap-1 nav-pill-btn" onclick="toggleTheme()" title="تبديل الوضع النهاري / الليلي">
-                    <i id="themeIcon" class="bi bi-moon-stars-fill text-warning"></i>
-                    <span id="themeLabel" class="d-none d-md-inline fw-bold small">الوضع الليلي</span>
+                    <i id="themeIcon" class="bi bi-sun-fill text-warning"></i>
+                    <span id="themeLabel" class="d-none d-md-inline fw-bold small">الوضع الفاتح</span>
                 </button>
 
                 <!-- Language Switcher -->

@@ -159,7 +159,7 @@ app.UseSwaggerUI(c =>
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-// 10. Localization Middleware
+// 10. Localization Middleware (Default: Arabic ar-EG / RTL)
 var supportedCultures = new[] { new CultureInfo("ar-EG"), new CultureInfo("en-US") };
 app.UseRequestLocalization(new RequestLocalizationOptions
 {
@@ -169,8 +169,7 @@ app.UseRequestLocalization(new RequestLocalizationOptions
     RequestCultureProviders = new List<IRequestCultureProvider>
     {
         new QueryStringRequestCultureProvider(),
-        new CookieRequestCultureProvider(),
-        new AcceptLanguageHeaderRequestCultureProvider()
+        new CookieRequestCultureProvider()
     }
 });
 
