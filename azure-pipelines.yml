@@ -1,0 +1,244 @@
+trigger:
+  branches:
+    include:
+    - master
+    - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  azureServiceConnection: 'Azure-Connection' # اسم الـ Service Connection المعرف في Azure DevOps
+  webAppName: 'goip-gateway-app'            # اسم الـ Web App الخاص بك في Azure (يجب أن يكون فريداً عالمياً)
+  defaultResourceGroup: 'rg-goip-gateway'   # اسم الـ Resource Group
+  defaultLocation: 'westeurope'             # المنطقة الافتراضية
+  sqlAdminUser: 'goipadmin'                 # اسم مستخدم مدير قاعدة البيانات
+  sqlAdminPassword: 'P@ssw0rdGoip2026!#'     # كلمة مرور قاعدة البيانات (يفضل نقلها لـ DevOps Secret Variables)
+  sqlDatabaseName: 'GoIPGatewayPlatformDb'  # اسم قاعدة البيانات
+
+stages:
+# ==========================================
+# المرحلة الأولى: البناء، الاختبار، والترحيلات (CI)
+# ==========================================
+- stage: Build
+  displayName: 'Build, Test, and Publish'
+  jobs:
+  - job: BuildJob
+    steps:
+    # 1. تثبيت .NET 10 SDK لضمان توافق بيئة وكيل البناء
+    - task: UseDotNet@2
+      displayName: 'Install .NET 10 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '10.x'
+        includePreviewVersions: true
+
+    # 2. استعادة الحزم لجميع المشاريع
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore NuGet Packages'
+      inputs:
+        command: 'restore'
+        projects: '**/*.csproj'
+
+    # 3. بناء الحل بالكامل
+    - task: DotNetCoreCLI@2
+      displayName: 'Build Solution'
+      inputs:
+        command: 'build'
+        projects: 'GoIPGateway.sln'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
+
+    # 4. تشغيل الاختبارات الأوتوماتيكية للتأكد من سلامة النظام
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Unit Tests'
+      inputs:
+        command: 'test'
+        projects: 'GoIPGateway.Tests/GoIPGateway.Tests.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-build'
+
+    # 5. تثبيت أداة EF Core CLI
+    - task: DotNetCoreCLI@2
+      displayName: 'Install dotnet-ef tool'
+      inputs:
+        command: 'custom'
+        custom: 'tool'
+        arguments: 'install --global dotnet-ef'
+      continueOnError: true
+
+    # 6. توليد سكربت SQL التراكمي لترحيلات EF Core
+    - script: |
+        dotnet ef migrations script --idempotent --project GoIPGateway.Infrastructure/GoIPGateway.Infrastructure.csproj --startup-project GoIPGateway.Web/GoIPGateway.Web.csproj --context AppDbContext --output $(Build.ArtifactStagingDirectory)/sql/database_migrations.sql
+      displayName: 'Generate EF Core Idempotent SQL Script'
+      continueOnError: true
+
+    # 7. نشر تطبيق الويب GoIPGateway.Web وتجهيز حزمة الـ Zip
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish Web Project'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'GoIPGateway.Web/GoIPGateway.Web.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/app'
+        zipAfterPublish: true
+
+    # 8. حفظ المخرجات (Artifacts) لنقلها لمرحلة النشر
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Build Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
+# ==========================================
+# المرحلة الثانية: تجهيز الخادم والنشر التلقائي (CD - Single Server)
+# ==========================================
+- stage: Deploy
+  displayName: 'Deploy to Single Azure Server'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: DeployJob
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          # تنزيل ملفات البناء والـ Artifacts
+          - task: DownloadBuildArtifacts@0
+            displayName: 'Download Artifacts'
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'drop'
+              downloadPath: '$(System.ArtifactsDirectory)'
+
+          # الأتمتة الكاملة: إنشاء وإعداد قاعدة بيانات Azure SQL وحقن الاتصال
+          - task: AzureCLI@2
+            displayName: 'Auto-Provision Azure SQL & Configure WebApp'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                set -e
+                echo "==> 1. فحص الـ Resource Group المصرح به للـ Service Connection..."
+                RG_NAME=$(az group list --query "[0].name" -o tsv 2>/dev/null || echo "")
+                LOCATION=$(az group list --query "[0].location" -o tsv 2>/dev/null || echo "")
+
+                if [ -z "$RG_NAME" ]; then
+                  RG_NAME="$(defaultResourceGroup)"
+                fi
+
+                if [ -z "$LOCATION" ]; then
+                  LOCATION="$(defaultLocation)"
+                fi
+
+                echo "==> تم تحديد الـ Resource Group: $RG_NAME في منطقة: $LOCATION"
+
+                # إنشاء الـ Resource Group إذا لم يكن موجوداً
+                if ! az group show --name "$RG_NAME" &>/dev/null; then
+                  echo "==> إنشاء Resource Group جديد: $RG_NAME..."
+                  az group create --name "$RG_NAME" --location "$LOCATION"
+                fi
+
+                SQL_DB="$(sqlDatabaseName)"
+                SQL_SERVER=""
+
+                echo "==> 2. التحقق من تسجيل موفر الخدمة Microsoft.Sql في الاشتراك..."
+                SQL_REG_STATUS=$(az provider show --namespace Microsoft.Sql --query "registrationState" -o tsv 2>/dev/null || echo "NotRegistered")
+                if [ "$SQL_REG_STATUS" != "Registered" ]; then
+                  echo "==> موفر خدمة Microsoft.Sql غير مسجل ($SQL_REG_STATUS)، جاري محاولة تسجيله تلقائياً..."
+                  az provider register --namespace Microsoft.Sql --wait 2>/dev/null || az provider register --namespace Microsoft.Sql 2>/dev/null || true
+                fi
+
+                echo "==> 3. التحقق من وجود خادم SQL جاهز أو إنشاؤه..."
+                EXISTING_SERVER=$(az sql server list --resource-group "$RG_NAME" --query "[?starts_with(name, 'sql-$(webAppName)')].name | [0]" -o tsv 2>/dev/null || echo "")
+                if [ -n "$EXISTING_SERVER" ] && [ "$EXISTING_SERVER" != "None" ]; then
+                  STATE=$(az sql server show --name "$EXISTING_SERVER" --resource-group "$RG_NAME" --query "state" -o tsv 2>/dev/null || echo "")
+                  if [ "$STATE" = "Ready" ]; then
+                    echo "==> تم العثور على خادم SQL جاهز مسبقاً: $EXISTING_SERVER"
+                    SQL_SERVER="$EXISTING_SERVER"
+                  fi
+                fi
+
+                if [ -z "$SQL_SERVER" ]; then
+                  CREATED=false
+                  # مناطق خالية من قيود السعة
+                  CANDIDATE_REGIONS=("$LOCATION" "westeurope" "northeurope" "eastus2" "swedencentral" "germanywestcentral")
+                  for REGION in "${CANDIDATE_REGIONS[@]}"; do
+                    CURRENT_SERVER="sql-$(webAppName)-${REGION}"
+                    CURRENT_SERVER=$(echo "$CURRENT_SERVER" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]-' | cut -c 1-60)
+                    echo "==> محاولة إنشاء خادم SQL باسم [$CURRENT_SERVER] في منطقة [$REGION]..."
+                    OUTPUT=$(az sql server create \
+                      --name "$CURRENT_SERVER" \
+                      --resource-group "$RG_NAME" \
+                      --location "$REGION" \
+                      --admin-user "$(sqlAdminUser)" \
+                      --admin-password "$(sqlAdminPassword)" 2>&1) && {
+                        echo "==> تم إنشاء خادم SQL بنجاح في: $REGION باسم $CURRENT_SERVER!"
+                        SQL_SERVER="$CURRENT_SERVER"
+                        CREATED=true
+                        break
+                    } || {
+                      ERR_MSG=$(echo "$OUTPUT" | grep -i "Message:" | head -n 1 || echo "$OUTPUT" | head -n 2)
+                      echo "==> تعذر في $REGION: $ERR_MSG"
+                    }
+                  done
+
+                  if [ "$CREATED" = false ] || [ -z "$SQL_SERVER" ]; then
+                    echo "==> خطأ: تعذر إنشاء خادم SQL في كافة المناطق المرشحة."
+                    exit 1
+                  fi
+                fi
+
+                echo "==> 4. ضبط جدار الحماية للسماح باتصالات خدمات Azure..."
+                az sql server firewall-rule create \
+                  --server "$SQL_SERVER" \
+                  --resource-group "$RG_NAME" \
+                  --name "AllowAllWindowsAzureIps" \
+                  --start-ip-address "0.0.0.0" \
+                  --end-ip-address "0.0.0.0" 2>/dev/null || true
+
+                echo "==> 5. إنشاء قاعدة البيانات (خطة Basic موفرة واقتصادية)..."
+                if ! az sql db show --name "$SQL_DB" --server "$SQL_SERVER" --resource-group "$RG_NAME" &>/dev/null; then
+                  az sql db create \
+                    --name "$SQL_DB" \
+                    --server "$SQL_SERVER" \
+                    --resource-group "$RG_NAME" \
+                    --service-objective "Basic"
+                fi
+
+                echo "==> 6. التحقق من وجود Web App أو إنشاؤه..."
+                if ! az webapp show --name "$(webAppName)" --resource-group "$RG_NAME" &>/dev/null; then
+                  PLAN_NAME="plan-$(webAppName)"
+                  echo "==> جاري إنشاء App Service Plan [$PLAN_NAME]..."
+                  az appservice plan create --name "$PLAN_NAME" --resource-group "$RG_NAME" --sku B1 --is-linux 2>/dev/null || true
+                  echo "==> جاري إنشاء Web App [$(webAppName)]..."
+                  az webapp create --name "$(webAppName)" --resource-group "$RG_NAME" --plan "$PLAN_NAME" --os-type Linux 2>/dev/null || true
+                fi
+
+                echo "==> 7. تفعيل WebSockets لدعم SignalR..."
+                az webapp config set --name "$(webAppName)" --resource-group "$RG_NAME" --web-sockets-enabled true 2>/dev/null || true
+
+                echo "==> 8. حقن سلسلة الاتصال وإعدادات البيئة تلقائياً داخل الـ Web App..."
+                CONN_STR="Server=tcp:${SQL_SERVER}.database.windows.net,1433;Initial Catalog=${SQL_DB};Persist Security Info=False;User ID=$(sqlAdminUser);Password=$(sqlAdminPassword);MultipleActiveResultSets=True;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+                az webapp config connection-string set \
+                  --name "$(webAppName)" \
+                  --resource-group "$RG_NAME" \
+                  --connection-string-type SQLServer \
+                  --settings DefaultConnection="$CONN_STR"
+
+                echo "==> اكتمل إعداد البنية التحتية وقاعدة البيانات بنجاح 100%!"
+
+          # نشر حزمة المشروع إلى خادم الـ Web App
+          - task: AzureRmWebAppDeployment@4
+            displayName: 'Deploy Package to Azure WebApp'
+            inputs:
+              ConnectionType: 'AzureRM'
+              azureSubscription: '$(azureServiceConnection)'
+              appType: 'webApp'
+              WebAppName: '$(webAppName)'
+              packageForLinux: '$(System.ArtifactsDirectory)/drop/app/*.zip'
+              appSettings: '-ASPNETCORE_ENVIRONMENT Production -WEBSITE_RUN_FROM_PACKAGE 1'
+
