@@ -37,7 +37,7 @@ public class UssdMultiStepExecutor : IServiceExecutor
     }
 
     public bool CanHandle(ServiceType serviceType) =>
-        serviceType is ServiceType.USSD or ServiceType.Transfer or ServiceType.Custom or ServiceType.Settlement;
+        serviceType is ServiceType.USSD or ServiceType.Custom;
 
     public async Task<Result<TransactionResultDto>> ExecuteAsync(TenantTransaction transaction, CancellationToken cancellationToken = default)
     {
@@ -345,3 +345,4 @@ public class UssdMultiStepExecutor : IServiceExecutor
         return Result.Failure<TransactionResultDto>(code, message);
     }
 }
+

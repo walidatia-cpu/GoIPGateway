@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using GoIPGateway.Application.Common.Interfaces;
 using GoIPGateway.Application.Common.Models;
 using GoIPGateway.Application.DTOs;
@@ -13,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace GoIPGateway.Infrastructure.Services.Executors;
 
 /// <summary>
-/// مشغّل عمليات الدفع والتحويل النقدي والمحافظ الإلكترونية و QR Code
+/// مشغّل عمليات الدفع والتحويلات المالية والمحافظ الإلكترونية و QR Code
 /// يدعم التحقق الاستباقي من الرصيد، حجز المنفذ، بناء أوامر الـ USSD المخصصة أو التلقائية، والخصم المالي الآمن
 /// </summary>
 public class PaymentExecutor : IServiceExecutor
@@ -41,11 +40,15 @@ public class PaymentExecutor : IServiceExecutor
         _logger = logger;
     }
 
+    /// <summary>
+    /// يختص بمعالجة عمليات الدفع والتحويل والتسوية
+    /// </summary>
     public bool CanHandle(ServiceType serviceType) =>
         serviceType is ServiceType.QRPayment or ServiceType.Transfer or ServiceType.Settlement;
 
     public async Task<Result<TransactionResultDto>> ExecuteAsync(TenantTransaction transaction, CancellationToken cancellationToken = default)
     {
+        // 1. التحقق من المنفذ والشريحة
         if (!transaction.DevicePortId.HasValue || !transaction.SimCardId.HasValue)
         {
             return await FailTransactionAsync(transaction, "MissingPortOrSim", "لم يتم تحديد منفذ أو شريحة صالحة لتنفيذ عملية الدفع.", cancellationToken);
@@ -56,7 +59,7 @@ public class PaymentExecutor : IServiceExecutor
                 .ThenInclude(p => p.Device)
             .FirstOrDefaultAsync(s => s.Id == transaction.SimCardId.Value, cancellationToken);
 
-        if (sim == null || sim.DevicePort == null || sim.DevicePort.Device == null)
+        if (sim?.DevicePort?.Device == null)
         {
             return await FailTransactionAsync(transaction, "DeviceUnavailable", "جهاز GoIP أو الشريحة غير متوفرين على الشبكة.", cancellationToken);
         }
@@ -70,7 +73,7 @@ public class PaymentExecutor : IServiceExecutor
             return await FailTransactionAsync(transaction, "ServiceNotFound", "بيانات الخدمة غير موجودة.", cancellationToken);
         }
 
-        // 1. Pre-validation of SIM Balance for Payments
+        // 2. التحقق المالي الاستباقي من رصيد الشريحة
         if (transaction.Amount.HasValue && transaction.Amount.Value > 0 && service.BalanceActionType == BalanceActionType.Decrement)
         {
             if (sim.CurrentBalance < transaction.Amount.Value)
@@ -80,19 +83,14 @@ public class PaymentExecutor : IServiceExecutor
             }
         }
 
-        // 2. Acquire Port Lock
+        // 3. حجز منفذ الشريحة لمنع التداخل أثناء تنفيذ الـ USSD
         var locked = await _lockManager.TryAcquireLockAsync(sim.DevicePortId, TimeSpan.FromSeconds(25), cancellationToken);
         if (!locked)
         {
             return await FailTransactionAsync(transaction, "PortLocked", "منفذ الشريحة مشغول حالياً بعملية أخرى. يرجى إعادة المحاولة.", cancellationToken);
         }
 
-        var stopwatch = new Stopwatch();
-        var logs = new List<TransactionLog>();
-        var parameters = string.IsNullOrEmpty(transaction.Parameters)
-            ? new Dictionary<string, string>()
-            : JsonSerializer.Deserialize<Dictionary<string, string>>(transaction.Parameters) ?? new();
-
+        // 4. تحديث حالة المعاملة إلى قيد المعالجة (Processing)
         transaction.Status = TransactionStatus.Processing;
         transaction.ProcessingStartedAt = DateTime.UtcNow;
         transaction.SimBalanceBefore = sim.CurrentBalance;
@@ -102,118 +100,16 @@ public class PaymentExecutor : IServiceExecutor
 
         try
         {
-            string? lastResponse = null;
-            string? finalSuccessClientMessage = null;
+            // 5. تنفيذ سيكل أوامر الـ USSD عبر جهاز GoIP
+            var (isSuccess, clientMessage, rawResponse, logs) = await ExecuteUssdWorkflowAsync(transaction, service, sim, cancellationToken);
 
-            // Scenario A: Custom steps defined in DB
-            if (service.UssdSteps.Any(s => s.IsActive && !s.IsDelete))
+            if (!isSuccess)
             {
-                var activeSteps = service.UssdSteps.Where(s => s.IsActive && !s.IsDelete).OrderBy(s => s.StepOrder).ToList();
-                foreach (var step in activeSteps)
-                {
-                    stopwatch.Restart();
-                    var command = EvaluatePlaceholders(step.UssdCommand, sim, parameters, transaction.Amount);
-
-                    _logger.LogInformation("Payment Tx {TxRef} Step {Order}: Executing USSD: {Command}", transaction.TransactionRef, step.StepOrder, command);
-
-                    var response = await _goipClient.SendUssdCommandAsync(
-                        sim.DevicePort.Device,
-                        sim.DevicePort.PortNumber,
-                        command,
-                        step.TimeoutSeconds > 0 ? step.TimeoutSeconds : 30,
-                        cancellationToken);
-
-                    stopwatch.Stop();
-                    lastResponse = response;
-
-                    var isStepSuccess = EvaluateStepSuccess(step, response, out var stepError, out var clientSafeMessage);
-                    if (isStepSuccess && !string.IsNullOrWhiteSpace(clientSafeMessage))
-                    {
-                        finalSuccessClientMessage = clientSafeMessage;
-                    }
-
-                    var log = new TransactionLog
-                    {
-                        TransactionId = transaction.Id,
-                        StepOrder = step.StepOrder,
-                        StepName = step.StepTitle ?? $"خطوة دفع {step.StepOrder}",
-                        UssdCommand = command,
-                        UssdResponse = response,
-                        IsSuccess = isStepSuccess,
-                        ErrorMessage = stepError,
-                        DurationMs = (int)stopwatch.ElapsedMilliseconds,
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    logs.Add(log);
-                    _context.TransactionLogs.Add(log);
-                    await _context.SaveChangesAsync(cancellationToken);
-
-                    if (!isStepSuccess)
-                    {
-                        var finalErrorMessage = clientSafeMessage ?? stepError ?? "فشلت خطوة أثناء معالجة الدفع.";
-                        return await MarkTransactionFailedAsync(transaction, response, "PaymentStepFailed", finalErrorMessage, cancellationToken);
-                    }
-
-                    if (step.DelayAfterMs > 0)
-                    {
-                        await Task.Delay(step.DelayAfterMs, cancellationToken);
-                    }
-                }
-            }
-            else
-            {
-                // Scenario B: Standard auto-constructed payment USSD
-                var paymentCommand = BuildAutoPaymentUssdCommand(sim.Operator, sim, parameters, transaction.Amount);
-                stopwatch.Restart();
-
-                _logger.LogInformation("Payment Tx {TxRef}: Executing Auto USSD: {Command}", transaction.TransactionRef, paymentCommand);
-
-                var response = await _goipClient.SendUssdCommandAsync(
-                    sim.DevicePort.Device,
-                    sim.DevicePort.PortNumber,
-                    paymentCommand,
-                    35,
-                    cancellationToken);
-
-                stopwatch.Stop();
-                lastResponse = response;
-
-                var isSuccess = DeterminePaymentSuccess(response, out var paymentError, out var successMsg);
-                if (isSuccess)
-                {
-                    finalSuccessClientMessage = successMsg;
-                }
-
-                var log = new TransactionLog
-                {
-                    TransactionId = transaction.Id,
-                    StepOrder = 1,
-                    StepName = "أمر الدفع الإلكتروني المباشر",
-                    UssdCommand = paymentCommand,
-                    UssdResponse = response,
-                    IsSuccess = isSuccess,
-                    ErrorMessage = isSuccess ? null : paymentError,
-                    DurationMs = (int)stopwatch.ElapsedMilliseconds,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                logs.Add(log);
-                _context.TransactionLogs.Add(log);
-                await _context.SaveChangesAsync(cancellationToken);
-
-                if (!isSuccess)
-                {
-                    return await MarkTransactionFailedAsync(transaction, response, "PaymentFailed", paymentError ?? "فشلت عملية الدفع من الشبكة.", cancellationToken);
-                }
+                var errorMsg = clientMessage ?? "فشلت عملية الدفع من الشبكة.";
+                return await FailTransactionAsync(transaction, "PaymentFailed", errorMsg, cancellationToken, rawResponse);
             }
 
-            // === PAYMENT COMPLETED SUCCESSFULLY ===
-            transaction.Status = TransactionStatus.Completed;
-            transaction.RawResponse = lastResponse;
-            transaction.CompletedAt = DateTime.UtcNow;
-
-            // Financial Balance Deduction
+            // 6. الخصم المالي للرصيد وتسجيل السجل التاريخي
             if (service.BalanceActionType == BalanceActionType.Decrement && transaction.Amount.HasValue)
             {
                 sim.CurrentBalance -= transaction.Amount.Value;
@@ -235,59 +131,163 @@ public class PaymentExecutor : IServiceExecutor
                 });
             }
 
+            // 7. تثبيت اكتمال المعاملة بنجاح
+            transaction.Status = TransactionStatus.Completed;
+            transaction.RawResponse = rawResponse;
+            transaction.CompletedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync(cancellationToken);
 
-            // SignalR Live Events & Webhook Dispatch
+            // 8. إرسال الإشعارات اللحظية عبر SignalR و Webhook
             await _notifier.NotifyTransactionUpdatedAsync(transaction, cancellationToken);
             await _notifier.NotifySimBalanceChangedAsync(sim, cancellationToken);
             await _webhookDispatcher.DispatchTransactionWebhookAsync(transaction, cancellationToken);
 
-            var resultDto = new TransactionResultDto
-            {
-                TransactionId = transaction.Id,
-                TransactionRef = transaction.TransactionRef,
-                ExternalRef = transaction.ExternalRef,
-                Status = TransactionStatus.Completed,
-                Message = finalSuccessClientMessage ?? "تمت عملية الدفع بنجاح.",
-                RawResponse = lastResponse,
-                SimBalanceBefore = transaction.SimBalanceBefore,
-                SimBalanceAfter = transaction.SimBalanceAfter,
-                SimCardId = sim.Id,
-                SimPhoneNumber = sim.PhoneNumber,
-                PortNumber = sim.DevicePort?.PortNumber,
-                Operator = sim.Operator,
-                CompletedAt = transaction.CompletedAt.Value,
-                Logs = logs.Select(l => new TransactionLogDto
-                {
-                    StepOrder = l.StepOrder,
-                    StepName = l.StepName,
-                    Command = l.UssdCommand,
-                    Response = l.UssdResponse,
-                    IsSuccess = l.IsSuccess,
-                    ErrorMessage = l.ErrorMessage,
-                    DurationMs = l.DurationMs
-                }).ToList()
-            };
-
+            var resultDto = CreateTransactionResultDto(transaction, sim, clientMessage ?? "تمت عملية الدفع بنجاح.", rawResponse, logs);
             return Result.Success(resultDto);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error executing Payment transaction {TxRef}", transaction.TransactionRef);
-            return await MarkTransactionFailedAsync(transaction, ex.Message, "PaymentException", "حدث خطأ غير متوقع أثناء معالجة الدفع: " + ex.Message, cancellationToken);
+            return await FailTransactionAsync(transaction, "PaymentException", "حدث خطأ غير متوقع أثناء معالجة الدفع: " + ex.Message, cancellationToken, ex.Message);
         }
         finally
         {
+            // 9. تحرير قفل المنفذ دائماً
             await _lockManager.ReleaseLockAsync(sim.DevicePortId);
         }
     }
 
-    private string BuildAutoPaymentUssdCommand(OperatorType op, SimCard sim, Dictionary<string, string> parameters, decimal? amount)
+    /// <summary>
+    /// تنفيذ خطوات الـ USSD (إما خطوات مخصصة معرفة في قاعدة البيانات أو الأمر التلقائي للمشغل)
+    /// </summary>
+    private async Task<(bool IsSuccess, string? Message, string? RawResponse, List<TransactionLog> Logs)> ExecuteUssdWorkflowAsync(
+        TenantTransaction transaction,
+        ServiceDefinition service,
+        SimCard sim,
+        CancellationToken cancellationToken)
+    {
+        var stopwatch = new Stopwatch();
+        var logs = new List<TransactionLog>();
+        var parameters = string.IsNullOrEmpty(transaction.Parameters)
+            ? new Dictionary<string, string>()
+            : JsonSerializer.Deserialize<Dictionary<string, string>>(transaction.Parameters) ?? new();
+
+        var activeSteps = service.UssdSteps.Where(s => s.IsActive && !s.IsDelete).OrderBy(s => s.StepOrder).ToList();
+
+        // سيناريو أ: توجد خطوات مخصصة معرفة في قاعدة البيانات
+        if (activeSteps.Any())
+        {
+            string? lastResponse = null;
+            string? finalSuccessMessage = null;
+
+            foreach (var step in activeSteps)
+            {
+                stopwatch.Restart();
+                var command = EvaluatePlaceholders(step.UssdCommand, sim, parameters, transaction.Amount);
+
+                _logger.LogInformation("Payment Tx {TxRef} Step {Order}: Executing USSD: {Command}", transaction.TransactionRef, step.StepOrder, command);
+
+                var response = await _goipClient.SendUssdCommandAsync(
+                    sim.DevicePort!.Device!,
+                    sim.DevicePort.PortNumber,
+                    command,
+                    step.TimeoutSeconds > 0 ? step.TimeoutSeconds : 30,
+                    cancellationToken);
+
+                stopwatch.Stop();
+                lastResponse = response;
+
+                var isStepSuccess = EvaluateStepSuccess(step, response, out var stepError, out var clientSafeMessage);
+                if (isStepSuccess && !string.IsNullOrWhiteSpace(clientSafeMessage))
+                {
+                    finalSuccessMessage = clientSafeMessage;
+                }
+
+                var log = new TransactionLog
+                {
+                    TransactionId = transaction.Id,
+                    StepOrder = step.StepOrder,
+                    StepName = step.StepTitle ?? $"خطوة دفع {step.StepOrder}",
+                    UssdCommand = command,
+                    UssdResponse = response,
+                    IsSuccess = isStepSuccess,
+                    ErrorMessage = stepError,
+                    DurationMs = (int)stopwatch.ElapsedMilliseconds,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                logs.Add(log);
+                _context.TransactionLogs.Add(log);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                if (!isStepSuccess)
+                {
+                    var finalErrorMessage = clientSafeMessage ?? stepError ?? "فشلت خطوة أثناء معالجة الدفع.";
+                    return (false, finalErrorMessage, response, logs);
+                }
+
+                if (step.DelayAfterMs > 0)
+                {
+                    await Task.Delay(step.DelayAfterMs, cancellationToken);
+                }
+            }
+
+            return (true, finalSuccessMessage, lastResponse, logs);
+        }
+        else
+        {
+            // سيناريو ب: الأمر القياسي التلقائي للمشغل
+            var paymentCommand = BuildAutoPaymentUssdCommand(sim.Operator, sim, parameters, transaction.Amount);
+            stopwatch.Restart();
+
+            _logger.LogInformation("Payment Tx {TxRef}: Executing Auto USSD: {Command}", transaction.TransactionRef, paymentCommand);
+
+            var response = await _goipClient.SendUssdCommandAsync(
+                sim.DevicePort!.Device!,
+                sim.DevicePort.PortNumber,
+                paymentCommand,
+                35,
+                cancellationToken);
+
+            stopwatch.Stop();
+
+            var isSuccess = DeterminePaymentSuccess(response, out var paymentError, out var successMsg);
+
+            var log = new TransactionLog
+            {
+                TransactionId = transaction.Id,
+                StepOrder = 1,
+                StepName = "أمر الدفع الإلكتروني المباشر",
+                UssdCommand = paymentCommand,
+                UssdResponse = response,
+                IsSuccess = isSuccess,
+                ErrorMessage = isSuccess ? null : paymentError,
+                DurationMs = (int)stopwatch.ElapsedMilliseconds,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            logs.Add(log);
+            _context.TransactionLogs.Add(log);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            if (!isSuccess)
+            {
+                return (false, paymentError ?? "فشلت عملية الدفع من الشبكة.", response, logs);
+            }
+
+            return (true, successMsg, response, logs);
+        }
+    }
+
+    /// <summary>
+    /// بناء أمر الـ USSD التلقائي للتحويل والدفع لكل شبكة مصرية
+    /// </summary>
+    private static string BuildAutoPaymentUssdCommand(OperatorType op, SimCard sim, Dictionary<string, string> parameters, decimal? amount)
     {
         var amt = amount?.ToString("0.##") ?? parameters.GetValueOrDefault("amount", "0");
         var pin = sim.WalletPassword ?? sim.UssdPassword ?? parameters.GetValueOrDefault("pin", parameters.GetValueOrDefault("walletPassword", "0000"));
         var deviceMerchant = sim.DevicePort?.Device?.MerchantCode ?? "";
-        var target = parameters.GetValueOrDefault("merchantCode", parameters.GetValueOrDefault("phoneNumber", parameters.GetValueOrDefault("receiverPhone", deviceMerchant)));
+        var target = parameters.GetValueOrDefault("merchantCode", parameters.GetValueOrDefault("phoneNumber", parameters.GetValueOrDefault("receiverPhone", parameters.GetValueOrDefault("recipient", deviceMerchant))));
         if (string.IsNullOrWhiteSpace(target) && !string.IsNullOrWhiteSpace(deviceMerchant))
         {
             target = deviceMerchant;
@@ -303,7 +303,10 @@ public class PaymentExecutor : IServiceExecutor
         };
     }
 
-    private static bool DeterminePaymentSuccess(string response, out string? errorMessage, out string? successMessage)
+    /// <summary>
+    /// التحقق من نجاح أو فشل الرد المباشر لعملية الدفع
+    /// </summary>
+    public static bool DeterminePaymentSuccess(string response, out string? errorMessage, out string? successMessage)
     {
         if (string.IsNullOrWhiteSpace(response))
         {
@@ -314,26 +317,28 @@ public class PaymentExecutor : IServiceExecutor
 
         var normalized = response.Trim();
 
-        // Failure indicators
+        // مؤشرات الفشل الصريحة
         if (normalized.Contains("خطأ") || normalized.Contains("غير كاف") || normalized.Contains("غير صحيح") ||
             normalized.Contains("فشل") || normalized.Contains("رفض") || normalized.Contains("incorrect") ||
-            normalized.Contains("failed") || normalized.Contains("insufficient") || normalized.Contains("invalid"))
+            normalized.Contains("failed") || normalized.Contains("insufficient") || normalized.Contains("invalid") ||
+            normalized.Contains("غير مسجل") || normalized.Contains("عفوا"))
         {
             errorMessage = normalized;
             successMessage = null;
             return false;
         }
 
-        // Success indicators
+        // مؤشرات النجاح الصريحة
         if (normalized.Contains("تمت") || normalized.Contains("بنجاح") || normalized.Contains("success") ||
-            normalized.Contains("تم تحويل") || normalized.Contains("رقم العملية") || normalized.Contains("تم الدفع"))
+            normalized.Contains("تم تحويل") || normalized.Contains("رقم العملية") || normalized.Contains("تم الدفع") ||
+            normalized.Contains("تم بنجاح"))
         {
             errorMessage = null;
             successMessage = normalized;
             return true;
         }
 
-        // Fallback: accept response if no failure markers
+        // في حال عدم وجود مؤشرات فشل واضحة
         errorMessage = null;
         successMessage = "تم تنفيذ عملية الدفع بنجاح.";
         return true;
@@ -383,15 +388,29 @@ public class PaymentExecutor : IServiceExecutor
     private static string EvaluatePlaceholders(string commandTemplate, SimCard sim, Dictionary<string, string> parameters, decimal? amount)
     {
         var result = commandTemplate;
-        result = result.Replace("{PhoneNumber}", sim.PhoneNumber ?? "")
-                       .Replace("{SimNumber}", sim.SimNumber ?? "")
-                       .Replace("{WalletPassword}", sim.WalletPassword ?? "")
-                       .Replace("{UssdPassword}", sim.UssdPassword ?? "")
-                       .Replace("{Pin}", sim.WalletPassword ?? sim.UssdPassword ?? "");
 
+        // 1. الحقول الداخلية الثابتة من النظام (الشريحة والجهاز - لا يرسلها العميل)
+        var simPin = sim.WalletPassword ?? sim.UssdPassword ?? "";
+        var deviceMerchant = sim.DevicePort?.Device?.MerchantCode ?? "";
+        var simNumber = sim.SimNumber ?? sim.PhoneNumber ?? "";
+
+        result = result.Replace("{Password}", simPin, StringComparison.OrdinalIgnoreCase)
+                       .Replace("{WalletPassword}", simPin, StringComparison.OrdinalIgnoreCase)
+                       .Replace("{Pin}", simPin, StringComparison.OrdinalIgnoreCase)
+                       .Replace("{UssdPassword}", simPin, StringComparison.OrdinalIgnoreCase)
+                       .Replace("{MerchantCode}", deviceMerchant, StringComparison.OrdinalIgnoreCase)
+                       .Replace("{SimNumber}", simNumber, StringComparison.OrdinalIgnoreCase);
+
+        // 2. الحقول المدخلة من العميل (المبلغ ورقم المستلم والبارامترات)
         if (amount.HasValue)
         {
-            result = result.Replace("{Amount}", amount.Value.ToString("0.##"));
+            result = result.Replace("{Amount}", amount.Value.ToString("0.##"), StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (parameters.TryGetValue("phoneNumber", out var phone) && !string.IsNullOrWhiteSpace(phone))
+        {
+            result = result.Replace("{PhoneNumber}", phone, StringComparison.OrdinalIgnoreCase);
+            result = result.Replace("{Recipient}", phone, StringComparison.OrdinalIgnoreCase);
         }
 
         foreach (var (key, value) in parameters)
@@ -402,12 +421,17 @@ public class PaymentExecutor : IServiceExecutor
         return result;
     }
 
-    private async Task<Result<TransactionResultDto>> MarkTransactionFailedAsync(TenantTransaction transaction, string? rawResponse, string errorCode, string errorMessage, CancellationToken cancellationToken)
+    private async Task<Result<TransactionResultDto>> FailTransactionAsync(
+        TenantTransaction transaction,
+        string errorCode,
+        string errorMessage,
+        CancellationToken cancellationToken,
+        string? rawResponse = null)
     {
         transaction.Status = TransactionStatus.Failed;
-        transaction.RawResponse = rawResponse;
         transaction.ErrorCode = errorCode;
         transaction.ErrorMessage = errorMessage;
+        transaction.RawResponse = rawResponse ?? transaction.RawResponse;
         transaction.CompletedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -417,17 +441,38 @@ public class PaymentExecutor : IServiceExecutor
         return Result.Failure<TransactionResultDto>(errorCode, errorMessage);
     }
 
-    private async Task<Result<TransactionResultDto>> FailTransactionAsync(TenantTransaction transaction, string errorCode, string errorMessage, CancellationToken cancellationToken)
+    private static TransactionResultDto CreateTransactionResultDto(
+        TenantTransaction transaction,
+        SimCard sim,
+        string clientMessage,
+        string? rawResponse,
+        List<TransactionLog> logs)
     {
-        transaction.Status = TransactionStatus.Failed;
-        transaction.ErrorCode = errorCode;
-        transaction.ErrorMessage = errorMessage;
-        transaction.CompletedAt = DateTime.UtcNow;
-
-        await _context.SaveChangesAsync(cancellationToken);
-        await _notifier.NotifyTransactionUpdatedAsync(transaction, cancellationToken);
-        await _webhookDispatcher.DispatchTransactionWebhookAsync(transaction, cancellationToken);
-
-        return Result.Failure<TransactionResultDto>(errorCode, errorMessage);
+        return new TransactionResultDto
+        {
+            TransactionId = transaction.Id,
+            TransactionRef = transaction.TransactionRef,
+            ExternalRef = transaction.ExternalRef,
+            Status = TransactionStatus.Completed,
+            Message = clientMessage,
+            RawResponse = rawResponse,
+            SimBalanceBefore = transaction.SimBalanceBefore,
+            SimBalanceAfter = transaction.SimBalanceAfter,
+            SimCardId = sim.Id,
+            SimPhoneNumber = sim.PhoneNumber,
+            PortNumber = sim.DevicePort?.PortNumber,
+            Operator = sim.Operator,
+            CompletedAt = transaction.CompletedAt ?? DateTime.UtcNow,
+            Logs = logs.Select(l => new TransactionLogDto
+            {
+                StepOrder = l.StepOrder,
+                StepName = l.StepName,
+                Command = l.UssdCommand,
+                Response = l.UssdResponse,
+                IsSuccess = l.IsSuccess,
+                ErrorMessage = l.ErrorMessage,
+                DurationMs = l.DurationMs
+            }).ToList()
+        };
     }
 }

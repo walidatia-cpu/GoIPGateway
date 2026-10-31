@@ -21,7 +21,7 @@ public class ExecuteController : Controller
     private readonly IMediator _mediator;
     private readonly ICurrentUserService _currentUser;
     private readonly ITenantProvider _tenantProvider;
-
+    
     public ExecuteController(IMediator mediator, ICurrentUserService currentUser, ITenantProvider tenantProvider)
     {
         _mediator = mediator;
@@ -161,6 +161,22 @@ public class ExecuteController : Controller
             request.CallbackUrl,
             RequestSource.Dashboard
         );
+
+        var result = await _mediator.Send(command, cancellationToken);
+        if (result.IsSuccess)
+            return Ok(new { success = true, data = result.Value });
+
+        return BadRequest(new { success = false, errorCode = result.Error.Code, message = result.Error.Message });
+    }
+
+    /// <summary>
+    /// تنفيذ عملية دفع أو تحويل فوري سريع عبر AJAX من لوحة تحكم الشركة
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> QuickPayment([FromBody] ProcessPaymentCommand command, CancellationToken cancellationToken)
+    {
+        var tenantId = ResolveTenantId();
+        if (!tenantId.HasValue) return Forbid();
 
         var result = await _mediator.Send(command, cancellationToken);
         if (result.IsSuccess)

@@ -73,7 +73,6 @@ public static class DependencyInjection
         services.AddScoped<IServiceExecutor, UssdMultiStepExecutor>(sp => sp.GetRequiredService<UssdMultiStepExecutor>());
         services.AddScoped<IServiceExecutor, BalanceInquiryExecutor>();
         services.AddScoped<IServiceExecutor, SimNumberInquiryExecutor>();
-        services.AddScoped<IServiceExecutor, QrPaymentExecutor>();
         services.AddScoped<IServiceExecutor, PaymentExecutor>();
 
         // 7. Background Hosted Workers
@@ -83,3 +82,5 @@ public static class DependencyInjection
         return services;
     }
 }
+
+

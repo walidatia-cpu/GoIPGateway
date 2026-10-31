@@ -3,6 +3,7 @@ using GoIPGateway.Application.Common.Models;
 using GoIPGateway.Application.DTOs;
 using GoIPGateway.Application.Services.Transactions;
 using GoIPGateway.Domain.Enums;
+using GoIPGateway.Application.Common.Interfaces;
 using MediatR;
 
 namespace GoIPGateway.Application.Features.Transactions.Commands;
@@ -15,7 +16,7 @@ public record ExecuteServiceCommand(
     Dictionary<string, string> Parameters,
     string? CallbackUrl = null,
     RequestSource Source = RequestSource.API
-) : IRequest<Result<TransactionResultDto>>;
+) : IRequest<Result<TransactionResultDto>>, ITenantScopedRequest;
 
 public class ExecuteServiceCommandValidator : AbstractValidator<ExecuteServiceCommand>
 {

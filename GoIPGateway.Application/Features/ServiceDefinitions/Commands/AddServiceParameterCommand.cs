@@ -1,6 +1,7 @@
 using FluentValidation;
 using GoIPGateway.Application.Common.Models;
 using GoIPGateway.Application.Services.ServiceDefinitions;
+using GoIPGateway.Domain.Common;
 using GoIPGateway.Domain.Entities;
 using MediatR;
 
@@ -12,13 +13,24 @@ public class AddServiceParameterCommandValidator : AbstractValidator<AddServiceP
 {
     public AddServiceParameterCommandValidator()
     {
-        RuleFor(x => x.Parameter.ServiceDefinitionId)
-            .GreaterThan(0)
-            .WithMessage("معرف الخدمة غير صالح.");
+        RuleFor(x => x.Parameter)
+            .NotNull()
+            .WithMessage("بيانات البارامتر مطلوبة.");
 
-        RuleFor(x => x.Parameter.ParameterKey)
-            .NotEmpty()
-            .WithMessage("مفتاح البارامتر مطلوب (مثل: amount أو merchantCode).");
+        When(x => x.Parameter != null, () =>
+        {
+            RuleFor(x => x.Parameter.ServiceDefinitionId)
+                .GreaterThan(0)
+                .WithMessage("معرف الخدمة غير صالح.");
+
+            RuleFor(x => x.Parameter.ParameterKey)
+                .NotEmpty()
+                .WithMessage("مفتاح البارامتر مطلوب.")
+                .Must(key => !StandardServiceParameters.IsReservedInternalKey(key))
+                .WithMessage("لا يمكن إضافة مفاتيح النظام الداخلية (مثل: Password, Pin, MerchantCode) كبارامتر خارجي؛ هذه القيم يستبدلها النظام تلقائياً من إعدادات الشريحة أو الجهاز.")
+                .Must(key => StandardServiceParameters.IsAllowedStandardParameter(key))
+                .WithMessage("نوع البارامتر غير مدعوم. مسموح فقط باختيار الأنواع الثابتة المعيارية المعتمدة (المبلغ، رقم الهاتف، الرقم القومي، رقم الحساب، رقم الفاتورة، كود OTP).");
+        });
     }
 }
 
@@ -36,16 +48,35 @@ public class AddServiceParameterCommandHandler : IRequestHandler<AddServiceParam
         var param = request.Parameter;
         if (param != null)
         {
-            param.ParameterKey = (param.ParameterKey ?? string.Empty).Trim().Trim('{', '}').Trim();
-            if (string.IsNullOrWhiteSpace(param.ParameterName))
+            param.ParameterKey = StandardServiceParameters.CleanKey(param.ParameterKey ?? string.Empty);
+
+            var standard = StandardServiceParameters.FindByKey(param.ParameterKey);
+            if (standard != null)
             {
-                param.ParameterName = !string.IsNullOrWhiteSpace(param.ParameterKey)
-                    ? (char.ToUpper(param.ParameterKey[0]) + (param.ParameterKey.Length > 1 ? param.ParameterKey[1..] : ""))
-                    : (!string.IsNullOrWhiteSpace(param.DisplayNameAr) ? param.DisplayNameAr : "Param");
+                if (string.IsNullOrWhiteSpace(param.ParameterName))
+                    param.ParameterName = standard.Name;
+
+                if (string.IsNullOrWhiteSpace(param.DisplayNameAr))
+                    param.DisplayNameAr = standard.DisplayNameAr;
+
+                if (string.IsNullOrWhiteSpace(param.DisplayNameEn))
+                    param.DisplayNameEn = standard.DisplayNameEn;
+
+                // Sync data type with standard definition
+                param.DataType = standard.DataType;
             }
-            if (string.IsNullOrWhiteSpace(param.DisplayNameAr))
+            else
             {
-                param.DisplayNameAr = param.ParameterName;
+                if (string.IsNullOrWhiteSpace(param.ParameterName))
+                {
+                    param.ParameterName = !string.IsNullOrWhiteSpace(param.ParameterKey)
+                        ? (char.ToUpper(param.ParameterKey[0]) + (param.ParameterKey.Length > 1 ? param.ParameterKey[1..] : ""))
+                        : "Param";
+                }
+                if (string.IsNullOrWhiteSpace(param.DisplayNameAr))
+                {
+                    param.DisplayNameAr = param.ParameterName;
+                }
             }
         }
 

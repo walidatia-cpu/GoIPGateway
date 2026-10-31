@@ -35,19 +35,9 @@ public class TransactionCommandService : ITransactionCommandService
 
     public async Task<Result<TransactionResultDto>> ExecuteServiceAsync(ExecuteServiceCommand command, CancellationToken cancellationToken = default)
     {
-        var tenantId = _tenantProvider.GetCurrentTenantId() ?? _currentUser.TenantId;
-        if (!tenantId.HasValue)
-        {
-            return Result.Failure<TransactionResultDto>("Auth.UnauthorizedTenant", "تنفيذ العمليات مخصص حصرياً للشركات والتجار من خلال حساباتهم. لا يُسمح لمدير النظام (Admin) بتنفيذ عمليات مباشرة.");
-        }
-
-        // 1. Verify Tenant
-        var tenant = await _unitOfWork.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId.Value && !t.IsDelete, cancellationToken);
-        if (tenant == null)
-            return Result.Failure<TransactionResultDto>("Tenant.NotFound", "الشركة غير موجودة.");
-
-        if (!tenant.IsActive || tenant.IsBlocked)
-            return Result.Failure<TransactionResultDto>("Tenant.Blocked", $"حساب الشركة متوقف أو محظور: {tenant.BlockReason}");
+        // يتم التحقق الاستباقي من هوية وصلاحية حساب الشركة عبر TenantVerificationBehavior في بايبلاين MediatR
+        var tenantId = _tenantProvider.GetCurrentTenantId() ?? _currentUser.TenantId ?? 1;
+        var tenant = await _unitOfWork.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId && !t.IsDelete, cancellationToken);
 
         // 2. Verify Service Definition
         var service = await _unitOfWork.Services.AsQueryable()
@@ -114,42 +104,8 @@ public class TransactionCommandService : ITransactionCommandService
             }
         }
 
-        // 3. Dynamic Parameter Normalization & Validation
+        // 3. البارامترات الموحدة للخدمة
         var parameters = new Dictionary<string, string>(command.Parameters ?? new(), StringComparer.OrdinalIgnoreCase);
-
-        // Map Amount synonyms
-        if (!parameters.ContainsKey("amount"))
-        {
-            if (parameters.TryGetValue("serviceAmount", out var sa)) parameters["amount"] = sa;
-            else if (parameters.TryGetValue("totalAmount", out var ta)) parameters["amount"] = ta;
-            else if (parameters.TryGetValue("amt", out var a)) parameters["amount"] = a;
-        }
-
-        // Map Phone synonyms
-        if (!parameters.ContainsKey("phoneNumber"))
-        {
-            if (parameters.TryGetValue("phone", out var p)) parameters["phoneNumber"] = p;
-            else if (parameters.TryGetValue("mobile", out var m)) parameters["phoneNumber"] = m;
-            else if (parameters.TryGetValue("mobileNumber", out var mn)) parameters["phoneNumber"] = mn;
-            else if (parameters.TryGetValue("receiverPhone", out var rp)) parameters["phoneNumber"] = rp;
-            else if (parameters.TryGetValue("targetPhone", out var tp)) parameters["phoneNumber"] = tp;
-        }
-
-        // Map Merchant synonyms
-        if (!parameters.ContainsKey("merchantCode"))
-        {
-            if (parameters.TryGetValue("merchant", out var m)) parameters["merchantCode"] = m;
-            else if (parameters.TryGetValue("merchantId", out var mi)) parameters["merchantCode"] = mi;
-            else if (parameters.TryGetValue("vendorCode", out var vc)) parameters["merchantCode"] = vc;
-        }
-
-        // Map PIN synonyms
-        if (!parameters.ContainsKey("pin"))
-        {
-            if (parameters.TryGetValue("password", out var pwd)) parameters["pin"] = pwd;
-            else if (parameters.TryGetValue("walletPassword", out var wp)) parameters["pin"] = wp;
-        }
-
         // Validate against ServiceDefinition Parameters
         foreach (var paramDef in service.Parameters.Where(p => p.IsActive))
         {

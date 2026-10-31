@@ -1,5 +1,6 @@
 using GoIPGateway.Application.Common.Interfaces.Repositories;
 using GoIPGateway.Application.Common.Models;
+using GoIPGateway.Domain.Common;
 using GoIPGateway.Domain.Entities;
 using GoIPGateway.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -164,9 +165,38 @@ public class ServiceDefinitionCommandService : IServiceDefinitionCommandService
 
     public async Task<Result<int>> AddParameterAsync(ServiceParameter param, CancellationToken cancellationToken = default)
     {
-        param.ParameterKey = (param.ParameterKey ?? string.Empty).Trim().Trim('{', '}').Trim();
+        param.ParameterKey = StandardServiceParameters.CleanKey(param.ParameterKey ?? string.Empty);
         if (string.IsNullOrWhiteSpace(param.ParameterKey))
             return Result.Failure<int>("Parameter.InvalidKey", "مفتاح البارامتر مطلوب.");
+
+        // 1. Enforce protection against internal system keys
+        if (StandardServiceParameters.IsReservedInternalKey(param.ParameterKey))
+        {
+            return Result.Failure<int>(
+                "Parameter.ReservedInternalKey",
+                $"المتغير '{param.ParameterKey}' خاص بالنظام الداخلي (شريحة / جهاز GoIP) ويتم استبداله تلقائياً من إعدادات النظام. لا يمكن إضافته كبارامتر مطلوب من العميل.");
+        }
+
+        // 2. Enforce standard allowed parameter types only
+        if (!StandardServiceParameters.IsAllowedStandardParameter(param.ParameterKey))
+        {
+            return Result.Failure<int>(
+                "Parameter.InvalidStandardKey",
+                $"المتغير '{param.ParameterKey}' غير مدعوم. مسموح فقط باختيار الأنواع الثابتة المعيارية المعتمدة (المبلغ، رقم الهاتف، الرقم القومي، رقم الحساب، رقم الفاتورة، كود OTP).");
+        }
+
+        // 3. Populate standard definitions if missing
+        var standard = StandardServiceParameters.FindByKey(param.ParameterKey);
+        if (standard != null)
+        {
+            if (string.IsNullOrWhiteSpace(param.ParameterName))
+                param.ParameterName = standard.Name;
+            if (string.IsNullOrWhiteSpace(param.DisplayNameAr))
+                param.DisplayNameAr = standard.DisplayNameAr;
+            if (string.IsNullOrWhiteSpace(param.DisplayNameEn))
+                param.DisplayNameEn = standard.DisplayNameEn;
+            param.DataType = standard.DataType;
+        }
 
         if (string.IsNullOrWhiteSpace(param.ParameterName))
             param.ParameterName = char.ToUpper(param.ParameterKey[0]) + (param.ParameterKey.Length > 1 ? param.ParameterKey[1..] : "");

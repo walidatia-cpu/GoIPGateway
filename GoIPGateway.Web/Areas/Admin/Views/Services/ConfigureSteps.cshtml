@@ -1,4 +1,5 @@
 @model GoIPGateway.Domain.Entities.ServiceDefinition
+@using GoIPGateway.Domain.Common
 @{
     ViewData["Title"] = $"خطوات أوامر USSD: {Model.NameAr}";
     var steps = Model.UssdSteps.Where(s => !s.IsDelete).OrderBy(s => s.StepOrder).ToList();
@@ -26,10 +27,16 @@
         if (string.IsNullOrEmpty(cmd)) return "";
         var formatted = System.Web.HttpUtility.HtmlEncode(cmd);
         formatted = formatted.Replace("{Password}", "<span class=\"ussd-tag tag-pwd\"><i class=\"bi bi-key-fill\"></i> {Password}</span>");
+        formatted = formatted.Replace("{Pin}", "<span class=\"ussd-tag tag-pwd\"><i class=\"bi bi-key-fill\"></i> {Pin}</span>");
         formatted = formatted.Replace("{Amount}", "<span class=\"ussd-tag tag-amt\"><i class=\"bi bi-cash\"></i> {Amount}</span>");
         formatted = formatted.Replace("{MobileNumber}", "<span class=\"ussd-tag tag-phone\"><i class=\"bi bi-phone\"></i> {MobileNumber}</span>");
         formatted = formatted.Replace("{PhoneNumber}", "<span class=\"ussd-tag tag-phone\"><i class=\"bi bi-phone\"></i> {PhoneNumber}</span>");
         formatted = formatted.Replace("{MerchantCode}", "<span class=\"ussd-tag tag-merchant\"><i class=\"bi bi-shop\"></i> {MerchantCode}</span>");
+        formatted = formatted.Replace("{SimNumber}", "<span class=\"ussd-tag tag-phone\"><i class=\"bi bi-sim\"></i> {SimNumber}</span>");
+        formatted = formatted.Replace("{NationalId}", "<span class=\"ussd-tag tag-custom\"><i class=\"bi bi-person-vcard\"></i> {NationalId}</span>");
+        formatted = formatted.Replace("{AccountNumber}", "<span class=\"ussd-tag tag-custom\"><i class=\"bi bi-file-earmark-text\"></i> {AccountNumber}</span>");
+        formatted = formatted.Replace("{InvoiceNumber}", "<span class=\"ussd-tag tag-custom\"><i class=\"bi bi-receipt\"></i> {InvoiceNumber}</span>");
+        formatted = formatted.Replace("{OtpCode}", "<span class=\"ussd-tag tag-custom\"><i class=\"bi bi-shield-lock\"></i> {OtpCode}</span>");
         return formatted;
     }
 }
@@ -95,6 +102,7 @@
     .tag-amt { background: rgba(16, 185, 129, 0.22); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
     .tag-phone { background: rgba(14, 165, 233, 0.22); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.35); }
     .tag-merchant { background: rgba(168, 85, 247, 0.22); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); }
+    .tag-custom { background: rgba(99, 102, 241, 0.22); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.35); }
 
     /* Pill Badges (High Contrast, No Opacity Glitches) */
     .pill-badge {
@@ -382,7 +390,7 @@
     </div>
 
     <!-- Required API Parameters Card -->
-    <div class="portal-card p-4 shadow-sm">
+    <div class="portal-card p-4 shadow-sm mb-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3 pb-2 border-bottom">
             <div>
                 <h5 class="fw-black mb-0 d-flex align-items-center gap-2 text-main">
@@ -391,11 +399,56 @@
                     </span>
                     <span>بارامترات الـ API المطلوبة للخدمة (@Model.Parameters.Count(p => p.IsActive))</span>
                 </h5>
-                <p class="text-muted small mb-0 mt-1">المتغيرات التي تستقبلها الـ Gateway من تطبيق الشركة لاستبدالها داخل أوامر الـ USSD (مثل: amount أو merchantCode)</p>
+                <p class="text-muted small mb-0 mt-1">البارامترات المعيارية المعتمدة التي يستقبلها الـ Gateway من تطبيق العميل أو الشركة لتمريرها واستبدالها داخل أوامر الـ USSD</p>
             </div>
             <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#addParamInline" aria-expanded="false">
-                <i class="bi bi-plus-lg me-1"></i> إضافة بارامتر جديد
+                <i class="bi bi-plus-lg me-1"></i> إضافة بارامتر من الأنواع المعيارية
             </button>
+        </div>
+
+        <!-- System vs Client Parameters Clarification Alert -->
+        <div class="alert alert-light border border-opacity-75 shadow-xs rounded-3 p-3 mb-3">
+            <div class="d-flex align-items-start gap-3">
+                <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary fs-5 mt-0.5">
+                    <i class="bi bi-info-circle-fill"></i>
+                </div>
+                <div class="flex-grow-1 small">
+                    <div class="fw-bold text-main mb-1">دليل معمارية متغيرات الـ USSD والمدفوعات:</div>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="p-2 rounded-2 bg-success bg-opacity-10 border border-success border-opacity-25 h-100">
+                                <div class="fw-bold text-success mb-1 d-flex align-items-center gap-1.5">
+                                    <i class="bi bi-check2-circle"></i>
+                                    <span>بارامترات العميل المعيارية (تُطلب عبر الـ API):</span>
+                                </div>
+                                <div class="text-muted fs-9">
+                                    تُضاف أدناه وتُرسل في ريكوست الدفع من العميل:
+                                    <span class="badge bg-light text-primary border font-monospace mt-1">{Amount}</span>
+                                    <span class="badge bg-light text-info border font-monospace mt-1">{PhoneNumber}</span>
+                                    <span class="badge bg-light text-secondary border font-monospace mt-1">{NationalId}</span>
+                                    <span class="badge bg-light text-secondary border font-monospace mt-1">{AccountNumber}</span>
+                                    <span class="badge bg-light text-secondary border font-monospace mt-1">{InvoiceNumber}</span>
+                                    <span class="badge bg-light text-secondary border font-monospace mt-1">{OtpCode}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-2 rounded-2 bg-warning bg-opacity-10 border border-warning border-opacity-25 h-100">
+                                <div class="fw-bold text-warning mb-1 d-flex align-items-center gap-1.5">
+                                    <i class="bi bi-shield-lock-fill"></i>
+                                    <span>حقول النظام الداخلية المحمية (تلقائية بالكامل):</span>
+                                </div>
+                                <div class="text-muted fs-9">
+                                    يستبدلها النظام داخلياً من إعدادات الشريحة أو جهاز الـ GoIP (ممنوع طلبها من العميل):
+                                    <span class="badge bg-light text-dark border font-monospace mt-1">{Password} / {Pin}</span>
+                                    <span class="badge bg-light text-dark border font-monospace mt-1">{MerchantCode}</span>
+                                    <span class="badge bg-light text-dark border font-monospace mt-1">{SimNumber}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Inline Add Parameter Form (Collapsible) -->
@@ -404,33 +457,48 @@
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <h6 class="fw-bold text-primary mb-0 small d-flex align-items-center gap-1.5">
                         <i class="bi bi-plus-circle-fill"></i>
-                        <span>إضافة بارامتر API جديد للخدمة</span>
+                        <span>إضافة بارامتر جديد من قائمة الأنواع الثابتة المعيارية</span>
                     </h6>
                     <button type="button" class="btn-close fs-9" data-bs-toggle="collapse" data-bs-target="#addParamInline" aria-label="Close"></button>
                 </div>
-                <form asp-action="AddParameter" method="post">
+                <form asp-action="AddParameter" method="post" id="addParameterForm">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="serviceId" value="@Model.Id" />
 
                     <div class="row g-2.5 align-items-end">
                         <div class="col-md-3">
-                            <label class="form-label small fw-bold mb-1">مفتاح الـ API <span class="text-danger">*</span></label>
-                            <input type="text" name="ParameterKey" class="form-control form-control-sm font-monospace" placeholder="مثال: amount أو merchantCode" oninput="this.value = this.value.replace(/[{}]/g, '')" required />
-                            <small class="text-muted fs-9">بدون أقواس، يُستخدم كـ <code>{اسم_المفتاح}</code></small>
+                            <label class="form-label small fw-bold mb-1">نوع البارامتر المعياري <span class="text-danger">*</span></label>
+                            <select id="standardParamSelector" name="ParameterKey" class="form-select form-select-sm fw-bold" required>
+                                <option value="" disabled selected>-- اختر النوع المعياري --</option>
+                                @foreach (var std in StandardServiceParameters.All)
+                                {
+                                    var isAlreadyAdded = Model.Parameters.Any(p => p.IsActive && !p.IsDelete && string.Equals(p.ParameterKey, std.Key, StringComparison.OrdinalIgnoreCase));
+                                    <option value="@std.Key" 
+                                            data-name="@std.Name" 
+                                            data-display="@std.DisplayNameAr" 
+                                            data-type="@((int)std.DataType)" 
+                                            data-required="@(std.DefaultRequired ? "true" : "false")"
+                                            data-desc="@std.DescriptionAr"
+                                            disabled="@(isAlreadyAdded ? "disabled" : null)">
+                                        @std.DisplayNameAr (@std.Key) @(isAlreadyAdded ? " [مضاف بالفعل]" : "")
+                                    </option>
+                                }
+                            </select>
+                            <small class="text-muted fs-9">مقتصر حصرياً على الأنواع المعتمدة</small>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small fw-bold mb-1">الاسم بالعربية <span class="text-danger">*</span></label>
-                            <input type="text" name="DisplayNameAr" class="form-control form-control-sm" placeholder="مثال: المبلغ المطلوب" required />
+                            <input type="text" id="paramDisplayInput" name="DisplayNameAr" class="form-control form-control-sm" placeholder="الاسم الظاهر للمستخدم" required />
                             <small class="text-muted fs-9">الاسم الذي يظهر للعملاء في التوثيق</small>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label small fw-bold mb-1">الاسم التقني (إنجليزي)</label>
-                            <input type="text" name="ParameterName" class="form-control form-control-sm font-monospace" placeholder="مثال: Amount" />
-                            <small class="text-muted fs-9">اختياري (يتم توليده تلقائياً)</small>
+                            <label class="form-label small fw-bold mb-1">الاسم البرمجي / قالب USSD</label>
+                            <input type="text" id="paramNameInput" name="ParameterName" class="form-control form-control-sm font-monospace bg-light" placeholder="ParameterName" readonly />
+                            <small class="text-muted fs-9">قالب الاستبدال البرمجي</small>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label small fw-bold mb-1">نوع البيانات</label>
-                            <select name="DataType" class="form-select form-select-sm">
+                            <select id="paramDataTypeSelect" name="DataType" class="form-select form-select-sm bg-light" readonly>
                                 <option value="1">نص (String)</option>
                                 <option value="2">رقم صحيح (Integer)</option>
                                 <option value="3">مبلغ عشري (Decimal)</option>
@@ -448,6 +516,15 @@
                             </button>
                         </div>
                     </div>
+                    <!-- Live Dynamic Hint -->
+                    <div id="paramInfoBox" class="mt-2.5 p-2 rounded-2 bg-white border d-none">
+                        <div class="d-flex align-items-center gap-2 flex-wrap fs-9">
+                            <span class="fw-bold text-primary"><i class="bi bi-braces me-1"></i>رمز الاستبدال في الـ USSD:</span>
+                            <code id="paramPlaceholderPreview" class="bg-primary bg-opacity-10 text-primary px-2 py-0.5 rounded fw-bold font-monospace"></code>
+                            <span class="text-muted">•</span>
+                            <span id="paramDescPreview" class="text-muted"></span>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -457,7 +534,7 @@
             <div class="text-center py-4 border rounded-3 border-dashed bg-light bg-opacity-30">
                 <span class="text-muted small d-block mb-2">لا توجد بارامترات مسجلة لهذه الخدمة بعد.</span>
                 <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#addParamInline">
-                    + إضافة أول بارامتر (مثل amount)
+                    + إضافة أول بارامتر معياري (مثل amount أو phoneNumber)
                 </button>
             </div>
         }
@@ -469,7 +546,7 @@
                         <tr>
                             <th style="min-width: 140px;">مفتاح الـ API</th>
                             <th style="min-width: 160px;">الاسم بالعربية</th>
-                            <th style="min-width: 140px;">الاسم البرمجي</th>
+                            <th style="min-width: 140px;">قالب الـ USSD</th>
                             <th style="min-width: 120px;">نوع البيانات</th>
                             <th style="min-width: 100px;">الإلزامية</th>
                             <th style="width: 80px;" class="text-center">إجراء</th>
@@ -490,14 +567,16 @@
                             <tr>
                                 <td>
                                     <code class="font-monospace fw-bold text-primary bg-primary bg-opacity-10 px-2.5 py-1 rounded-2 fs-8 border border-primary border-opacity-25">
-                                        {@p.ParameterKey}
+                                        @p.ParameterKey
                                     </code>
                                 </td>
                                 <td>
                                     <span class="fw-bold text-main">@(p.DisplayNameAr ?? p.ParameterName)</span>
                                 </td>
                                 <td>
-                                    <span class="font-monospace text-muted small">@p.ParameterName</span>
+                                    <span class="font-monospace text-muted small bg-light px-2 py-0.5 rounded border">
+                                        {@p.ParameterName}
+                                    </span>
                                 </td>
                                 <td>
                                     <span class="badge @typeBadge border px-2 py-0.5 rounded-pill fs-8">
@@ -523,11 +602,11 @@
                                         <form asp-action="DeleteParameter" method="post" class="d-inline"
                                               data-confirm="true"
                                               data-confirm-title="حذف بارامتر الخدمة"
-                                              data-confirm-message="هل أنت متأكد من حذف هذا المتغير/البارامتر؟"
+                                              data-confirm-message="هل أنت متأكد من حذف هذا البارامتر المعياري؟"
                                               data-confirm-detail="@p.ParameterKey (@(p.DisplayNameAr ?? p.ParameterName))"
-                                              data-confirm-detail-label="المتغير:"
-                                              data-confirm-consequence="إذا كان هذا المتغير مستخدماً داخل نصوص أو قوالب USSD، فقد تفشل الطلبات القادمة من الـ API."
-                                              data-confirm-btn="نعم، حذف المتغير"
+                                              data-confirm-detail-label="البارامتر:"
+                                              data-confirm-consequence="إذا كان هذا المتغير مستخدماً داخل أوامر USSD، فقد تفشل الطلبات القادمة من الـ API."
+                                              data-confirm-btn="نعم، حذف البارامتر"
                                               data-confirm-type="danger">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@p.Id" />
@@ -546,3 +625,40 @@
         }
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const selector = document.getElementById('standardParamSelector');
+            if (!selector) return;
+
+            selector.addEventListener('change', function () {
+                const opt = this.options[this.selectedIndex];
+                if (!opt || !opt.value) return;
+
+                const nameInput = document.getElementById('paramNameInput');
+                const displayInput = document.getElementById('paramDisplayInput');
+                const dataTypeSelect = document.getElementById('paramDataTypeSelect');
+                const isReqSwitch = document.getElementById('isReqParamInline');
+                const infoBox = document.getElementById('paramInfoBox');
+                const previewTag = document.getElementById('paramPlaceholderPreview');
+                const descText = document.getElementById('paramDescPreview');
+
+                const name = opt.getAttribute('data-name') || '';
+                const display = opt.getAttribute('data-display') || '';
+                const type = opt.getAttribute('data-type') || '1';
+                const required = opt.getAttribute('data-required') === 'true';
+                const desc = opt.getAttribute('data-desc') || '';
+
+                if (nameInput) nameInput.value = name;
+                if (displayInput) displayInput.value = display;
+                if (dataTypeSelect) dataTypeSelect.value = type;
+                if (isReqSwitch) isReqSwitch.checked = required;
+
+                if (infoBox) infoBox.classList.remove('d-none');
+                if (previewTag) previewTag.textContent = '{' + name + '}';
+                if (descText) descText.textContent = desc;
+            });
+        });
+    </script>
+}
