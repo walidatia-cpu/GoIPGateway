@@ -31,7 +31,9 @@ public class CurrentUserService : ICurrentUserService
 
     public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
 
-    public bool IsSuperAdmin => User?.IsInRole("SuperAdmin") ?? false;
+    public bool IsOwner => (User?.FindFirstValue("IsOwner") == "True") || (User?.IsInRole("Owner") ?? false);
+
+    public bool IsSuperAdmin => IsOwner || (User?.IsInRole("SuperAdmin") ?? false);
 
     public string? AllowedServices => User?.FindFirstValue("AllowedServices");
 }

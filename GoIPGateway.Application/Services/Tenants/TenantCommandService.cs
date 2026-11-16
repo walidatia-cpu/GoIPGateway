@@ -12,11 +12,16 @@ public class TenantCommandService : ITenantCommandService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUser;
+    private readonly IIdentityService _identityService;
 
-    public TenantCommandService(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
+    public TenantCommandService(
+        IUnitOfWork unitOfWork, 
+        ICurrentUserService currentUser,
+        IIdentityService identityService)
     {
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
+        _identityService = identityService;
     }
 
     public async Task<Result<int>> CreateTenantAsync(CreateTenantCommand command, CancellationToken cancellationToken = default)
@@ -55,6 +60,9 @@ public class TenantCommandService : ITenantCommandService
         await _unitOfWork.TenantApiKeys.AddAsync(apiKey, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        // Automatically create a dedicated role with full tenant default permissions
+        await _identityService.EnsureTenantDefaultRoleAsync(tenant.Id, tenant.CompanyName, cancellationToken);
+
         return Result.Success(tenant.Id);
     }
 
@@ -83,6 +91,9 @@ public class TenantCommandService : ITenantCommandService
 
         _unitOfWork.Tenants.Update(tenant);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Sync role name if company name changed
+        await _identityService.SyncTenantRoleNameAsync(tenant.Id, tenant.CompanyName, cancellationToken);
 
         return Result.Success(true);
     }
@@ -132,6 +143,9 @@ public class TenantCommandService : ITenantCommandService
 
         _unitOfWork.Tenants.Update(tenant);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Sync role name if company name changed
+        await _identityService.SyncTenantRoleNameAsync(tenant.Id, tenant.CompanyName, cancellationToken);
 
         return Result.Success(true);
     }
@@ -282,6 +296,9 @@ public class TenantCommandService : ITenantCommandService
 
         _unitOfWork.Tenants.Update(tenant);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Sync role name if company name changed
+        await _identityService.SyncTenantRoleNameAsync(tenant.Id, tenant.CompanyName, cancellationToken);
 
         return Result.Success(true);
     }

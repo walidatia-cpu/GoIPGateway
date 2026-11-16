@@ -1,5 +1,7 @@
 using GoIPGateway.Application.Common.Interfaces;
+using GoIPGateway.Application.Common.Security;
 using GoIPGateway.Application.Features.Tenants.Queries;
+using GoIPGateway.Infrastructure.Identity.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
 [Area("Company")]
-[Authorize(Roles = "TenantAdmin,TenantOperator,SuperAdmin")]
+[Authorize]
 public class ApiSettingsController : Controller
 {
     private readonly IMediator _mediator;
@@ -36,6 +38,8 @@ public class ApiSettingsController : Controller
         return null;
     }
 
+    [HttpGet]
+    [HasPermission(AppPermissions.ApiSettings.View)]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);

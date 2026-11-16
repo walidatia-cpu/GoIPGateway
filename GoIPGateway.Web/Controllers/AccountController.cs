@@ -1,11 +1,12 @@
-using GoIPGateway.Application.Common.Interfaces.Repositories;
+using GoIPGateway.Application.Features.Tenants.Queries;
+using GoIPGateway.Application.Features.Users.Commands;
 using GoIPGateway.Infrastructure.Identity;
 using GoIPGateway.Web.Models;
+using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace GoIPGateway.Web.Controllers;
 
@@ -13,16 +14,16 @@ public class AccountController : Controller
 {
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMediator _mediator;
 
     public AccountController(
         SignInManager<ApplicationUser> signInManager, 
         UserManager<ApplicationUser> userManager,
-        IUnitOfWork unitOfWork)
+        IMediator mediator)
     {
         _signInManager = signInManager;
         _userManager = userManager;
-        _unitOfWork = unitOfWork;
+        _mediator = mediator;
     }
 
     [HttpGet]
@@ -40,11 +41,8 @@ public class AccountController : Controller
             var user = await _userManager.GetUserAsync(User);
             if (user != null && user.TenantId.HasValue)
             {
-                var tenant = await _unitOfWork.Tenants.AsQueryable()
-                    .IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(t => t.Id == user.TenantId.Value);
-
-                if (tenant == null || tenant.IsDelete || !tenant.IsActive || tenant.IsBlocked)
+                var tenantAccess = await _mediator.Send(new ValidateTenantAccessQuery(user.TenantId.Value));
+                if (!tenantAccess.IsSuccess)
                 {
                     await _signInManager.SignOutAsync();
                     return View(new LoginViewModel { ReturnUrl = returnUrl });
@@ -53,11 +51,10 @@ public class AccountController : Controller
 
             if (string.IsNullOrEmpty(returnUrl))
             {
-                if (User.IsInRole("SuperAdmin"))
+                if (User.IsInRole("SuperAdmin") || User.HasClaim("IsOwner", "True") || User.IsInRole("Owner"))
                     return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
 
-                if (User.IsInRole("TenantAdmin") || User.IsInRole("TenantOperator") || User.IsInRole("TenantViewer"))
-                    return RedirectToAction("Index", "Dashboard", new { area = "Company" });
+                return RedirectToAction("Index", "Dashboard", new { area = "Company" });
             }
         }
 
@@ -78,23 +75,13 @@ public class AccountController : Controller
             return View(model);
         }
 
-        // Check company status: Block login if tenant is deleted or blocked
+        // Check company status via MediatR and Result Pattern
         if (user.TenantId.HasValue)
         {
-            var tenant = await _unitOfWork.Tenants.AsQueryable()
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(t => t.Id == user.TenantId.Value);
-
-            if (tenant == null || tenant.IsDelete)
+            var tenantAccess = await _mediator.Send(new ValidateTenantAccessQuery(user.TenantId.Value));
+            if (!tenantAccess.IsSuccess)
             {
-                ModelState.AddModelError(string.Empty, "حساب الشركة التابع لها هذا المستخدم محذوف من النظام، ولا يمكن تسجيل الدخول.");
-                return View(model);
-            }
-
-            if (!tenant.IsActive || tenant.IsBlocked)
-            {
-                var reason = !string.IsNullOrWhiteSpace(tenant.BlockReason) ? $" ({tenant.BlockReason})" : "";
-                ModelState.AddModelError(string.Empty, $"حساب الشركة موقوف حالياً من قبل الإدارة{reason}. يرجى مراجعة إدارة المنصة.");
+                ModelState.AddModelError(string.Empty, tenantAccess.Error.Message);
                 return View(model);
             }
         }
@@ -102,11 +89,19 @@ public class AccountController : Controller
         var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, lockoutOnFailure: false);
         if (result.Succeeded)
         {
+            user.LastLoginDate = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+
+            if (user.MustChangePassword)
+            {
+                return RedirectToAction(nameof(ChangePasswordRequired));
+            }
+
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl) && !model.ReturnUrl.Contains("/Account/Login", StringComparison.OrdinalIgnoreCase))
                 return Redirect(model.ReturnUrl);
 
             var roles = await _userManager.GetRolesAsync(user);
-            if (roles.Contains("SuperAdmin"))
+            if (user.IsOwner || roles.Contains("SuperAdmin"))
                 return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
 
             return RedirectToAction("Index", "Dashboard", new { area = "Company" });
@@ -137,6 +132,61 @@ public class AccountController : Controller
             return Redirect(returnUrl);
 
         return RedirectToAction("Index", "Home");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ChangePasswordRequired()
+    {
+        if (User.Identity?.IsAuthenticated != true)
+            return RedirectToAction(nameof(Login));
+
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+            return RedirectToAction(nameof(Login));
+
+        var model = new ChangePasswordRequiredViewModel
+        {
+            FullName = user.FullName,
+            Email = user.Email
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePasswordRequired(ChangePasswordRequiredViewModel model)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+            return RedirectToAction(nameof(Login));
+
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+            return RedirectToAction(nameof(Login));
+
+        model.FullName = user.FullName;
+        model.Email = user.Email;
+
+        if (!ModelState.IsValid)
+            return View(model);
+
+        var result = await _mediator.Send(new ChangeRequiredPasswordCommand(user.Id, model.CurrentPassword, model.NewPassword));
+        if (!result.IsSuccess)
+        {
+            ModelState.AddModelError(string.Empty, result.Error.Message);
+            return View(model);
+        }
+
+        // Refresh sign-in to update claims in cookie (removing MustChangePassword)
+        await _signInManager.RefreshSignInAsync(user);
+
+        TempData["Success"] = "تم تحديث كلمة المرور بنجاح! تم فتح صلاحيات حسابك بالكامل.";
+
+        var roles = await _userManager.GetRolesAsync(user);
+        if (roles.Contains("SuperAdmin"))
+            return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
+
+        return RedirectToAction("Index", "Dashboard", new { area = "Company" });
     }
 
     [HttpGet]

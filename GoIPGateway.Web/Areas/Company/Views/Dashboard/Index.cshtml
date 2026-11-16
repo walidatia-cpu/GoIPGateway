@@ -20,14 +20,20 @@
                 </div>
             </div>
             <div class="mt-4 d-flex flex-wrap gap-2">
-                <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="btn btn-warning btn-merchant-action text-dark">
-                    <i class="bi bi-lightning-charge-fill fs-5"></i>
-                    <span>تنفيذ عملية فورية الآن</span>
-                </a>
-                <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="btn btn-outline-secondary btn-merchant-action">
-                    <i class="bi bi-receipt fs-5"></i>
-                    <span>سجل معاملاتي</span>
-                </a>
+                @if (User.HasPermission(AppPermissions.Transactions.Execute))
+                {
+                    <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="btn btn-warning btn-merchant-action text-dark">
+                        <i class="bi bi-lightning-charge-fill fs-5"></i>
+                        <span>تنفيذ عملية فورية الآن</span>
+                    </a>
+                }
+                @if (User.HasPermission(AppPermissions.Transactions.View))
+                {
+                    <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="btn btn-outline-secondary btn-merchant-action">
+                        <i class="bi bi-receipt fs-5"></i>
+                        <span>سجل معاملاتي</span>
+                    </a>
+                }
             </div>
         </div>
 
@@ -117,171 +123,191 @@
     </div>
 </div>
 
-<!-- 3 Large Action Cards for Ordinary Market Users -->
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="text-decoration-none">
-            <div class="portal-card p-4 h-100 d-flex align-items-center gap-3 border-2 border-warning border-opacity-50">
-                <div class="p-3 rounded-4 bg-warning bg-opacity-15 text-warning fs-1">
-                    <i class="bi bi-qr-code-scan"></i>
+@if (User.HasPermission(AppPermissions.Transactions.Execute))
+{
+    <!-- 3 Large Action Cards for Ordinary Market Users -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="text-decoration-none">
+                <div class="portal-card p-4 h-100 d-flex align-items-center gap-3 border-2 border-warning border-opacity-50">
+                    <div class="p-3 rounded-4 bg-warning bg-opacity-15 text-warning fs-1">
+                        <i class="bi bi-qr-code-scan"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1 text-main">دفع تاجر QR</h5>
+                        <p class="text-muted small mb-0">تحويل فوري لماكينة أو كود التاجر بالجنيه</p>
+                    </div>
                 </div>
-                <div>
-                    <h5 class="fw-bold mb-1 text-main">دفع تاجر QR</h5>
-                    <p class="text-muted small mb-0">تحويل فوري لماكينة أو كود التاجر بالجنيه</p>
-                </div>
-            </div>
-        </a>
-    </div>
+            </a>
+        </div>
 
-    <div class="col-md-4">
-        <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="text-decoration-none">
-            <div class="portal-card p-4 h-100 d-flex align-items-center gap-3 border-2 border-primary border-opacity-50">
-                <div class="p-3 rounded-4 bg-primary bg-opacity-15 text-primary fs-1">
-                    <i class="bi bi-arrow-left-right"></i>
+        <div class="col-md-4">
+            <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="text-decoration-none">
+                <div class="portal-card p-4 h-100 d-flex align-items-center gap-3 border-2 border-primary border-opacity-50">
+                    <div class="p-3 rounded-4 bg-primary bg-opacity-15 text-primary fs-1">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1 text-main">تحويل كاش لمحفظة</h5>
+                        <p class="text-muted small mb-0">تحويل فوري لأي رقم محفظة إلكترونية</p>
+                    </div>
                 </div>
-                <div>
-                    <h5 class="fw-bold mb-1 text-main">تحويل كاش لمحفظة</h5>
-                    <p class="text-muted small mb-0">تحويل فوري لأي رقم محفظة إلكترونية</p>
-                </div>
-            </div>
-        </a>
-    </div>
+            </a>
+        </div>
 
-    <div class="col-md-4">
-        <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="text-decoration-none">
-            <div class="portal-card p-4 h-100 d-flex align-items-center gap-3 border-2 border-success border-opacity-50">
-                <div class="p-3 rounded-4 bg-success bg-opacity-15 text-success fs-1">
-                    <i class="bi bi-wallet2"></i>
+        <div class="col-md-4">
+            <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="text-decoration-none">
+                <div class="portal-card p-4 h-100 d-flex align-items-center gap-3 border-2 border-success border-opacity-50">
+                    <div class="p-3 rounded-4 bg-success bg-opacity-15 text-success fs-1">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1 text-main">استعلام رصيد المحفظة</h5>
+                        <p class="text-muted small mb-0">كشف رصيد الخط والشريحة في ثواني</p>
+                    </div>
                 </div>
-                <div>
-                    <h5 class="fw-bold mb-1 text-main">استعلام رصيد المحفظة</h5>
-                    <p class="text-muted small mb-0">كشف رصيد الخط والشريحة في ثواني</p>
-                </div>
-            </div>
-        </a>
+            </a>
+        </div>
     </div>
-</div>
+}
 
 <div class="row g-4">
-    <!-- Merchant Assigned SIMs -->
-    <div class="col-lg-6">
-        <div class="portal-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0"><i class="bi bi-sim-fill text-primary me-2"></i> خطوط المحافظ المخصصة لحسابك</h5>
-                <span class="badge bg-secondary">@Model.AssignedSimCards.Count خطوط</span>
-            </div>
+    @if (User.HasPermission(AppPermissions.SimCards.View))
+    {
+        <!-- Merchant Assigned SIMs -->
+        <div class="@(User.HasPermission(AppPermissions.Transactions.View) ? "col-lg-6" : "col-12")">
+            <div class="portal-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-sim-fill text-primary me-2"></i> خطوط المحافظ المخصصة لحسابك</h5>
+                    <span class="badge bg-secondary">@Model.AssignedSimCards.Count خطوط</span>
+                </div>
 
-            <div class="table-responsive">
-                <table class="table table-custom">
-                    <thead>
-                        <tr>
-                            <th>الشبكة</th>
-                            <th>رقم الخط</th>
-                            <th>رصيد الشريحة</th>
-                            <th>الحالة</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.AssignedSimCards.Count == 0)
-                        {
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
                             <tr>
-                                <td colspan="4" class="text-center py-4 text-muted">لا توجد خطوط مخصصة لحسابكم حالياً.</td>
+                                <th>الشبكة</th>
+                                <th>رقم الخط</th>
+                                <th>رصيد الشريحة</th>
+                                <th>الحالة</th>
                             </tr>
-                        }
-                        @foreach (var sim in Model.AssignedSimCards)
-                        {
-                            <tr>
-                                <td>
-                                    @switch (sim.Operator)
-                                    {
-                                        case GoIPGateway.Domain.Enums.OperatorType.Vodafone:
-                                            <span class="badge badge-op-vodafone px-3 py-2">فودافون كاش</span>
-                                            break;
-                                        case GoIPGateway.Domain.Enums.OperatorType.Orange:
-                                            <span class="badge badge-op-orange px-3 py-2">أورانج كاش</span>
-                                            break;
-                                        case GoIPGateway.Domain.Enums.OperatorType.Etisalat:
-                                            <span class="badge badge-op-etisalat px-3 py-2">اتصالات كاش</span>
-                                            break;
-                                        default:
-                                            <span class="badge badge-op-we px-3 py-2">وي باي (WE)</span>
-                                            break;
-                                    }
-                                </td>
-                                <td class="fw-bold fs-6">@sim.PhoneNumber</td>
-                                <td class="fw-bold fs-6 text-success">@sim.CurrentBalance.ToString("N2") ج.م</td>
-                                <td>
-                                    <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 py-1">
-                                        <i class="bi bi-check2-circle me-1"></i> جاهز وشغال
-                                    </span>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Merchant Transactions -->
-    <div class="col-lg-6">
-        <div class="portal-card p-4 h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0"><i class="bi bi-clock-history text-warning me-2"></i> آخر المعاملات المنفذة</h5>
-                <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="btn btn-sm btn-link text-decoration-none fw-bold">عرض السجل الكامل</a>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-custom">
-                    <thead>
-                        <tr>
-                            <th>نوع المعاملة</th>
-                            <th>المبلغ</th>
-                            <th>الحالة</th>
-                            <th>التوقيت</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.RecentTransactions.Count == 0)
-                        {
-                            <tr>
-                                <td colspan="4" class="text-center py-4 text-muted">لا توجد عمليات منفذة بعد. اضغط على "تنفيذ عملية فورية" للبدء.</td>
-                            </tr>
-                        }
-                        @foreach (var tx in Model.RecentTransactions)
-                        {
-                            <tr>
-                                <td>
-                                    <div class="fw-bold">@(tx.ServiceDefinition?.NameAr ?? "عملية USSD")</div>
-                                    <code class="small">@tx.TransactionRef</code>
-                                </td>
-                                <td class="fw-bold fs-6">@(tx.Amount.HasValue ? tx.Amount.Value.ToString("N2") + " ج.م" : "-")</td>
-                                <td>
-                                    @if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Completed)
-                                    {
+                        </thead>
+                        <tbody>
+                            @if (Model.AssignedSimCards.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">لا توجد خطوط مخصصة لحسابكم حالياً.</td>
+                                </tr>
+                            }
+                            @foreach (var sim in Model.AssignedSimCards)
+                            {
+                                <tr>
+                                    <td>
+                                        @switch (sim.Operator)
+                                        {
+                                            case GoIPGateway.Domain.Enums.OperatorType.Vodafone:
+                                                <span class="badge badge-op-vodafone px-3 py-2">فودافون كاش</span>
+                                                break;
+                                            case GoIPGateway.Domain.Enums.OperatorType.Orange:
+                                                <span class="badge badge-op-orange px-3 py-2">أورانج كاش</span>
+                                                break;
+                                            case GoIPGateway.Domain.Enums.OperatorType.Etisalat:
+                                                <span class="badge badge-op-etisalat px-3 py-2">اتصالات كاش</span>
+                                                break;
+                                            default:
+                                                <span class="badge badge-op-we px-3 py-2">وي باي (WE)</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td class="fw-bold fs-6">@sim.PhoneNumber</td>
+                                    <td class="fw-bold fs-6 text-success">@sim.CurrentBalance.ToString("N2") ج.م</td>
+                                    <td>
                                         <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 py-1">
-                                            <i class="bi bi-check-circle-fill me-1"></i> ناجحة
+                                            <i class="bi bi-check2-circle me-1"></i> جاهز وشغال
                                         </span>
-                                    }
-                                    else if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Processing)
-                                    {
-                                        <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-2 py-1">
-                                            <i class="bi bi-hourglass-split me-1"></i> قيد التنفيذ
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-2 py-1">
-                                            <i class="bi bi-x-circle-fill me-1"></i> فشلت
-                                        </span>
-                                    }
-                                </td>
-                                <td class="small text-muted">@tx.RequestedAt.ToString("HH:mm")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
+    }
+
+    @if (User.HasPermission(AppPermissions.Transactions.View))
+    {
+        <!-- Recent Merchant Transactions -->
+        <div class="@(User.HasPermission(AppPermissions.SimCards.View) ? "col-lg-6" : "col-12")">
+            <div class="portal-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-clock-history text-warning me-2"></i> آخر المعاملات المنفذة</h5>
+                    <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="btn btn-sm btn-link text-decoration-none fw-bold">عرض السجل الكامل</a>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>نوع المعاملة</th>
+                                <th>المبلغ</th>
+                                <th>الحالة</th>
+                                <th>التوقيت</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.RecentTransactions.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">لا توجد عمليات منفذة بعد. اضغط على "تنفيذ عملية فورية" للبدء.</td>
+                                </tr>
+                            }
+                            @foreach (var tx in Model.RecentTransactions)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">@(tx.ServiceDefinition?.NameAr ?? "عملية USSD")</div>
+                                        <code class="small">@tx.TransactionRef</code>
+                                    </td>
+                                    <td class="fw-bold fs-6">@(tx.Amount.HasValue ? tx.Amount.Value.ToString("N2") + " ج.م" : "-")</td>
+                                    <td>
+                                        @if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Completed)
+                                        {
+                                            <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 py-1">
+                                                <i class="bi bi-check-circle-fill me-1"></i> ناجحة
+                                            </span>
+                                        }
+                                        else if (tx.Status == GoIPGateway.Domain.Enums.TransactionStatus.Processing)
+                                        {
+                                            <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-2 py-1">
+                                                <i class="bi bi-hourglass-split me-1"></i> قيد التنفيذ
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-2 py-1">
+                                                <i class="bi bi-x-circle-fill me-1"></i> فشلت
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="small text-muted">@tx.RequestedAt.ToString("HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!User.HasPermission(AppPermissions.SimCards.View) && !User.HasPermission(AppPermissions.Transactions.View))
+    {
+        <div class="col-12">
+            <div class="portal-card p-5 text-center">
+                <i class="bi bi-shield-lock display-3 text-muted mb-3"></i>
+                <h4 class="fw-bold text-main">حسابك لا يمتلك صلاحيات وصول للبيانات التشغيلية</h4>
+                <p class="text-muted mb-0">يرجى التواصل مع مسؤول الشركة أو المشرف العام لتفعيل الصلاحيات اللازمة لمهامك على النظام.</p>
+            </div>
+        </div>
+    }
 </div>

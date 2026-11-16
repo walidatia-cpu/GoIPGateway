@@ -24,6 +24,28 @@ GoIPGateway/
 
 ---
 
+## 1.1 Strict Backend Architecture: MediatR, Services & Result Pattern
+
+### The Mandatory Pipeline:
+```
+Controller ──► IMediator.Send(...) ──► Handler ──► Domain/Application Service ──► Result<T>
+```
+
+### Mandatory Controller Standards (100% Thin Controllers):
+1. **Zero Business Logic & Zero LINQ**: Controllers MUST NEVER contain domain business logic, LINQ queries, or direct database operations.
+2. **Zero Direct DB / Repository Access**: NEVER inject `IUnitOfWork`, `ApplicationDbContext`, or repository interfaces into Controllers.
+3. **Allowed Controller Dependencies**:
+   - `IMediator`: Primary orchestrator for dispatching all Commands and Queries.
+   - `ITenantProvider` / `ICurrentUserService`: Only when explicit tenant resolution is required in the Web presentation layer.
+4. **Form Metadata & Lookups**:
+   - Never query database repositories or `AppPermissions` directly in Controller GET actions to populate dropdowns or permission matrices.
+   - Always create and dispatch dedicated MediatR queries (e.g., `GetRoleCreateFormMetadataQuery`, `GetUserCreateFormMetadataQuery`) returning `Result<FormMetadataDto>`.
+5. **Result Pattern Everywhere**:
+   - All Handlers and Services must return `Result<T>` or `Result`.
+   - Controllers inspect `result.IsSuccess` (or `result.IsFailure`), handle UI notifications (`TempData` or `ModelState.AddModelError`), and return Views, Redirects, or JSON payloads.
+
+---
+
 ## 2. Frontend Architecture & Modular Services (`wwwroot/js/services/`)
 
 ### Rule: ZERO Inline Scripts

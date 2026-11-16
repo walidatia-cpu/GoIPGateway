@@ -1,4 +1,5 @@
 using GoIPGateway.Application.Common.Interfaces;
+using GoIPGateway.Application.Common.Security;
 using GoIPGateway.Application.DTOs;
 using GoIPGateway.Application.Features.Devices.Queries;
 using GoIPGateway.Application.Features.SimCards.Commands;
@@ -8,6 +9,7 @@ using GoIPGateway.Application.Features.Transactions.Commands;
 using GoIPGateway.Application.Features.Transactions.Queries;
 using GoIPGateway.Domain.Entities;
 using GoIPGateway.Domain.Enums;
+using GoIPGateway.Infrastructure.Identity.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
 [Area("Company")]
-[Authorize(Roles = "TenantAdmin,TenantOperator,SuperAdmin")]
+[Authorize]
 public class SimCardsController : Controller
 {
     private readonly IMediator _mediator;
@@ -44,6 +46,8 @@ public class SimCardsController : Controller
         return null;
     }
 
+    [HttpGet]
+    [HasPermission(AppPermissions.SimCards.View)]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -67,6 +71,7 @@ public class SimCardsController : Controller
     }
 
     [HttpGet]
+    [HasPermission(AppPermissions.SimCards.Configure)]
     public async Task<IActionResult> Create(int? portId, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -96,6 +101,7 @@ public class SimCardsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [HasPermission(AppPermissions.SimCards.Configure)]
     public async Task<IActionResult> Create(SimCard sim, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -145,6 +151,7 @@ public class SimCardsController : Controller
     }
 
     [HttpGet]
+    [HasPermission(AppPermissions.SimCards.Configure)]
     public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetSimCardByIdQuery(id), cancellationToken);
@@ -156,6 +163,7 @@ public class SimCardsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [HasPermission(AppPermissions.SimCards.Configure)]
     public async Task<IActionResult> Edit(int id, SimCard model, CancellationToken cancellationToken)
     {
         var command = new UpdateSimCardCommand(
@@ -186,6 +194,7 @@ public class SimCardsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [HasPermission(AppPermissions.SimCards.Configure)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteSimCardCommand(id), cancellationToken);
@@ -202,6 +211,7 @@ public class SimCardsController : Controller
     }
 
     [HttpPost]
+    [HasPermission(AppPermissions.SimCards.CheckBalance)]
     public async Task<IActionResult> QueryBalance(int simId, CancellationToken cancellationToken)
     {
         var command = new GoIPGateway.Application.Features.Transactions.Commands.ExecuteServiceCommand("BAL_INQ", null, simId, null, new Dictionary<string, string>(), null, RequestSource.Dashboard);
@@ -223,6 +233,7 @@ public class SimCardsController : Controller
     }
 
     [HttpPost]
+    [HasPermission(AppPermissions.SimCards.CheckBalance)]
     public async Task<IActionResult> QueryNumber(int simId, CancellationToken cancellationToken)
     {
         var command = new GoIPGateway.Application.Features.Transactions.Commands.ExecuteServiceCommand("NUM_INQ", null, simId, null, new Dictionary<string, string>(), null, RequestSource.Dashboard);
@@ -244,6 +255,7 @@ public class SimCardsController : Controller
     }
 
     [HttpPost]
+    [HasPermission(AppPermissions.SimCards.CheckBalance)]
     public async Task<IActionResult> BulkExecute([FromBody] BulkSimActionRequest request, [FromServices] IServiceScopeFactory scopeFactory, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);

@@ -1,36 +1,33 @@
 using GoIPGateway.Application.Common.Interfaces;
+using GoIPGateway.Application.Common.Security;
 using GoIPGateway.Application.Features.Devices.Commands;
 using GoIPGateway.Application.Features.Devices.Queries;
 using GoIPGateway.Application.Features.Tenants.Queries;
 using GoIPGateway.Domain.Entities;
 using GoIPGateway.Domain.Enums;
+using GoIPGateway.Infrastructure.Identity.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-using GoIPGateway.Application.Services.Devices;
-
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
 [Area("Company")]
-[Authorize(Roles = "TenantAdmin,TenantOperator,SuperAdmin")]
+[Authorize]
 public class DevicesController : Controller
 {
     private readonly IMediator _mediator;
     private readonly ICurrentUserService _currentUser;
     private readonly ITenantProvider _tenantProvider;
-    private readonly IDeviceCommandService _deviceCommandService;
 
     public DevicesController(
         IMediator mediator,
         ICurrentUserService currentUser,
-        ITenantProvider tenantProvider,
-        IDeviceCommandService deviceCommandService)
+        ITenantProvider tenantProvider)
     {
         _mediator = mediator;
         _currentUser = currentUser;
         _tenantProvider = tenantProvider;
-        _deviceCommandService = deviceCommandService;
     }
 
     private async Task<int?> ResolveTenantIdAsync(CancellationToken cancellationToken)
@@ -48,6 +45,8 @@ public class DevicesController : Controller
         return null;
     }
 
+    [HttpGet]
+    [HasPermission(AppPermissions.Devices.View)]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -73,6 +72,7 @@ public class DevicesController : Controller
     }
 
     [HttpGet]
+    [HasPermission(AppPermissions.Devices.Create)]
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -109,6 +109,7 @@ public class DevicesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [HasPermission(AppPermissions.Devices.Create)]
     public async Task<IActionResult> Create(Device device, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -168,6 +169,7 @@ public class DevicesController : Controller
     }
 
     [HttpGet]
+    [HasPermission(AppPermissions.Devices.View)]
     public async Task<IActionResult> Details(int id, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -180,6 +182,7 @@ public class DevicesController : Controller
     }
 
     [HttpGet]
+    [HasPermission(AppPermissions.Devices.Edit)]
     public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -199,6 +202,7 @@ public class DevicesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [HasPermission(AppPermissions.Devices.Edit)]
     public async Task<IActionResult> Edit(int id, Device model, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -248,6 +252,7 @@ public class DevicesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [HasPermission(AppPermissions.Devices.Delete)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -273,6 +278,7 @@ public class DevicesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [HasPermission(AppPermissions.Devices.Edit)]
     public async Task<IActionResult> Restore(int id, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -297,6 +303,7 @@ public class DevicesController : Controller
     }
 
     [HttpPost]
+    [HasPermission(AppPermissions.Devices.Edit)]
     public async Task<IActionResult> SwitchActiveGroupAjax([FromBody] SwitchGroupRequest req, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -306,8 +313,8 @@ public class DevicesController : Controller
         var assignment = assignmentsResult.Data?.FirstOrDefault(td => td.DeviceId == req.DeviceId);
         if (assignment == null) return Json(new { success = false, message = "الجهاز غير موجود أو غير مخصص لشركتك." });
 
-        var result = await _deviceCommandService.SwitchActiveGroupAsync(req.DeviceId, req.Group, cancellationToken);
-        if (result.Succeeded)
+        var result = await _mediator.Send(new SwitchDeviceActiveGroupCommand(req.DeviceId, req.Group), cancellationToken);
+        if (result.IsSuccess)
         {
             var letter = req.Group.ToUpperInvariant() switch { "1" or "01" or "A" => "A", "2" or "02" or "B" => "B", "3" or "03" or "C" => "C", "4" or "04" or "D" => "D", _ => req.Group };
             var num = req.Group.ToUpperInvariant() switch { "A" or "1" or "01" => "01", "B" or "2" or "02" => "02", "C" or "3" or "03" => "03", "D" or "4" or "04" => "04", _ => req.Group };
@@ -318,6 +325,7 @@ public class DevicesController : Controller
     }
 
     [HttpPost]
+    [HasPermission(AppPermissions.Devices.Edit)]
     public async Task<IActionResult> SwitchBlockSlotAjax([FromBody] SwitchBlockSlotRequest req, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -327,8 +335,8 @@ public class DevicesController : Controller
         var assignment = assignmentsResult.Data?.FirstOrDefault(td => td.DeviceId == req.DeviceId);
         if (assignment == null) return Json(new { success = false, message = "الجهاز غير موجود أو غير مخصص لشركتك." });
 
-        var result = await _deviceCommandService.SwitchBlockSlotAsync(req.DeviceId, req.PortId, cancellationToken);
-        if (result.Succeeded)
+        var result = await _mediator.Send(new SwitchDeviceBlockSlotCommand(req.DeviceId, req.PortId), cancellationToken);
+        if (result.IsSuccess)
         {
             return Json(new { success = true, portId = req.PortId, message = "تم تفعيل المنفذ في هذا البلوك بنجاح وتحويل باقي منافذ البلوك لوضع الاستعداد." });
         }

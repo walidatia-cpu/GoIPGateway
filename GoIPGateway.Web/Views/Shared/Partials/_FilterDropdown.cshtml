@@ -2,20 +2,20 @@
 
 @if (Model != null)
 {
-    <div class="d-inline-flex align-items-center gap-1.5 filter-dropdown-wrapper">
+    <div class="d-inline-flex align-items-center gap-2 filter-dropdown-wrapper">
         @if (!string.IsNullOrEmpty(Model.Label))
         {
-            <label for="@Model.Id" class="small fw-semibold text-muted text-nowrap mb-0 d-none d-sm-inline">
+            <label for="@Model.Id" class="small fw-bold text-muted text-nowrap mb-0 d-none d-xl-inline fs-7">
                 @if (!string.IsNullOrEmpty(Model.Icon))
                 {
-                    <i class="bi @Model.Icon me-1"></i>
+                    <i class="bi @Model.Icon me-1 text-primary opacity-75"></i>
                 }
                 @Model.Label
             </label>
         }
-        <div style="min-width: 140px; max-width: 220px;" class="flex-grow-1">
+        <div style="min-width: 170px;" class="flex-grow-1">
             <select id="@Model.Id"
-                    class="form-select form-select-sm searchable-select"
+                    class="form-select searchable-select filter-select-enhanced"
                     data-searchable="true"
                     data-placeholder="@(Model.Placeholder ?? "اختر...")"
                     @(!string.IsNullOrEmpty(Model.OnChange) ? $"onchange=\"{Model.OnChange}\"" : "")>

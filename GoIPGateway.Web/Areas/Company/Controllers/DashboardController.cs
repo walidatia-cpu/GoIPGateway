@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
 [Area("Company")]
-[Authorize(Roles = "TenantAdmin,TenantOperator,TenantViewer,SuperAdmin")]
+[Authorize]
 public class DashboardController : Controller
 {
     private readonly IMediator _mediator;

@@ -67,6 +67,8 @@ public static class DependencyInjection
         // 5. Real-Time & Security
         services.AddScoped<ISignalRNotifier, SignalRNotifier>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, GoIPGateway.Infrastructure.Identity.Permissions.PermissionAuthorizationHandler>();
 
         // 6. Service Executors (Factory Strategies)
         services.AddScoped<UssdMultiStepExecutor>();

@@ -7,6 +7,7 @@ public interface ICurrentUserService
     int? TenantId { get; }
     string? Role { get; }
     bool IsAuthenticated { get; }
+    bool IsOwner { get; }
     bool IsSuperAdmin { get; }
     string? AllowedServices { get; }
 }

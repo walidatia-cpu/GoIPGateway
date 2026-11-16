@@ -4,6 +4,7 @@
 }
 
 <div class="container-xl px-0 py-2">
+    @Html.AntiForgeryToken()
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb mb-0">
@@ -65,6 +66,21 @@
                         <i class="bi bi-key-fill text-primary"></i>
                         <span>مفاتيح الـ API</span>
                     </a>
+                    <a asp-area="Admin" asp-controller="Roles" asp-action="Index" asp-route-tenantId="@Model.Id" class="btn btn-light border px-3 py-2 rounded-pill fw-bold d-inline-flex align-items-center gap-1.5 hover-primary shadow-2xs" title="إدارة مجموعة صلاحيات الشركة">
+                        <i class="bi bi-shield-lock-fill text-success"></i>
+                        <span>صلاحيات الشركة</span>
+                    </a>
+                    <button type="button" 
+                            class="btn btn-warning px-3 py-2 rounded-pill fw-bold text-dark shadow-sm d-inline-flex align-items-center gap-1.5"
+                            data-action="set-temp-password"
+                            data-url="@Url.Action("SetAdminTempPassword")"
+                            data-id="@Model.Id"
+                            data-type="tenant"
+                            data-name="@Model.CompanyName"
+                            title="تعيين أو توليد كلمة مرور مؤقتة لمدير الشركة">
+                        <i class="bi bi-key-fill"></i>
+                        <span>كلمة مرور مؤقتة للمدير</span>
+                    </button>
                     <form asp-action="Delete" method="post" class="d-inline"
                           data-confirm="true"
                           data-confirm-title="حذف الشركة مؤقتاً (Soft Delete)"

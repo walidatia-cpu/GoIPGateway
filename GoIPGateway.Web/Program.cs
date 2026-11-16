@@ -29,7 +29,7 @@ builder.Services.AddSignalR();
 // 4. Localization Configuration (ar-EG & en-US)
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
-// 5. Authentication (Cookies for Dashboards + JWT Bearer for REST API)
+// 5. Authentication & Authorization Policies (Cookies for Dashboards + JWT Bearer for REST API)
 var jwtSecret = builder.Configuration["Jwt:SecretKey"] ?? "GoIP_Gateway_Super_Secret_Key_For_Jwt_Generation_2026_Secure_Default!";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "GoIPGatewayPlatform";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "GoIPGatewayClients";
@@ -69,6 +69,15 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         ClockSkew = TimeSpan.Zero
     };
+});
+
+builder.Services.AddAuthorization(options =>
+{
+    foreach (var perm in GoIPGateway.Application.Common.Security.AppPermissions.All)
+    {
+        options.AddPolicy(perm.Code, policy => 
+            policy.Requirements.Add(new GoIPGateway.Infrastructure.Identity.Permissions.PermissionRequirement(perm.Code)));
+    }
 });
 
 builder.Services.ConfigureApplicationCookie(options =>
@@ -179,6 +188,7 @@ app.UseRouting();
 app.UseMiddleware<ApiKeyAuthenticationMiddleware>();
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();
+app.UseMiddleware<ForcePasswordChangeMiddleware>();
 app.UseAuthorization();
 
 // 12. Endpoint Mappings

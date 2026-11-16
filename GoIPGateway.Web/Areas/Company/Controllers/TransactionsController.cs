@@ -1,7 +1,9 @@
 using GoIPGateway.Application.Common.Interfaces;
+using GoIPGateway.Application.Common.Security;
 using GoIPGateway.Application.Features.Tenants.Queries;
 using GoIPGateway.Application.Features.Transactions.Queries;
 using GoIPGateway.Domain.Enums;
+using GoIPGateway.Infrastructure.Identity.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
 [Area("Company")]
-[Authorize(Roles = "TenantAdmin,TenantOperator,TenantViewer,SuperAdmin")]
+[Authorize]
 public class TransactionsController : Controller
 {
     private readonly IMediator _mediator;
@@ -38,6 +40,8 @@ public class TransactionsController : Controller
         return null;
     }
 
+    [HttpGet]
+    [HasPermission(AppPermissions.Transactions.View)]
     public async Task<IActionResult> Index(TransactionStatus? status, int page = 1, CancellationToken cancellationToken = default)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);

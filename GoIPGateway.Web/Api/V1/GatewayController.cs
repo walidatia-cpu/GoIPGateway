@@ -8,7 +8,6 @@ using GoIPGateway.Infrastructure.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace GoIPGateway.Web.Api.V1;
 

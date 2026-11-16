@@ -1,8 +1,10 @@
 using GoIPGateway.Application.Common.Interfaces;
+using GoIPGateway.Application.Common.Security;
 using GoIPGateway.Application.Features.SimCards.Queries;
 using GoIPGateway.Application.Features.Tenants.Commands;
 using GoIPGateway.Application.Features.Tenants.Queries;
 using GoIPGateway.Domain.Entities;
+using GoIPGateway.Infrastructure.Identity.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
 [Area("Company")]
-[Authorize(Roles = "TenantAdmin,TenantOperator,SuperAdmin")]
+[Authorize]
 public class RoutingController : Controller
 {
     private readonly IMediator _mediator;
@@ -39,6 +41,8 @@ public class RoutingController : Controller
         return null;
     }
 
+    [HttpGet]
+    [HasPermission(AppPermissions.Routing.View)]
     public async Task<IActionResult> Index(int? serviceId, int? simId, string tab = "byService", CancellationToken cancellationToken = default)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -89,6 +93,7 @@ public class RoutingController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [HasPermission(AppPermissions.Routing.Manage)]
     public async Task<IActionResult> SaveByService(int serviceDefinitionId, int[]? selectedSimIds, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -109,6 +114,7 @@ public class RoutingController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [HasPermission(AppPermissions.Routing.Manage)]
     public async Task<IActionResult> SaveBySim(int simId, int[]? selectedServiceIds, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -128,6 +134,7 @@ public class RoutingController : Controller
     }
 
     [HttpPost]
+    [HasPermission(AppPermissions.Routing.Manage)]
     public async Task<IActionResult> ToggleServiceSimAjax([FromBody] ToggleServiceSimRequest req, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -152,6 +159,7 @@ public class RoutingController : Controller
     }
 
     [HttpPost]
+    [HasPermission(AppPermissions.Routing.Manage)]
     public async Task<IActionResult> SetServiceSimsAjax([FromBody] SetServiceSimsRequest req, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -162,6 +170,7 @@ public class RoutingController : Controller
     }
 
     [HttpPost]
+    [HasPermission(AppPermissions.Routing.Manage)]
     public async Task<IActionResult> ToggleSimServiceAjax([FromBody] ToggleSimServiceRequest req, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -189,6 +198,7 @@ public class RoutingController : Controller
     }
 
     [HttpPost]
+    [HasPermission(AppPermissions.Routing.Manage)]
     public async Task<IActionResult> SetSimServicesAjax([FromBody] SetSimServicesRequest req, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);

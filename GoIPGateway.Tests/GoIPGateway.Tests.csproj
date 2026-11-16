@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -23,6 +23,7 @@
     <ProjectReference Include="..\GoIPGateway.Domain\GoIPGateway.Domain.csproj" />
     <ProjectReference Include="..\GoIPGateway.Application\GoIPGateway.Application.csproj" />
     <ProjectReference Include="..\GoIPGateway.Infrastructure\GoIPGateway.Infrastructure.csproj" />
+    <ProjectReference Include="..\GoIPGateway.Web\GoIPGateway.Web.csproj" />
   </ItemGroup>
 
 </Project>

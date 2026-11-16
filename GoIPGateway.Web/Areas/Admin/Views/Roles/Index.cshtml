@@ -1,0 +1,227 @@
+@model IEnumerable<GoIPGateway.Web.Models.Roles.RoleListItemViewModel>
+@using GoIPGateway.Web.Models.Components
+@{
+    ViewData["Title"] = "إدارة مجموعات الصلاحيات والأدوار";
+    var rolesList = Model.ToList();
+    var totalRoles = rolesList.Count;
+    var systemRoles = rolesList.Count(r => r.IsSystemRole);
+    var customRoles = totalRoles - systemRoles;
+
+    var filterBar = new SearchFilterBarModel
+    {
+        SearchInputId = "roleSearchInput",
+        SearchPlaceholder = "ابحث باسم الدور أو الوصف...",
+        OnSearchInput = "filterRoleTable()",
+        CounterId = "rolesVisibleCount",
+        CounterLabel = "الأدوار الظاهرة:",
+        InitialCount = totalRoles,
+        ResetFiltersFunction = "resetRoleFilters()",
+        PrimaryAction = new ActionButtonModel
+        {
+            Text = "إنشاء مجموعة صلاحيات جديدة",
+            Url = Url.Action("Create"),
+            Icon = "bi-plus-circle-fill",
+            ColorClass = "btn-primary"
+        }
+    };
+}
+
+<div class="container-xl px-0 py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة التحكم</a></li>
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Users" asp-action="Index" class="text-decoration-none text-muted">المستخدمين</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">مجموعات الصلاحيات</li>
+        </ol>
+    </nav>
+
+    @if (ViewBag.FilteredTenantId != null)
+    {
+        var filteredTenantName = rolesList.FirstOrDefault(r => r.TenantId == (int)ViewBag.FilteredTenantId)?.TenantName ?? "الشركة المحددة";
+        <div class="alert alert-primary d-flex align-items-center justify-content-between p-3 rounded-3 mb-4 shadow-sm">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-funnel-fill fs-5"></i>
+                <div>
+                    <strong>تصفية حسب الشركة:</strong> يتم حالياً عرض الأدوار والمجموعات التابعة لـ <strong>@filteredTenantName</strong>.
+                </div>
+            </div>
+            <a asp-action="Index" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                <i class="bi bi-x-circle me-1"></i> عرض كافة الأدوار
+            </a>
+        </div>
+    }
+
+    <!-- Header Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+            <div class="portal-card p-3 shadow-sm h-100">
+                <div class="text-muted fs-8 mb-1">إجمالي الأدوار والمجموعات</div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h3 class="fw-black mb-0 text-primary font-monospace">@totalRoles</h3>
+                    <i class="bi bi-shield-lock-fill fs-4 text-primary opacity-50"></i>
+                </div>
+                <small class="text-muted mt-2 d-block fs-9">أدوار نظام ومجموعات مخصصة</small>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <div class="portal-card p-3 shadow-sm h-100">
+                <div class="text-muted fs-8 mb-1">أدوار النظام الأساسية</div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h3 class="fw-black mb-0 text-info font-monospace">@systemRoles</h3>
+                    <i class="bi bi-gear-fill fs-4 text-info opacity-50"></i>
+                </div>
+                <small class="text-muted mt-2 d-block fs-9">مبنية مسبقاً وغير قابلة للحذف</small>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="portal-card p-3 shadow-sm h-100">
+                <div class="text-muted fs-8 mb-1">المجموعات المخصصة</div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h3 class="fw-black mb-0 text-success font-monospace">@customRoles</h3>
+                    <i class="bi bi-diagram-3-fill fs-4 text-success opacity-50"></i>
+                </div>
+                <small class="text-muted mt-2 d-block fs-9">ديناميكية بصلاحيات قابلة للتعديل</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar Component -->
+    <div class="portal-card mb-4 shadow-sm search-filter-card">
+        <partial name="Partials/_SearchFilterBar" model="filterBar" />
+    </div>
+
+    <!-- Roles Table Container -->
+    <div id="rolesTableContainer" class="portal-card shadow-sm table-card-container mb-4">
+        <div class="table-responsive table-responsive-custom">
+            <table class="table table-custom table-sticky-col align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="sticky-col" style="min-width: 200px;">
+                            <span>اسم الدور / المجموعة</span>
+                        </th>
+                        <th style="min-width: 250px;">
+                            <span>الوصف والمهام</span>
+                        </th>
+                        <th style="min-width: 150px;">
+                            <span>التبعية والنوع</span>
+                        </th>
+                        <th style="min-width: 120px;">
+                            <span>المستخدمين</span>
+                        </th>
+                        <th style="min-width: 130px;">
+                            <span>عدد الصلاحيات</span>
+                        </th>
+                        <th class="text-center" style="min-width: 140px;">
+                            <span>الإجراءات</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="rolesTableBody">
+                    @foreach (var role in rolesList)
+                    {
+                        <tr class="role-table-row" data-name="@role.Name" data-desc="@(role.Description ?? "")">
+                            <!-- Sticky Col: Role Name -->
+                            <td class="sticky-col">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="p-2 rounded-circle @(role.IsSystemRole ? "bg-info bg-opacity-10 text-info" : "bg-primary bg-opacity-10 text-primary") fs-5" style="width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="bi @(role.IsSystemRole ? "bi-shield-shaded" : "bi-diagram-3")"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-main font-monospace">@role.Name</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Description -->
+                            <td>
+                                <span class="text-muted small">@(role.Description ?? "لا يوجد وصف محدد")</span>
+                            </td>
+
+                            <!-- Type & Tenant -->
+                            <td>
+                                @if (role.IsSystemRole)
+                                {
+                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
+                                        <i class="bi bi-shield-check me-1"></i> دور نظام أساسي
+                                    </span>
+                                }
+                                else if (role.TenantId.HasValue)
+                                {
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="bi bi-building me-1 text-primary"></i> @role.TenantName
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                                        <i class="bi bi-sliders me-1"></i> مخصص عام للمنصة
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- Users Count -->
+                            <td>
+                                <span class="badge bg-light text-dark border font-monospace">
+                                    <i class="bi bi-people me-1 text-muted"></i> @role.UsersCount مستخدم
+                                </span>
+                            </td>
+
+                            <!-- Permissions Count -->
+                            <td>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 font-monospace">
+                                    <i class="bi bi-key me-1"></i> @role.PermissionsCount صلاحية
+                                </span>
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="text-center">
+                                <div class="d-inline-flex align-items-center gap-1.5">
+                                    <a asp-action="Edit" asp-route-id="@role.Id" class="btn btn-sm btn-light border rounded-pill px-2.5" title="تعديل الصلاحيات الممنوحة">
+                                        <i class="bi bi-pencil-square text-primary"></i>
+                                        <span class="fs-9 fw-bold">الصلاحيات</span>
+                                    </a>
+
+                                    @if (!role.IsSystemRole)
+                                    {
+                                        <form asp-action="Delete" method="post" class="d-inline"
+                                              data-confirm="true"
+                                              data-confirm-title="حذف مجموعة الصلاحيات"
+                                              data-confirm-message="هل أنت متأكد من حذف هذه المجموعة نهائياً؟"
+                                              data-confirm-detail="@role.Name"
+                                              data-confirm-type="danger">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@role.Id" />
+                                            <button type="submit" class="btn btn-sm btn-light border text-danger rounded-pill px-2" title="حذف المجموعة">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="rolesEmptyState" class="portal-card p-4 shadow-sm text-center d-none">
+        @{
+            var emptyModel = new EmptyTableStateModel
+            {
+                Icon = "bi-shield-slash",
+                Title = "لم يتم العثور على أي أدوار",
+                Message = "لا توجد مجموعات تطابق معايير البحث.",
+                ResetActionClick = "resetRoleFilters()",
+                ActionText = "إنشاء مجموعة جديدة",
+                ActionUrl = Url.Action("Create")
+            };
+        }
+        <partial name="Partials/_EmptyTableState" model="emptyModel" />
+    </div>
+</div>
+

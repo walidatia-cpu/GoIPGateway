@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using GoIPGateway.Application.Common.Interfaces;
 using GoIPGateway.Domain.Entities;
 using GoIPGateway.Domain.Enums;
 using GoIPGateway.Infrastructure.Identity;
@@ -29,16 +30,81 @@ public static class InitialDataSeed
                 await context.Database.ExecuteSqlRawAsync(
                     "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Devices') AND name = 'MerchantCode') " +
                     "BEGIN ALTER TABLE Devices ADD MerchantCode nvarchar(max) NULL; END");
+
+                await context.Database.ExecuteSqlRawAsync(
+                    "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('AspNetUsers') AND name = 'MustChangePassword') " +
+                    "BEGIN ALTER TABLE AspNetUsers ADD MustChangePassword bit NOT NULL DEFAULT 0; END");
+
+                await context.Database.ExecuteSqlRawAsync(
+                    "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('AspNetUsers') AND name = 'TemporaryPasswordSetDate') " +
+                    "BEGIN ALTER TABLE AspNetUsers ADD TemporaryPasswordSetDate datetime2 NULL; END");
+
+                await context.Database.ExecuteSqlRawAsync(
+                    "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('AspNetUsers') AND name = 'LastPasswordChangedDate') " +
+                    "BEGIN ALTER TABLE AspNetUsers ADD LastPasswordChangedDate datetime2 NULL; END");
+
+                await context.Database.ExecuteSqlRawAsync(
+                    "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('AspNetUsers') AND name = 'LastLoginDate') " +
+                    "BEGIN ALTER TABLE AspNetUsers ADD LastLoginDate datetime2 NULL; END");
+
+                await context.Database.ExecuteSqlRawAsync(
+                    "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('AspNetRoles') AND name = 'TenantId') " +
+                    "BEGIN ALTER TABLE AspNetRoles ADD TenantId int NULL; END");
+
+                await context.Database.ExecuteSqlRawAsync(
+                    "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('AspNetRoles') AND name = 'IsSystemRole') " +
+                    "BEGIN ALTER TABLE AspNetRoles ADD IsSystemRole bit NOT NULL DEFAULT 0; END");
+
+                await context.Database.ExecuteSqlRawAsync(
+                    "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('AspNetUsers') AND name = 'IsOwner') " +
+                    "BEGIN ALTER TABLE AspNetUsers ADD IsOwner bit NOT NULL DEFAULT 0; END");
             }
             catch { }
+
+            // 0. System Owner (Higher than SuperAdmin, hidden from listings, immune to modifications, not bound to any role)
+            var ownerEmail = "owner@goipgateway.com";
+            var ownerUser = await userManager.FindByEmailAsync(ownerEmail);
+            if (ownerUser == null)
+            {
+                ownerUser = new ApplicationUser
+                {
+                    UserName = ownerEmail,
+                    Email = ownerEmail,
+                    FullName = "System Owner",
+                    EmailConfirmed = true,
+                    IsActive = true,
+                    IsOwner = true
+                };
+
+                var createOwnerRes = await userManager.CreateAsync(ownerUser, "Owner@123456");
+                if (!createOwnerRes.Succeeded)
+                {
+                    logger.LogError("Failed to create default Owner user: {Errors}", string.Join(", ", createOwnerRes.Errors.Select(e => e.Description)));
+                }
+            }
+            else if (!ownerUser.IsOwner)
+            {
+                ownerUser.IsOwner = true;
+                await userManager.UpdateAsync(ownerUser);
+            }
 
             // 1. Roles
             string[] roles = { "SuperAdmin", "TenantAdmin", "TenantOperator", "TenantViewer" };
             foreach (var role in roles)
             {
-                if (!await roleManager.RoleExistsAsync(role))
+                var existingRole = await roleManager.FindByNameAsync(role);
+                if (existingRole == null)
                 {
-                    await roleManager.CreateAsync(new ApplicationRole(role) { Description = $"System role {role}" });
+                    await roleManager.CreateAsync(new ApplicationRole(role) 
+                    { 
+                        Description = $"System role {role}",
+                        IsSystemRole = true 
+                    });
+                }
+                else if (!existingRole.IsSystemRole)
+                {
+                    existingRole.IsSystemRole = true;
+                    await roleManager.UpdateAsync(existingRole);
                 }
             }
 
@@ -147,6 +213,27 @@ public static class InitialDataSeed
                 }
 
                 await context.SaveChangesAsync();
+            }
+
+            // 4.1. Ensure all Tenants have a dedicated Role with standard tenant permissions
+            var identityService = scope.ServiceProvider.GetRequiredService<IIdentityService>();
+            var allTenants = await context.Tenants.IgnoreQueryFilters().ToListAsync();
+            foreach (var t in allTenants)
+            {
+                var roleRes = await identityService.EnsureTenantDefaultRoleAsync(t.Id, t.CompanyName);
+                if (roleRes.IsSuccess)
+                {
+                    // Ensure users belonging to this tenant are associated with their company's role
+                    var tenantUsers = await userManager.Users.Where(u => u.TenantId == t.Id).ToListAsync();
+                    foreach (var u in tenantUsers)
+                    {
+                        var userRoles = await userManager.GetRolesAsync(u);
+                        if (!userRoles.Contains(roleRes.Value))
+                        {
+                            await userManager.AddToRoleAsync(u, roleRes.Value);
+                        }
+                    }
+                }
             }
 
             // 5. Default GoIP Device

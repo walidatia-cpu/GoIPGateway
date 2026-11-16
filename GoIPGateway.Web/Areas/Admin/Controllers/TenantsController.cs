@@ -280,4 +280,25 @@ public class TenantsController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetAdminTempPassword(int tenantId, string? customPassword = null, CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(new SetTenantAdminTempPasswordCommand(tenantId, customPassword), cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return Json(new { success = false, message = result.Error.Message });
+        }
+
+        return Json(new
+        {
+            success = true,
+            message = "تم تعيين كلمة المرور المؤقتة لمدير الشركة بنجاح.",
+            companyName = result.Value.CompanyName,
+            email = result.Value.Email,
+            userName = result.Value.FullName,
+            password = result.Value.TemporaryPassword
+        });
+    }
 }

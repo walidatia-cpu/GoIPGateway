@@ -1,0 +1,142 @@
+@model GoIPGateway.Web.Models.Users.EditUserViewModel
+@{
+    ViewData["Title"] = $"تعديل بيانات المستخدم: {Model.FullName}";
+    var tenants = ViewBag.Tenants as List<GoIPGateway.Application.DTOs.Identity.TenantLookupDto> ?? new();
+    var roles = ViewBag.AvailableRoles as List<GoIPGateway.Application.DTOs.Identity.RoleDto> ?? new();
+}
+
+<div class="container-xl px-0 py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة التحكم</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">إدارة المستخدمين</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">تعديل المستخدم</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <div class="portal-card p-4 shadow-sm mb-4">
+                <div class="d-flex align-items-center justify-content-between pb-3 mb-4 border-bottom">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 rounded-4 bg-primary bg-opacity-10 text-primary fs-3" style="width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-pencil-square"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-black mb-1 text-main">@Model.FullName</h4>
+                            <p class="text-muted small mb-0 font-monospace">@Model.Email</p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Set Temp Password button -->
+                    <button type="button" 
+                            class="btn btn-outline-warning rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5"
+                            data-action="set-temp-password"
+                            data-url="@Url.Action("SetTempPassword")"
+                            data-id="@Model.Id"
+                            data-type="user"
+                            data-name="@Model.FullName">
+                        <i class="bi bi-key-fill"></i>
+                        <span>تعيين كلمة مرور مؤقتة</span>
+                    </button>
+                </div>
+
+                <form asp-action="Edit" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small rounded-3 mb-3"></div>
+
+                    <!-- Personal Info -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <label asp-for="FullName" class="form-label small fw-bold text-main"></label>
+                            <input asp-for="FullName" class="form-control" required />
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Email" class="form-label small fw-bold text-main"></label>
+                            <input asp-for="Email" type="email" class="form-control font-monospace" required />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label asp-for="PhoneNumber" class="form-label small fw-bold text-main"></label>
+                            <input asp-for="PhoneNumber" class="form-control font-monospace" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label asp-for="TenantId" class="form-label small fw-bold text-main"></label>
+                            <select asp-for="TenantId" class="form-select searchable-select" data-searchable="true">
+                                <option value="">-- مشرف النظام العام (بدون شركة / SuperAdmin) --</option>
+                                @foreach (var t in tenants)
+                                {
+                                    <option value="@t.Id" selected="@(Model.TenantId == t.Id)">@t.CompanyName (@t.ContactPerson)</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Roles & Groups Selection -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-main mb-2">الأدوار والمجموعات الممنوحة للمستخدم:</label>
+                        <div class="p-3 rounded-3 border bg-light bg-opacity-50">
+                            <div class="row g-2">
+                                @foreach (var r in roles)
+                                {
+                                    var isChecked = Model.SelectedRoles.Contains(r.Name!);
+                                    <div class="col-12 col-sm-6">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="SelectedRoles" value="@r.Name" id="edit_role_@r.Id" @(isChecked ? "checked" : "") />
+                                            <label class="form-check-label fw-bold small text-main" for="edit_role_@r.Id">
+                                                @r.Name
+                                                @if (!string.IsNullOrEmpty(r.Description))
+                                                {
+                                                    <span class="text-muted fw-normal fs-9 d-block">@r.Description</span>
+                                                }
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security & Status Toggles -->
+                    <div class="p-3 rounded-3 border mb-4 bg-light">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsActive" class="form-check-input" />
+                                    <label asp-for="IsActive" class="form-check-label small fw-bold text-main"></label>
+                                </div>
+                                <span class="text-muted fs-9 d-block">تفعيل أو تعطيل قدرة المستخدم على تسجيل الدخول.</span>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <div class="form-check form-switch">
+                                    <input asp-for="MustChangePassword" class="form-check-input" />
+                                    <label asp-for="MustChangePassword" class="form-check-label small fw-bold text-main"></label>
+                                </div>
+                                <span class="text-muted fs-9 d-block">إجبار المستخدم على تغيير كلمة المرور في تسجيل الدخول التالي.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-2">
+                        <a asp-action="Index" class="btn btn-light border px-4 rounded-pill">إلغاء والعودة</a>
+                        <div class="d-flex gap-2">
+                            <a asp-action="Permissions" asp-route-id="@Model.Id" class="btn btn-outline-info px-4 rounded-pill fw-bold">
+                                <i class="bi bi-sliders me-1"></i> إدارة الصلاحيات المباشرة
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4 rounded-pill fw-bold shadow-sm">
+                                <i class="bi bi-check-lg me-1"></i> حفظ التعديلات
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -35,7 +35,12 @@ document.addEventListener('DOMContentLoaded', function () {
         window.AlertService.init();
     }
 
-    // 7. Initialize SignalR Real-Time Hub
+    // 7. Initialize User & Role Management Service
+    if (window.UserManagementService) {
+        window.UserManagementService.init();
+    }
+
+    // 8. Initialize SignalR Real-Time Hub
     if (window.SignalRService) {
         const tenantMeta = document.querySelector('meta[name="user-tenant-id"]');
         const tenantId = tenantMeta ? tenantMeta.getAttribute('content') : '';

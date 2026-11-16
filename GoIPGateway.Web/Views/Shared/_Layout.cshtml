@@ -1,9 +1,10 @@
-﻿@using System.Globalization
+@using System.Globalization
 @{
     var isRtl = CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
     var currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     var isAdminArea = ViewContext.RouteData.Values["area"]?.ToString() == "Admin";
     var isCompanyArea = ViewContext.RouteData.Values["area"]?.ToString() == "Company";
+    var hideSidebar = (ViewData["HideSidebar"] as bool?) == true;
 }
 <!DOCTYPE html>
 <html lang="@currentCulture" dir="@(isRtl ? "rtl" : "ltr")" data-bs-theme="light">
@@ -820,7 +821,7 @@
         }
 
         /* ========================================================
-           GLOBAL SEARCHABLE COMBOBOX SYSTEM
+           GLOBAL SEARCHABLE COMBOBOX & FILTER TOOLBAR SYSTEM
            ======================================================== */
         .searchable-combobox {
             position: relative;
@@ -831,94 +832,167 @@
             border: 1px solid var(--input-border);
             color: var(--input-text);
             border-radius: 12px;
-            padding: 10px 14px;
+            padding: 8px 16px;
             cursor: pointer;
-            transition: all 0.2s ease-in-out;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             user-select: none;
             min-height: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 0.92rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
         }
         .searchable-combobox.combobox-sm .combobox-trigger {
             padding: 6px 12px;
-            min-height: 36px;
+            min-height: 38px;
+            height: 38px;
             font-size: 0.875rem;
             border-radius: 10px;
         }
-        .searchable-combobox .combobox-trigger:hover, 
+        .searchable-combobox .combobox-trigger:hover {
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
         .searchable-combobox .combobox-trigger.active {
             border-color: var(--primary-accent);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
         }
+
+        /* Filter Toolbar Pill Triggers */
+        .search-filter-bar-container .combobox-trigger,
+        .filter-dropdown-wrapper .combobox-trigger {
+            border-radius: 50rem !important;
+            padding: 8px 18px !important;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+        }
+
+        /* Generous, Elevated Floating Combobox Menu */
         .searchable-combobox .combobox-menu {
             position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
-            left: 0;
+            top: calc(100% + 8px);
+            inset-inline-start: 0;
+            min-width: max(100%, 280px);
+            width: max-content;
+            max-width: min(92vw, 400px);
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 14px;
-            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.16);
-            z-index: 1060;
-            max-height: 340px;
-            overflow-y: auto;
+            border-radius: 16px;
+            box-shadow: 0 20px 45px -8px rgba(0, 0, 0, 0.2), 0 8px 20px -4px rgba(0, 0, 0, 0.1);
+            z-index: 2100;
             display: none;
-            padding: 8px;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
+        [data-bs-theme="dark"] .searchable-combobox .combobox-menu {
+            background: #1e293b;
+            border-color: rgba(255, 255, 255, 0.14);
+            box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.65), 0 10px 24px -5px rgba(0, 0, 0, 0.4);
         }
         .searchable-combobox .combobox-menu.show {
-            display: block;
-            animation: comboboxPopIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            animation: comboboxPopIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
         }
         @@keyframes comboboxPopIn {
-            from { opacity: 0; transform: translateY(-6px) scale(0.99); }
+            from { opacity: 0; transform: translateY(-8px) scale(0.98); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
+
+        /* Search Box inside Dropdown */
         .searchable-combobox .combobox-search-box {
-            position: sticky;
-            top: -8px;
-            background: var(--card-bg);
-            z-index: 2;
-            padding-bottom: 6px;
+            padding-bottom: 8px;
             margin-bottom: 6px;
             border-bottom: 1px solid var(--card-border);
+            flex-shrink: 0;
         }
+        .searchable-combobox .combobox-search-input-group {
+            background: var(--bg-app);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            padding: 2px 10px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .searchable-combobox .combobox-search-input-group:focus-within {
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+        }
+        .searchable-combobox .combobox-search-input {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            font-size: 0.92rem;
+            padding: 8px 6px;
+            color: var(--text-main);
+            width: 100%;
+        }
+        .searchable-combobox .combobox-search-input:focus {
+            outline: none;
+        }
+
+        /* Items Container & Scrollbar */
+        .searchable-combobox .combobox-items-list {
+            max-height: 280px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 2px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .searchable-combobox .combobox-items-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .searchable-combobox .combobox-items-list::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 4px;
+        }
+
+        /* Option Items */
+        .searchable-combobox .combobox-item {
+            padding: 10px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.15s ease, color 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            color: var(--text-main);
+            font-size: 0.92rem;
+            font-weight: 500;
+        }
+        .searchable-combobox .combobox-item:hover {
+            background-color: rgba(37, 99, 235, 0.08);
+            color: var(--primary-accent);
+        }
+        .searchable-combobox .combobox-item.selected {
+            background-color: rgba(37, 99, 235, 0.14);
+            color: var(--primary-accent);
+            font-weight: 700;
+        }
+        [data-bs-theme="dark"] .searchable-combobox .combobox-item:hover {
+            background-color: rgba(37, 99, 235, 0.22);
+        }
+        [data-bs-theme="dark"] .searchable-combobox .combobox-item.selected {
+            background-color: rgba(37, 99, 235, 0.32);
+        }
+
         .searchable-combobox .combobox-group-header {
             font-size: 0.75rem;
             font-weight: 800;
             text-transform: uppercase;
             color: var(--text-muted);
-            padding: 8px 10px 4px 10px;
+            padding: 8px 12px 4px 12px;
             letter-spacing: 0.3px;
             background: rgba(148, 163, 184, 0.08);
             border-radius: 6px;
             margin: 4px 0 2px 0;
-        }
-        .searchable-combobox .combobox-item {
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.15s ease, transform 0.1s ease;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            color: var(--text-main);
-            font-size: 0.92rem;
-        }
-        .searchable-combobox.combobox-sm .combobox-item {
-            padding: 6px 10px;
-            font-size: 0.85rem;
-            border-radius: 6px;
-        }
-        .searchable-combobox .combobox-item:hover {
-            background-color: rgba(37, 99, 235, 0.08);
-        }
-        .searchable-combobox .combobox-item.selected {
-            background-color: rgba(37, 99, 235, 0.14);
-            border-right: 3px solid var(--primary-accent);
-            font-weight: 700;
-        }
-        [dir="ltr"] .searchable-combobox .combobox-item.selected {
-            border-right: none;
-            border-left: 3px solid var(--primary-accent);
         }
         .searchable-combobox .combobox-caret {
             transition: transform 0.2s ease;
@@ -926,11 +1000,15 @@
         .searchable-combobox .combobox-trigger.active .combobox-caret {
             transform: rotate(180deg);
         }
-        [data-bs-theme="dark"] .searchable-combobox .combobox-item:hover {
-            background-color: rgba(37, 99, 235, 0.2);
-        }
-        [data-bs-theme="dark"] .searchable-combobox .combobox-item.selected {
-            background-color: rgba(37, 99, 235, 0.3);
+
+        /* Prevent Parent Card from Clipping Dropdowns */
+        .portal-card:has(.search-filter-bar-container),
+        .portal-card:has(.search-filter-wrapper),
+        .portal-card:has(.searchable-combobox),
+        .portal-card.search-filter-card {
+            overflow: visible !important;
+            position: relative;
+            z-index: 25;
         }
 
         /* ========================================================
@@ -1660,7 +1738,7 @@
     <nav class="navbar navbar-custom sticky-top py-2">
         <div class="container-fluid px-2 px-sm-3 px-md-4">
             <div class="d-flex align-items-center gap-2">
-                @if (User.Identity?.IsAuthenticated == true)
+                @if (User.Identity?.IsAuthenticated == true && !hideSidebar)
                 {
                     <!-- Mobile Hamburger Button (<768px) -->
                     <button class="btn btn-sm btn-outline-secondary d-md-none p-1.5 px-2 rounded-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" aria-label="فتح القائمة">
@@ -1716,7 +1794,7 @@
                             <span class="d-none d-sm-inline text-truncate" style="max-width: 140px;">@(User.Identity.Name ?? "المستخدم")</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                            <li><h6 class="dropdown-header">@(User.IsInRole("SuperAdmin") ? "👑 مدير المنصة (Super Admin)" : "🏢 حساب التاجر / الشركة")</h6></li>
+                            <li><h6 class="dropdown-header">@((User.HasClaim("IsOwner", "True") || User.IsInRole("Owner")) ? "🛡️ مالك المنصة (System Owner)" : (User.IsInRole("SuperAdmin") ? "👑 مدير المنصة (Super Admin)" : "🏢 حساب التاجر / الشركة"))</h6></li>
                             <li><a class="dropdown-item" href="/swagger"><i class="bi bi-file-code me-2"></i> توثيق الـ API (Swagger)</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
@@ -1735,7 +1813,7 @@
         </div>
     </nav>
 
-    @if (User.Identity?.IsAuthenticated == true)
+    @if (User.Identity?.IsAuthenticated == true && !hideSidebar)
     {
         <!-- Mobile Sidebar Offcanvas (<768px) -->
         <div class="offcanvas offcanvas-start mobile-offcanvas" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
@@ -1755,7 +1833,7 @@
                     </div>
                     <div class="overflow-hidden">
                         <div class="fw-bold text-truncate">@(User.Identity.Name ?? "المستخدم")</div>
-                        <div class="fs-8 text-muted">@(User.IsInRole("SuperAdmin") ? "👑 مدير المنصة (Super Admin)" : "🏢 حساب التاجر / الشركة")</div>
+                        <div class="fs-8 text-muted">@((User.HasClaim("IsOwner", "True") || User.IsInRole("Owner")) ? "🛡️ مالك المنصة (System Owner)" : (User.IsInRole("SuperAdmin") ? "👑 مدير المنصة (Super Admin)" : "🏢 حساب التاجر / الشركة"))</div>
                     </div>
                 </div>
 
@@ -1768,6 +1846,12 @@
                         </a>
                         <a asp-area="Admin" asp-controller="Tenants" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tenants" ? "active" : "")">
                             <i class="bi bi-buildings"></i> <span>إدارة الشركات والتجار</span>
+                        </a>
+                        <a asp-area="Admin" asp-controller="Users" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" && isAdminArea ? "active" : "")">
+                            <i class="bi bi-people"></i> <span>المستخدمين والمشرفين</span>
+                        </a>
+                        <a asp-area="Admin" asp-controller="Roles" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Roles" && isAdminArea ? "active" : "")">
+                            <i class="bi bi-shield-lock"></i> <span>مجموعات الصلاحيات</span>
                         </a>
                         <a asp-area="Admin" asp-controller="Services" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Services" ? "active" : "")">
                             <i class="bi bi-gear-wide-connected"></i> <span>كتالوج الخدمات و USSD</span>
@@ -1793,33 +1877,66 @@
                         <a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isCompanyArea ? "active" : "")">
                             <i class="bi bi-speedometer"></i> <span>لوحة المتابعة</span>
                         </a>
-                        <a asp-area="Company" asp-controller="Devices" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Devices" ? "active" : "")">
-                            <i class="bi bi-router"></i> <span>أجهزة GoIP</span>
-                        </a>
-                        <a asp-area="Company" asp-controller="SimCards" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SimCards" ? "active" : "")">
-                            <i class="bi bi-sim"></i> <span>الشرائح والمحافظ</span>
-                        </a>
-                        <a asp-area="Company" asp-controller="Routing" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Routing" ? "active" : "")">
-                            <i class="bi bi-shuffle text-primary"></i> <span>توجيه الخدمات والشرائح</span>
-                        </a>
-                        @if (!User.IsInRole("SuperAdmin"))
+                        @if (User.HasPermission(AppPermissions.Devices.View))
+                        {
+                            <a asp-area="Company" asp-controller="Devices" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Devices" ? "active" : "")">
+                                <i class="bi bi-router"></i> <span>أجهزة GoIP</span>
+                            </a>
+                        }
+                        @if (User.HasPermission(AppPermissions.SimCards.View))
+                        {
+                            <a asp-area="Company" asp-controller="SimCards" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SimCards" ? "active" : "")">
+                                <i class="bi bi-sim"></i> <span>الشرائح والمحافظ</span>
+                            </a>
+                        }
+                        @if (User.HasPermission(AppPermissions.Routing.View))
+                        {
+                            <a asp-area="Company" asp-controller="Routing" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Routing" ? "active" : "")">
+                                <i class="bi bi-shuffle text-primary"></i> <span>توجيه الخدمات والشرائح</span>
+                            </a>
+                        }
+                        @if (!User.IsInRole("SuperAdmin") && User.HasPermission(AppPermissions.Transactions.Execute))
                         {
                             <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Execute" ? "active" : "")">
                                 <i class="bi bi-lightning-charge-fill text-warning"></i> <span>تنفيذ عملية فورية</span>
                             </a>
                         }
-                        <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")">
-                            <i class="bi bi-receipt"></i> <span>سجل العمليات</span>
-                        </a>
-                        <a asp-area="Company" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")">
-                            <i class="bi bi-pie-chart-fill"></i> <span>تقرير الإجماليات والتسويات</span>
-                        </a>
-                        <a asp-area="Company" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
-                            <i class="bi bi-file-earmark-bar-graph"></i> <span>تقرير الأجهزة والعمليات</span>
-                        </a>
-                        <a asp-area="Company" asp-controller="ApiSettings" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ApiSettings" ? "active" : "")">
-                            <i class="bi bi-key"></i> <span>مفاتيح الربط والـ API</span>
-                        </a>
+                        @if (User.HasPermission(AppPermissions.Transactions.View))
+                        {
+                            <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")">
+                                <i class="bi bi-receipt"></i> <span>سجل العمليات</span>
+                            </a>
+                        }
+                        @if (User.HasPermission(AppPermissions.Reports.ViewSummary))
+                        {
+                            <a asp-area="Company" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")">
+                                <i class="bi bi-pie-chart-fill"></i> <span>تقرير الإجماليات والتسويات</span>
+                            </a>
+                        }
+                        @if (User.HasPermission(AppPermissions.Reports.ViewDevices))
+                        {
+                            <a asp-area="Company" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                                <i class="bi bi-file-earmark-bar-graph"></i> <span>تقرير الأجهزة والعمليات</span>
+                            </a>
+                        }
+                        @if (User.HasPermission(AppPermissions.ApiSettings.View))
+                        {
+                            <a asp-area="Company" asp-controller="ApiSettings" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ApiSettings" ? "active" : "")">
+                                <i class="bi bi-key"></i> <span>مفاتيح الربط والـ API</span>
+                            </a>
+                        }
+                        @if (User.HasPermission(AppPermissions.Users.View))
+                        {
+                            <a asp-area="Company" asp-controller="Users" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" && isCompanyArea ? "active" : "")">
+                                <i class="bi bi-people"></i> <span>فريق العمل والموظفين</span>
+                            </a>
+                        }
+                        @if (User.HasPermission(AppPermissions.Roles.View))
+                        {
+                            <a asp-area="Company" asp-controller="Roles" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Roles" && isCompanyArea ? "active" : "")">
+                                <i class="bi bi-shield-shaded"></i> <span>مجموعات الصلاحيات</span>
+                            </a>
+                        }
                     }
                 </div>
             </div>
@@ -1828,7 +1945,7 @@
 
     <!-- Layout Body -->
     <div class="d-flex flex-grow-1 position-relative">
-        @if (User.Identity?.IsAuthenticated == true)
+        @if (User.Identity?.IsAuthenticated == true && !hideSidebar)
         {
             <aside class="sidebar py-3 d-none d-md-block" id="desktopSidebar">
                 @if (isAdminArea || User.IsInRole("SuperAdmin"))
@@ -1839,6 +1956,12 @@
                     </a>
                     <a asp-area="Admin" asp-controller="Tenants" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Tenants" ? "active" : "")" title="إدارة الشركات والتجار">
                         <i class="bi bi-buildings"></i> <span>إدارة الشركات والتجار</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Users" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" && isAdminArea ? "active" : "")" title="إدارة المستخدمين والمشرفين">
+                        <i class="bi bi-people"></i> <span>المستخدمين والمشرفين</span>
+                    </a>
+                    <a asp-area="Admin" asp-controller="Roles" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Roles" && isAdminArea ? "active" : "")" title="مجموعات الصلاحيات">
+                        <i class="bi bi-shield-lock"></i> <span>مجموعات الصلاحيات</span>
                     </a>
                     <a asp-area="Admin" asp-controller="Services" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Services" ? "active" : "")" title="كتالوج الخدمات و USSD">
                         <i class="bi bi-gear-wide-connected"></i> <span>كتالوج الخدمات و USSD</span>
@@ -1864,33 +1987,66 @@
                     <a asp-area="Company" asp-controller="Dashboard" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && isCompanyArea ? "active" : "")" title="لوحة المتابعة">
                         <i class="bi bi-speedometer"></i> <span>لوحة المتابعة</span>
                     </a>
-                    <a asp-area="Company" asp-controller="Devices" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Devices" ? "active" : "")" title="أجهزة GoIP">
-                        <i class="bi bi-router"></i> <span>أجهزة GoIP</span>
-                    </a>
-                    <a asp-area="Company" asp-controller="SimCards" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SimCards" ? "active" : "")" title="الشرائح والمحافظ">
-                        <i class="bi bi-sim"></i> <span>الشرائح والمحافظ</span>
-                    </a>
-                    <a asp-area="Company" asp-controller="Routing" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Routing" ? "active" : "")" title="توجيه الخدمات والشرائح">
-                        <i class="bi bi-shuffle text-primary"></i> <span>توجيه الخدمات والشرائح</span>
-                    </a>
-                    @if (!User.IsInRole("SuperAdmin"))
+                    @if (User.HasPermission(AppPermissions.Devices.View))
+                    {
+                        <a asp-area="Company" asp-controller="Devices" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Devices" ? "active" : "")" title="أجهزة GoIP">
+                            <i class="bi bi-router"></i> <span>أجهزة GoIP</span>
+                        </a>
+                    }
+                    @if (User.HasPermission(AppPermissions.SimCards.View))
+                    {
+                        <a asp-area="Company" asp-controller="SimCards" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SimCards" ? "active" : "")" title="الشرائح والمحافظ">
+                            <i class="bi bi-sim"></i> <span>الشرائح والمحافظ</span>
+                        </a>
+                    }
+                    @if (User.HasPermission(AppPermissions.Routing.View))
+                    {
+                        <a asp-area="Company" asp-controller="Routing" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Routing" ? "active" : "")" title="توجيه الخدمات والشرائح">
+                            <i class="bi bi-shuffle text-primary"></i> <span>توجيه الخدمات والشرائح</span>
+                        </a>
+                    }
+                    @if (!User.IsInRole("SuperAdmin") && User.HasPermission(AppPermissions.Transactions.Execute))
                     {
                         <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Execute" ? "active" : "")" title="تنفيذ عملية فورية">
                             <i class="bi bi-lightning-charge-fill text-warning"></i> <span>تنفيذ عملية فورية</span>
                         </a>
                     }
-                    <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")" title="سجل العمليات">
-                        <i class="bi bi-receipt"></i> <span>سجل العمليات</span>
-                    </a>
-                    <a asp-area="Company" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")" title="تقرير الإجماليات والتسويات">
-                        <i class="bi bi-pie-chart-fill"></i> <span>تقرير الإجماليات والتسويات</span>
-                    </a>
-                    <a asp-area="Company" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")" title="تقرير الأجهزة والعمليات">
-                        <i class="bi bi-file-earmark-bar-graph"></i> <span>تقرير الأجهزة والعمليات</span>
-                    </a>
-                    <a asp-area="Company" asp-controller="ApiSettings" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ApiSettings" ? "active" : "")" title="مفاتيح الربط والـ API">
-                        <i class="bi bi-key"></i> <span>مفاتيح الربط والـ API</span>
-                    </a>
+                    @if (User.HasPermission(AppPermissions.Transactions.View))
+                    {
+                        <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")" title="سجل العمليات">
+                            <i class="bi bi-receipt"></i> <span>سجل العمليات</span>
+                        </a>
+                    }
+                    @if (User.HasPermission(AppPermissions.Reports.ViewSummary))
+                    {
+                        <a asp-area="Company" asp-controller="Reports" asp-action="Summary" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Summary" ? "active" : "")" title="تقرير الإجماليات والتسويات">
+                            <i class="bi bi-pie-chart-fill"></i> <span>تقرير الإجماليات والتسويات</span>
+                        </a>
+                    }
+                    @if (User.HasPermission(AppPermissions.Reports.ViewDevices))
+                    {
+                        <a asp-area="Company" asp-controller="Reports" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")" title="تقرير الأجهزة والعمليات">
+                            <i class="bi bi-file-earmark-bar-graph"></i> <span>تقرير الأجهزة والعمليات</span>
+                        </a>
+                    }
+                    @if (User.HasPermission(AppPermissions.ApiSettings.View))
+                    {
+                        <a asp-area="Company" asp-controller="ApiSettings" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "ApiSettings" ? "active" : "")" title="مفاتيح الربط والـ API">
+                            <i class="bi bi-key"></i> <span>مفاتيح الربط والـ API</span>
+                        </a>
+                    }
+                    @if (User.HasPermission(AppPermissions.Users.View))
+                    {
+                        <a asp-area="Company" asp-controller="Users" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" && isCompanyArea ? "active" : "")" title="فريق العمل والموظفين">
+                            <i class="bi bi-people"></i> <span>فريق العمل والموظفين</span>
+                        </a>
+                    }
+                    @if (User.HasPermission(AppPermissions.Roles.View))
+                    {
+                        <a asp-area="Company" asp-controller="Roles" asp-action="Index" class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Roles" && isCompanyArea ? "active" : "")" title="مجموعات الصلاحيات">
+                            <i class="bi bi-shield-shaded"></i> <span>مجموعات الصلاحيات</span>
+                        </a>
+                    }
                 }
             </aside>
         }
@@ -1945,7 +2101,7 @@
         </main>
     </div>
 
-    @if (User.Identity?.IsAuthenticated == true)
+    @if (User.Identity?.IsAuthenticated == true && !hideSidebar)
     {
         <!-- Mobile Bottom Glassmorphic Navigation Bar (<768px) -->
         <nav class="mobile-bottom-nav d-md-none" aria-label="شريط التنقل السريع للهواتف">
@@ -1980,20 +2136,29 @@
                     <i class="bi bi-speedometer"></i>
                     <span>الرئيسية</span>
                 </a>
-                <a asp-area="Company" asp-controller="Devices" asp-action="Index" class="mobile-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Devices" ? "active" : "")">
-                    <i class="bi bi-router"></i>
-                    <span>الأجهزة</span>
-                </a>
-                <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="mobile-nav-item mobile-nav-center @(ViewContext.RouteData.Values["controller"]?.ToString() == "Execute" ? "active" : "")" title="تنفيذ فوري">
-                    <div class="mobile-nav-center-btn">
-                        <i class="bi bi-lightning-charge-fill"></i>
-                    </div>
-                    <span>تنفيذ فوري</span>
-                </a>
-                <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="mobile-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")">
-                    <i class="bi bi-receipt"></i>
-                    <span>العمليات</span>
-                </a>
+                @if (User.HasPermission(AppPermissions.Devices.View))
+                {
+                    <a asp-area="Company" asp-controller="Devices" asp-action="Index" class="mobile-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Devices" ? "active" : "")">
+                        <i class="bi bi-router"></i>
+                        <span>الأجهزة</span>
+                    </a>
+                }
+                @if (!User.IsInRole("SuperAdmin") && User.HasPermission(AppPermissions.Transactions.Execute))
+                {
+                    <a asp-area="Company" asp-controller="Execute" asp-action="Index" class="mobile-nav-item mobile-nav-center @(ViewContext.RouteData.Values["controller"]?.ToString() == "Execute" ? "active" : "")" title="تنفيذ فوري">
+                        <div class="mobile-nav-center-btn">
+                            <i class="bi bi-lightning-charge-fill"></i>
+                        </div>
+                        <span>تنفيذ فوري</span>
+                    </a>
+                }
+                @if (User.HasPermission(AppPermissions.Transactions.View))
+                {
+                    <a asp-area="Company" asp-controller="Transactions" asp-action="Index" class="mobile-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Transactions" && isCompanyArea ? "active" : "")">
+                        <i class="bi bi-receipt"></i>
+                        <span>العمليات</span>
+                    </a>
+                }
                 <button type="button" class="mobile-nav-item" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" title="المزيد">
                     <i class="bi bi-grid-fill"></i>
                     <span>المزيد</span>
@@ -2059,6 +2224,7 @@
     <script src="~/js/services/comboboxService.js" asp-append-version="true"></script>
     <script src="~/js/services/confirmModalService.js" asp-append-version="true"></script>
     <script src="~/js/services/alertService.js" asp-append-version="true"></script>
+    <script src="~/js/services/userManagementService.js" asp-append-version="true"></script>
     <script src="~/js/services/signalrService.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)

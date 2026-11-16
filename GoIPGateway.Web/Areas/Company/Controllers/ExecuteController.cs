@@ -1,5 +1,6 @@
 using System.Text.Json;
 using GoIPGateway.Application.Common.Interfaces;
+using GoIPGateway.Application.Common.Security;
 using GoIPGateway.Application.DTOs;
 using GoIPGateway.Application.Features.ServiceDefinitions.Queries;
 using GoIPGateway.Application.Features.SimCards.Queries;
@@ -7,6 +8,7 @@ using GoIPGateway.Application.Features.Tenants.Queries;
 using GoIPGateway.Application.Features.Transactions.Commands;
 using GoIPGateway.Domain.Entities;
 using GoIPGateway.Domain.Enums;
+using GoIPGateway.Infrastructure.Identity.Permissions;
 using GoIPGateway.Web.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -15,7 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
 [Area("Company")]
-[Authorize(Roles = "TenantAdmin,TenantOperator")]
+[Authorize]
 public class ExecuteController : Controller
 {
     private readonly IMediator _mediator;
@@ -48,6 +50,7 @@ public class ExecuteController : Controller
     }
 
     [HttpGet]
+    [HasPermission(AppPermissions.Transactions.Execute)]
     public async Task<IActionResult> Index(string? serviceCode, int? serviceId, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
@@ -90,6 +93,7 @@ public class ExecuteController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [HasPermission(AppPermissions.Transactions.Execute)]
     public async Task<IActionResult> Execute(string serviceCode, int? simCardId, OperatorType? op, string? externalRef, [FromForm] IFormCollection form, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
@@ -146,6 +150,7 @@ public class ExecuteController : Controller
     /// نقطة نهاية للاختبار الفوري السريع عبر AJAX بدون إعادة تحميل الصفحة
     /// </summary>
     [HttpPost]
+    [HasPermission(AppPermissions.Transactions.Execute)]
     public async Task<IActionResult> QuickTest([FromBody] ExecuteServiceRequestDto request, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();
@@ -173,6 +178,7 @@ public class ExecuteController : Controller
     /// تنفيذ عملية دفع أو تحويل فوري سريع عبر AJAX من لوحة تحكم الشركة
     /// </summary>
     [HttpPost]
+    [HasPermission(AppPermissions.Transactions.Execute)]
     public async Task<IActionResult> QuickPayment([FromBody] ProcessPaymentCommand command, CancellationToken cancellationToken)
     {
         var tenantId = ResolveTenantId();

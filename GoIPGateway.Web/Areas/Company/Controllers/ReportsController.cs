@@ -1,8 +1,10 @@
 using System.Text;
 using GoIPGateway.Application.Common.Interfaces;
+using GoIPGateway.Application.Common.Security;
 using GoIPGateway.Application.DTOs.Reports;
 using GoIPGateway.Application.Features.Reports.Queries;
 using GoIPGateway.Application.Features.Tenants.Queries;
+using GoIPGateway.Infrastructure.Identity.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoIPGateway.Web.Areas.Company.Controllers;
 
 [Area("Company")]
-[Authorize(Roles = "TenantAdmin,TenantOperator,TenantViewer,SuperAdmin")]
+[Authorize]
 public class ReportsController : Controller
 {
     private readonly IMediator _mediator;
@@ -40,6 +42,7 @@ public class ReportsController : Controller
     }
 
     [HttpGet]
+    [HasPermission(AppPermissions.Reports.ViewDevices)]
     public async Task<IActionResult> Index(CompanyReportFilterDto filter, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -58,6 +61,7 @@ public class ReportsController : Controller
     }
 
     [HttpGet]
+    [HasPermission(AppPermissions.Reports.Export)]
     public async Task<IActionResult> ExportCsv(CompanyReportFilterDto filter, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -106,6 +110,7 @@ public class ReportsController : Controller
     }
 
     [HttpGet]
+    [HasPermission(AppPermissions.Reports.ViewSummary)]
     public async Task<IActionResult> Summary(ExecutiveSummaryFilterDto filter, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);
@@ -123,6 +128,7 @@ public class ReportsController : Controller
     }
 
     [HttpGet]
+    [HasPermission(AppPermissions.Reports.Export)]
     public async Task<IActionResult> ExportSummaryCsv(ExecutiveSummaryFilterDto filter, CancellationToken cancellationToken)
     {
         var tenantId = await ResolveTenantIdAsync(cancellationToken);

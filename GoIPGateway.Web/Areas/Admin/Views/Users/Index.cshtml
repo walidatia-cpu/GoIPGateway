@@ -1,0 +1,328 @@
+@model IEnumerable<GoIPGateway.Web.Models.Users.UserListItemViewModel>
+@using GoIPGateway.Web.Models.Components
+@{
+    ViewData["Title"] = "إدارة المستخدمين والمشرفين";
+    var userList = Model.ToList();
+    var totalUsers = userList.Count;
+    var activeUsers = userList.Count(u => u.IsActive);
+    var pendingPwdUsers = userList.Count(u => u.MustChangePassword);
+    var tenants = ViewBag.Tenants as Dictionary<int, string> ?? new();
+    var roles = ViewBag.Roles as List<string> ?? new();
+
+    var filterBar = new SearchFilterBarModel
+    {
+        SearchInputId = "userSearchInput",
+        SearchPlaceholder = "ابحث بالاسم أو البريد الإلكتروني...",
+        OnSearchInput = "filterUserTable()",
+        CounterId = "usersVisibleCount",
+        CounterLabel = "المستخدمون الظاهرون:",
+        InitialCount = totalUsers,
+        ResetFiltersFunction = "resetUserFilters()",
+        Filters = new List<FilterDropdownModel>
+        {
+            new FilterDropdownModel
+            {
+                Id = "userStatusFilter",
+                Label = "معيار الحالة:",
+                Icon = "bi-funnel-fill",
+                OnChange = "filterUserTable()",
+                Options = new List<FilterOptionModel>
+                {
+                    new FilterOptionModel("ALL", "جميع الحالات", badge: totalUsers.ToString(), color: "primary", isSelected: true),
+                    new FilterOptionModel("ACTIVE", "الحسابات النشطة فقط", badge: activeUsers.ToString(), color: "success"),
+                    new FilterOptionModel("INACTIVE", "الحسابات المعطلة", badge: (totalUsers - activeUsers).ToString(), color: "secondary"),
+                    new FilterOptionModel("PENDING_PWD", "بانتظار تغيير الباسورد", badge: pendingPwdUsers.ToString(), color: "warning")
+                }
+            },
+            new FilterDropdownModel
+            {
+                Id = "userRoleFilter",
+                Label = "الدور / المجموعة:",
+                Icon = "bi-shield-shaded",
+                OnChange = "filterUserTable()",
+                Options = new List<FilterOptionModel>
+                {
+                    new FilterOptionModel("ALL", "كافة الأدوار", isSelected: true)
+                }.Concat(roles.Select(r => new FilterOptionModel(r, r))).ToList()
+            }
+        },
+        PrimaryAction = new ActionButtonModel
+        {
+            Text = "إضافة مستخدم جديد",
+            Url = Url.Action("Create"),
+            Icon = "bi-person-plus-fill",
+            ColorClass = "btn-primary"
+        }
+    };
+}
+
+<div class="container-xl px-0 py-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="text-decoration-none text-muted">لوحة التحكم</a></li>
+            <li class="breadcrumb-item active text-main fw-bold" aria-current="page">إدارة المستخدمين</li>
+        </ol>
+    </nav>
+
+    <!-- Header Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="portal-card p-3 shadow-sm h-100">
+                <div class="text-muted fs-8 mb-1">إجمالي المستخدمين</div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h3 class="fw-black mb-0 text-primary font-monospace">@totalUsers</h3>
+                    <i class="bi bi-people fs-4 text-primary opacity-50"></i>
+                </div>
+                <small class="text-muted mt-2 d-block fs-9">مشرفو نظام ومستخدمو شركات</small>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="portal-card p-3 shadow-sm h-100">
+                <div class="text-muted fs-8 mb-1">حسابات نشطة</div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h3 class="fw-black mb-0 text-success font-monospace">@activeUsers</h3>
+                    <i class="bi bi-check-circle-fill fs-4 text-success opacity-50"></i>
+                </div>
+                <small class="text-muted mt-2 d-block fs-9">مصرح لها بتسجيل الدخول</small>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="portal-card p-3 shadow-sm h-100">
+                <div class="text-muted fs-8 mb-1">بانتظار تغيير الباسورد</div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h3 class="fw-black mb-0 text-warning font-monospace">@pendingPwdUsers</h3>
+                    <i class="bi bi-key-fill fs-4 text-warning opacity-50"></i>
+                </div>
+                <small class="text-muted mt-2 d-block fs-9">كلمة مرور مؤقتة (أول لوجن)</small>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="portal-card p-3 shadow-sm h-100">
+                <div class="text-muted fs-8 mb-1">مجموعات الصلاحيات</div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h3 class="fw-black mb-0 text-info font-monospace">@roles.Count</h3>
+                    <a asp-action="Index" asp-controller="Roles" class="btn btn-sm btn-outline-info rounded-pill fs-9 py-0.5 px-2">إدارة الأدوار</a>
+                </div>
+                <small class="text-muted mt-2 d-block fs-9">أدوار نظام ومجموعات داينمك</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Antiforgery Token for AJAX Temp Password actions -->
+    @Html.AntiForgeryToken()
+
+    <!-- Search & Filter Bar Component -->
+    <div class="portal-card mb-4 shadow-sm search-filter-card">
+        <partial name="Partials/_SearchFilterBar" model="filterBar" />
+    </div>
+
+    <!-- Users Table Container -->
+    <div id="usersTableContainer" class="portal-card shadow-sm table-card-container mb-4">
+        <div class="table-responsive table-responsive-custom">
+            <table class="table table-custom table-sticky-col align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="sticky-col" style="min-width: 220px;">
+                            <span>المستخدم والبريد الإلكتروني</span>
+                        </th>
+                        <th style="min-width: 150px;">
+                            <span class="d-none d-sm-inline">الشركة والتبعية</span>
+                            <span class="d-sm-none">الشركة</span>
+                        </th>
+                        <th style="min-width: 160px;">
+                            <span class="d-none d-sm-inline">الأدوار والمجموعات</span>
+                            <span class="d-sm-none">الأدوار</span>
+                        </th>
+                        <th style="min-width: 110px;">
+                            <span>الحالة</span>
+                        </th>
+                        <th style="min-width: 140px;">
+                            <span>أمان كلمة المرور</span>
+                        </th>
+                        <th style="min-width: 140px;">
+                            <span class="d-none d-md-inline">آخر تسجيل دخول</span>
+                            <span class="d-md-none">الدخول</span>
+                        </th>
+                        <th class="text-center" style="min-width: 180px;">
+                            <span>الإجراءات</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    @foreach (var user in userList)
+                    {
+                        var statusKey = user.MustChangePassword ? "PENDING_PWD" : (user.IsActive ? "ACTIVE" : "INACTIVE");
+                        var rolesAttr = string.Join(",", user.Roles);
+
+                        <tr class="user-table-row"
+                            data-name="@user.FullName"
+                            data-email="@user.Email"
+                            data-status="@statusKey"
+                            data-roles="@rolesAttr"
+                            data-tenant="@(user.TenantId?.ToString() ?? "ALL")">
+                            
+                            <!-- Sticky Column: User Name & Email -->
+                            <td class="sticky-col">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded-circle bg-primary bg-opacity-10 text-primary fs-5" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+                                    <div class="overflow-hidden">
+                                        <div class="fw-bold text-main text-truncate">@user.FullName</div>
+                                        <div class="text-muted fs-8 font-monospace text-truncate">@user.Email</div>
+                                        @if (!string.IsNullOrEmpty(user.PhoneNumber))
+                                        {
+                                            <div class="text-muted fs-9 font-monospace"><i class="bi bi-telephone me-1"></i>@user.PhoneNumber</div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Tenant / System -->
+                            <td>
+                                @if (user.TenantId.HasValue)
+                                {
+                                    <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-building text-primary"></i>
+                                        <span>@user.TenantName</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-shield-lock-fill"></i>
+                                        <span>مشرف النظام (Admin)</span>
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- Roles -->
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var r in user.Roles)
+                                    {
+                                        var roleBadgeColor = r == "SuperAdmin" ? "bg-danger bg-opacity-10 text-danger border-danger" :
+                                                             r == "TenantAdmin" ? "bg-primary bg-opacity-10 text-primary border-primary" :
+                                                             "bg-secondary bg-opacity-10 text-secondary border-secondary";
+                                        <span class="badge border @roleBadgeColor font-monospace fs-9">@r</span>
+                                    }
+                                    @if (user.DirectPermissionsCount > 0)
+                                    {
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info font-monospace fs-9" title="صلاحيات مخصصة مباشرة">
+                                            +@user.DirectPermissionsCount صلاحية
+                                        </span>
+                                    }
+                                </div>
+                            </td>
+
+                            <!-- Status -->
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 d-inline-flex align-items-center gap-1">
+                                        <span class="rounded-circle bg-success" style="width: 6px; height: 6px;"></span>
+                                        <span>نشط</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 d-inline-flex align-items-center gap-1">
+                                        <span class="rounded-circle bg-secondary" style="width: 6px; height: 6px;"></span>
+                                        <span>معطل</span>
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- Password Security -->
+                            <td>
+                                @if (user.MustChangePassword)
+                                {
+                                    <span class="badge bg-warning bg-opacity-20 text-dark border border-warning d-inline-flex align-items-center gap-1" title="مطلوب تغيير كلمة المرور فور الدخول">
+                                        <i class="bi bi-exclamation-circle text-warning"></i>
+                                        <span>مؤقتة (أول لوجن)</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-shield-check"></i>
+                                        <span>محدثة وشخصية</span>
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- Last Login -->
+                            <td>
+                                <div class="text-muted fs-8 font-monospace">
+                                    @(user.LastLoginDate.HasValue ? user.LastLoginDate.Value.ToString("yyyy-MM-dd HH:mm") : "لم يسجل دخول بعد")
+                                </div>
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="text-center">
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <!-- Edit -->
+                                    <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-sm btn-light border rounded-pill px-2" title="تعديل بيانات المستخدم">
+                                        <i class="bi bi-pencil-square text-primary"></i>
+                                    </a>
+
+                                    <!-- Direct Permissions -->
+                                    <a asp-action="Permissions" asp-route-id="@user.Id" class="btn btn-sm btn-light border rounded-pill px-2" title="الصلاحيات المباشرة">
+                                        <i class="bi bi-sliders text-info"></i>
+                                    </a>
+
+                                    <!-- Set Temp Password Button -->
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-warning rounded-pill px-2" 
+                                            data-action="set-temp-password"
+                                            data-url="@Url.Action("SetTempPassword")"
+                                            data-id="@user.Id"
+                                            data-type="user"
+                                            data-name="@user.FullName"
+                                            title="تعيين كلمة مرور مؤقتة جديدة للمستخدم">
+                                        <i class="bi bi-key-fill"></i>
+                                    </button>
+
+                                    <!-- Toggle Status -->
+                                    <form asp-action="ToggleStatus" method="post" class="d-inline"
+                                          data-confirm="true"
+                                          data-confirm-title="@(user.IsActive ? "تعطيل حساب المستخدم" : "تفعيل حساب المستخدم")"
+                                          data-confirm-message="هل تريد @(user.IsActive ? "تعطيل وإيقاف دخول" : "تفعيل وإتاحة دخول") المستخدم؟"
+                                          data-confirm-detail="@user.FullName (@user.Email)"
+                                          data-confirm-type="@(user.IsActive ? "danger" : "success")">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@user.Id" />
+                                        <button type="submit" class="btn btn-sm @(user.IsActive ? "btn-light border text-danger" : "btn-light border text-success") rounded-pill px-2" title="@(user.IsActive ? "تعطيل الحساب" : "تفعيل الحساب")">
+                                            <i class="bi @(user.IsActive ? "bi-lock-fill" : "bi-unlock-fill")"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Empty State Microcomponent -->
+    <div id="usersEmptyState" class="portal-card p-4 shadow-sm text-center d-none">
+        @{
+            var emptyModel = new EmptyTableStateModel
+            {
+                Icon = "bi-people",
+                Title = "لم يتم العثور على أي مستخدمين",
+                Message = "لا يوجد مستخدمون يطابقون معايير البحث والفلترة المحددة.",
+                ResetActionClick = "resetUserFilters()",
+                ActionText = "إضافة مستخدم جديد",
+                ActionUrl = Url.Action("Create")
+            };
+        }
+        <partial name="Partials/_EmptyTableState" model="emptyModel" />
+    </div>
+</div>
+

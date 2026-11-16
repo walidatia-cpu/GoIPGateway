@@ -8,11 +8,10 @@ public class HomeController : Controller
     {
         if (User.Identity?.IsAuthenticated == true)
         {
-            if (User.IsInRole("SuperAdmin"))
+            if (User.IsInRole("SuperAdmin") || User.HasClaim("IsOwner", "True") || User.IsInRole("Owner"))
                 return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
 
-            if (User.IsInRole("TenantAdmin") || User.IsInRole("TenantOperator") || User.IsInRole("TenantViewer"))
-                return RedirectToAction("Index", "Dashboard", new { area = "Company" });
+            return RedirectToAction("Index", "Dashboard", new { area = "Company" });
         }
 
         return RedirectToAction("Login", "Account");

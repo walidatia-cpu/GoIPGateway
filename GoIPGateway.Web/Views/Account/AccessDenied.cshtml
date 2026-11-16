@@ -1,7 +1,8 @@
 @{
     ViewData["Title"] = "غير مصرح بالوصول - 403 Forbidden";
-    var isSuperAdmin = User.IsInRole("SuperAdmin");
-    var isCompanyUser = User.IsInRole("TenantAdmin") || User.IsInRole("TenantOperator") || User.IsInRole("TenantViewer");
+    ViewData["HideSidebar"] = true;
+    var isSuperAdmin = User.IsInRole("SuperAdmin") || User.HasClaim("IsOwner", "True") || User.IsInRole("Owner");
+    var isCompanyUser = User.HasClaim(c => c.Type == "TenantId") || User.HasClaim(c => c.Type == "tenant_id") || User.IsInRole("TenantAdmin") || User.IsInRole("TenantOperator") || User.IsInRole("TenantViewer");
 }
 
 <div class="container py-5 d-flex align-items-center justify-content-center" style="min-height: 70vh;">
